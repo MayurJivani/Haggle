@@ -45,6 +45,18 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
     await admin?.end();
   });
 
+  it('keeps an empty lobby waiting instead of opening the market', async () => {
+    const engine = new Engine(sql, config, log);
+    engines.push(engine);
+    await engine.start();
+    expect(await engine.openNow()).toBe(true);
+    await sleep(300);
+    const s = engine.sessionInfo()!;
+    expect(s.phase).toBe('lobby');
+    expect(s.opensAt).toBeGreaterThan(Date.now());
+    engine.stop();
+  });
+
   it('runs a whole session with consistent books', async () => {
     const engine = new Engine(sql, config, log);
     engines.push(engine);

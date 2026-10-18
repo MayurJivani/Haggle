@@ -18,7 +18,7 @@ One Node process owns the live session. That is deliberate: a single authority f
 
 ## Session loop
 
-`lobby` until `opens_at`, then `trading`, then `closing` for the last `CLOSING_SECONDS` (trading continues, the UI calls last orders), then `results` at `closes_at`. After `RESULTS_SECONDS` a new lobby opens and every connected player is dealt in. `phaseAt()` in `ranking.ts` derives the phase from the timestamps alone, so there is no state machine to drift. The organiser can open the bell early with `POST /api/admin/start`.
+`lobby` until `opens_at`, then `trading`, then `closing` for the last `CLOSING_SECONDS` (trading continues, the UI calls last orders), then `results` at `closes_at`. After `RESULTS_SECONDS` a new lobby opens and every connected player is dealt in. `phaseAt()` in `ranking.ts` derives the phase from the timestamps alone, so there is no state machine to drift. The organiser can open the bell early with `POST /api/admin/start`. A lobby with nobody in it never opens: the countdown restarts instead, so an always-on server does not write a full session of price history every cycle for an empty room.
 
 Defaults: 2 min lobby, 10 min trading, 3 min results. All configurable in `.env`.
 

@@ -124,6 +124,14 @@ export class Engine {
     try {
       const live = this.live;
       const now = Date.now();
+      // An empty room keeps waiting rather than running a market nobody trades: an always-on box
+      // would otherwise write a full session of price history every cycle for no one.
+      if (live.row.status === 'lobby' && now >= live.opensAt && live.players.size === 0) {
+        live.opensAt = now + this.cfg.lobbySeconds * 1000;
+        live.closesAt = live.opensAt + live.cfg.totalTicks * live.cfg.tickMs;
+        await store.setSessionTimes(this.sql, live.row.id, new Date(live.opensAt), new Date(live.closesAt));
+        this.broadcastPhase();
+      }
       const phase = phaseAt(now, live.opensAt, live.closesAt, live.cfg.closingSeconds, live.finishedAt !== null);
 
       if (phase === 'trading' || phase === 'closing') {
