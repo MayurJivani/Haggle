@@ -6,7 +6,7 @@ import { schedule, type ScheduledEvent } from '../market/events.js';
 import { MarketSim } from '../market/sim.js';
 import { metrics } from '../metrics.js';
 import type { AssetInfo, Board, BookInfo, ClientMsg, EventInfo, PlayerResult, Results, ServerMsg, SessionInfo } from '../protocol.js';
-import { apply, pnlByTicker, quote, returnBps, valueOf, type Book } from '../trading/portfolio.js';
+import { apply, pnlByTicker, quote, returnBps, STARTING_CASH, valueOf, type Book } from '../trading/portfolio.js';
 import { compareRank, phaseAt, sharpe, type Phase } from './ranking.js';
 import * as store from './store.js';
 
@@ -126,7 +126,7 @@ export class Engine {
       const now = Date.now();
       // An empty room keeps waiting rather than running a market nobody trades: an always-on box
       // would otherwise write a full session of price history every cycle for no one.
-      if (live.row.status === 'lobby' && now >= live.opensAt && live.players.size === 0) {
+      if (live.row.status === 'lobby' && live.sim.tick === 0 && now >= live.opensAt && live.players.size === 0) {
         live.opensAt = now + this.cfg.lobbySeconds * 1000;
         live.closesAt = live.opensAt + live.cfg.totalTicks * live.cfg.tickMs;
         await store.setSessionTimes(this.sql, live.row.id, new Date(live.opensAt), new Date(live.closesAt));
@@ -221,7 +221,8 @@ export class Engine {
   // ---------------------------------------------------------------- session lifecycle
 
   private build(row: store.SessionRow): Live {
-    const cfg = row.config;
+    // An early close shortens the session; the stored close time is the authority on its length.
+    const cfg = { ...row.config, totalTicks: Math.min(row.config.totalTicks, Math.floor((row.closes_at.getTime() - row.opens_at.getTime()) / row.config.tickMs)) };
     const sim = new MarketSim(Number(row.seed), ASSETS, schedule(Number(row.seed), ASSETS, cfg.totalTicks, cfg.tickMs));
     const history = ASSETS.map((a) => {
       const h = new Int32Array(cfg.totalTicks + 1);
@@ -281,7 +282,9 @@ export class Engine {
     // shortcut: value samples and event windows before the restart are lost, so the two secondary
     // awards only cover the time since; persist samples if restarts mid-session become routine.
     const now = Date.now();
-    if (now > live.opensAt) {
+    // Only a session that actually opened has a tape to rebuild. A lobby whose bell time passed
+    // while the server was down never traded: it stays at tick 0 and the pump restarts its countdown.
+    if (row.status === 'trading' && now > live.opensAt) {
       const target = Math.min(live.cfg.totalTicks, Math.floor((now - live.opensAt) / live.cfg.tickMs));
       while (live.sim.tick < target) this.stepOnce(live, false);
     }
@@ -309,7 +312,7 @@ export class Engine {
     };
     const winner = scored[0];
     if (winner) award('winner', 'Top of the market', winner, `finished with ${eur(winner.value)}`);
-    const steady = scored.filter((s) => s.sharpe !== null && s.value > 100_000).sort((a, b) => b.sharpe! - a.sharpe!)[0];
+    const steady = scored.filter((s) => s.sharpe !== null && s.value > STARTING_CASH).sort((a, b) => b.sharpe! - a.sharpe!)[0];
     award('steady', 'Steadiest hand', steady, 'best risk-adjusted return');
     const eventer = scored.filter((s) => s.p.eventGain > 0).sort((a, b) => b.p.eventGain - a.p.eventGain || compareRank(a, b))[0];
     if (eventer) award('crier', 'Read the crier', eventer, `+${eur(eventer.p.eventGain)} during major events`);
@@ -352,6 +355,40 @@ export class Engine {
     return true;
   }
 
+  /** Rings the final bell now. The next pump values every purse and publishes the results. */
+  async closeNow(): Promise<boolean> {
+    const live = this.live;
+    const now = Date.now();
+    if (!live || live.row.status !== 'trading' || live.finishing || now >= live.closesAt) return false;
+    // The tape never runs past the bell: the session ends at the last tick already played.
+    live.cfg.totalTicks = live.sim.tick;
+    live.closesAt = Math.min(now, live.opensAt + live.sim.tick * live.cfg.tickMs);
+    await store.setCloseTime(this.sql, live.row.id, new Date(live.closesAt));
+    this.log.info({ session: live.row.id, tick: live.sim.tick }, 'market closed early by admin');
+    return true;
+  }
+
+  /** Skips the rest of the results screen and opens the next lobby. */
+  nextNow(): boolean {
+    const live = this.live;
+    if (!live || live.finishedAt === null) return false;
+    live.finishedAt = Date.now() - live.cfg.resultsSeconds * 1000;
+    return true;
+  }
+
+  /** What the host console shows: no player identity, just the room. */
+  hostView() {
+    const live = this.live;
+    const b = live ? this.board(live) : null;
+    return {
+      serverNow: Date.now(),
+      session: this.sessionInfo(),
+      board: { top: b?.top ?? [], count: b?.count ?? 0 },
+      events: (live?.fired ?? []).slice(-6).reverse(),
+      results: live?.results ? { top: live.results.top, awards: live.results.awards } : null,
+    };
+  }
+
   // ---------------------------------------------------------------- players and orders
 
   private async ensurePlayer(userId: string, nickname: string): Promise<Player | null> {
@@ -366,10 +403,10 @@ export class Engine {
     const job = (async () => {
       const { id, joinedAt } = await store.joinSession(this.sql, live.row.id, userId);
       const p: Player = {
-        id, userId, nickname, joinedAt: joinedAt.getTime(), book: { cash: 100_000, positions: new Map() },
+        id, userId, nickname, joinedAt: joinedAt.getTime(), book: { cash: STARTING_CASH, positions: new Map() },
         trades: 0, chain: Promise.resolve(), samples: [], eventGain: 0,
       };
-      if (live.sim.tick > 0) p.samples.push(100_000);
+      if (live.sim.tick > 0) p.samples.push(STARTING_CASH);
       live.players.set(userId, p);
       metrics.players = live.players.size;
       return p;

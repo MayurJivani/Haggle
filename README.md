@@ -2,7 +2,7 @@
 
 ![Stack](https://img.shields.io/badge/stack-React%20%C2%B7%20Node%20%C2%B7%20Postgres-ffb020) ![Realtime](https://img.shields.io/badge/realtime-WebSockets-7c83ff) ![Players](https://img.shields.io/badge/players-500%20per%20session-3ddc84)
 
-A live stock market for the whole room. Up to 500 players join with a nickname, get €1,000 of virtual money at the opening bell, trade 40 real companies at simulated prices, react to news that hits every screen at once, and finish ranked by portfolio value. A full event runs in about 15 minutes.
+A live stock market for the whole room. Up to 500 players join with a nickname, get €10,000 of virtual money at the opening bell, trade 40 real companies at simulated prices, react to news that hits every screen at once, and finish ranked by portfolio value. A full event runs in about 15 minutes.
 
 Virtual money only. Company names are real; every price, headline and euro is simulated.
 
@@ -25,10 +25,14 @@ cp .env.example .env    # point DATABASE_URL at your database, add ALLOWED_ORIGI
 npm run dev             # API on :4371, web on :5273
 ```
 
-Migrations run automatically at startup. To open the bell early during a hosted event:
+Migrations run automatically at startup.
+
+## Hosting an event
+
+Open `/host` on the organiser's laptop or the room's big screen and enter the host code (`ADMIN_TOKEN`). The console shows a QR code players scan to join, the countdown, the room count, the roster and the news, and runs the round: open the bell now, close the market early, start the next round. The same actions are plain API calls:
 
 ```bash
-curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:4371/api/admin/start
+curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:4371/api/admin/start   # also /close and /next
 ```
 
 ## Tests

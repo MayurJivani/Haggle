@@ -5,6 +5,7 @@ import { clock, money, moneyWhole, ordinal, pct, SECTOR_COLOR, tone } from '../l
 import { useGame, type PlayerResult, type SessionInfo } from '../lib/game';
 import { Pnl, SimulatedChip, useNow, Wordmark, leave } from './chrome';
 import { StallList } from './floor';
+import { PURSE, STARTING_CASH } from '../lib/portfolio';
 
 const ease = [0.16, 1, 0.3, 1] as const;
 const AWNINGS = Object.values(SECTOR_COLOR);
@@ -67,7 +68,7 @@ export function Join({ session, offset, onJoined }: { session: SessionInfo | nul
       ? `Next bell in ${clock(session.opensAt - t)}. ${session.players} traders waiting.`
       : session.phase === 'results'
         ? 'Results are in. You will be dealt into the next session.'
-        : `Market open, ${clock(session.closesAt - t)} left. ${session.players} trading. Late arrivals still get €1,000.`;
+        : `Market open, ${clock(session.closesAt - t)} left. ${session.players} trading. Late arrivals still get ${PURSE}.`;
 
   return (
     <main className="flex min-h-dvh flex-col bg-night">
@@ -78,7 +79,7 @@ export function Join({ session, offset, onJoined }: { session: SessionInfo | nul
             <Wordmark className="block text-[clamp(4rem,16vw,8.5rem)]" />
           </h1>
           <p className="mt-4 max-w-md text-lg text-ink-2">
-            A live stock market for the whole room. Everyone gets €1,000. The fattest purse at the closing bell wins.
+            A live stock market for the whole room. Everyone gets {PURSE}. The fattest purse at the closing bell wins.
           </p>
         </div>
         <form onSubmit={submit} className="flex flex-col gap-3">
@@ -151,7 +152,7 @@ export function Lobby() {
               'This session is full, so you are watching.'
             ) : (
               <>
-                <strong className="text-ink">€1,000</strong> in your purse at the bell,
+                <strong className="text-ink">{PURSE}</strong> in your purse at the bell,
               </>
             )}{' '}
             then <strong className="text-ink">{minutes} minutes</strong> of trading before the final bell.
@@ -211,7 +212,7 @@ export function Bell() {
               The market is <span className="text-saffron">open</span>
             </motion.p>
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }} className="text-lg text-ink-2">
-              €1,000 in your purse. Prices are simulated. Go.
+              {PURSE} in your purse. Prices are simulated. Go.
             </motion.p>
           </div>
         </motion.div>
@@ -221,7 +222,7 @@ export function Bell() {
 }
 
 function CountUp({ cents, delay = 0 }: { cents: number; delay?: number }) {
-  const v = useMotionValue(100_000);
+  const v = useMotionValue(STARTING_CASH);
   const text = useTransform(v, (x) => moneyWhole(Math.round(x)));
   useEffect(() => {
     const c = animate(v, cents, { delay, duration: 1.4, ease });
@@ -266,7 +267,7 @@ export function ResultCard({ r, share = true }: { r: PlayerResult; share?: boole
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
           <div>
             <dt className="text-ink-3">Profit</dt>
-            <dd><Pnl cents={r.value - 100_000} className="font-semibold" /></dd>
+            <dd><Pnl cents={r.value - STARTING_CASH} className="font-semibold" /></dd>
           </div>
           <div>
             <dt className="text-ink-3">Trades</dt>

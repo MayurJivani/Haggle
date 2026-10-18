@@ -13,15 +13,15 @@ describe('portfolio accounting', () => {
   it('buys move cash into a position at cost', () => {
     const b = fresh();
     fill(b, 'buy', 3, 12_345);
-    expect(b.cash).toBe(100_000 - 37_035);
+    expect(b.cash).toBe(STARTING_CASH - 37_035);
     expect(b.positions.get('AAPL')).toEqual({ qty: 3, cost: 37_035, realized: 0 });
     expect(valueOf(b, () => 12_345)).toBe(STARTING_CASH);
   });
 
   it('refuses to spend more than the cash on hand, to the cent', () => {
     const b = fresh();
-    expect(quote(b, 'buy', 'X', 1, 100_001)).toEqual({ ok: false, reason: 'insufficient_cash' });
-    expect(quote(b, 'buy', 'X', 1, 100_000).ok).toBe(true);
+    expect(quote(b, 'buy', 'X', 1, STARTING_CASH + 1)).toEqual({ ok: false, reason: 'insufficient_cash' });
+    expect(quote(b, 'buy', 'X', 1, STARTING_CASH).ok).toBe(true);
   });
 
   it('refuses to sell shares it does not own', () => {
@@ -64,9 +64,9 @@ describe('portfolio accounting', () => {
     fill(b, 'buy', 5, 4_000, 'B');
     const prices: Record<string, number> = { A: 5_500, B: 3_000 };
     const v = valueOf(b, (t) => prices[t]!);
-    expect(v).toBe(30_000 + 55_000 + 15_000);
+    expect(v).toBe(STARTING_CASH - 70_000 + 55_000 + 15_000);
     expect(returnBps(v)).toBe(0);
-    expect(returnBps(112_340)).toBe(1_234);
+    expect(returnBps(STARTING_CASH + STARTING_CASH * 0.1234)).toBe(1_234);
     expect(pnlByTicker(b, (t) => prices[t]!)).toEqual([{ ticker: 'A', pnl: 5_000 }, { ticker: 'B', pnl: -5_000 }]);
   });
 });

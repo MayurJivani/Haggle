@@ -7,6 +7,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { connect, migrate, type Sql } from '../src/db/db.js';
 import type { ServerMsg } from '../src/protocol.js';
 import { Engine, type Client } from '../src/session/engine.js';
+import { STARTING_CASH } from '../src/trading/portfolio.js';
+import { ASSETS } from '../src/market/assets.js';
 
 const ADMIN_URL = process.env.TEST_DATABASE_URL;
 const log = pino({ level: 'silent' });
@@ -57,6 +59,20 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
     engine.stop();
   });
 
+  it('does not replay a lobby whose bell time passed while the server was down', async () => {
+    const id = engines[0]!.live!.row.id;
+    await sql`UPDATE sessions SET opens_at = now() - interval '1 hour', closes_at = now() - interval '50 minutes' WHERE id = ${id}`;
+    const engine = new Engine(sql, config, log);
+    engines.push(engine);
+    await engine.start();
+    await sleep(300);
+    expect(engine.live!.row.id).toBe(id);
+    expect(engine.live!.sim.tick).toBe(0);
+    expect(engine.sessionInfo()!.phase).toBe('lobby');
+    expect(engine.sessionInfo()!.opensAt).toBeGreaterThan(Date.now());
+    engine.stop();
+  });
+
   it('runs a whole session with consistent books', async () => {
     const engine = new Engine(sql, config, log);
     engines.push(engine);
@@ -65,7 +81,7 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
     const bob = await makeClient('bob');
     await engine.attach(alice.client);
     await engine.attach(bob.client);
-    expect(alice.inbox[0]).toMatchObject({ t: 'hello', book: { cash: 100_000 } });
+    expect(alice.inbox[0]).toMatchObject({ t: 'hello', book: { cash: STARTING_CASH } });
 
     // Lobby: trading is refused.
     await engine.order(alice.client, { t: 'order', id: randomUUID(), side: 'buy', ticker: 'KO', qty: 1 });
@@ -74,8 +90,8 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
     expect(await engine.openNow()).toBe(true);
     await sleep(300);
 
-    // 40 concurrent buys of a ~EUR 60 stock: only as many as the cash covers may fill.
-    await Promise.all(Array.from({ length: 40 }, () => engine.order(alice.client, { t: 'order', id: randomUUID(), side: 'buy', ticker: 'KO', qty: 1 })));
+    // 40 concurrent buys of 5 KO (~EUR 300 each, ~EUR 12,000 in all): only as many as the cash covers may fill.
+    await Promise.all(Array.from({ length: 40 }, () => engine.order(alice.client, { t: 'order', id: randomUUID(), side: 'buy', ticker: 'KO', qty: 5 })));
     const filled = fills(alice.inbox).length;
     expect(filled).toBeGreaterThan(5);
     expect(filled + rejects(alice.inbox).filter((r) => r.reason === 'insufficient_cash').length).toBe(40);
@@ -101,7 +117,7 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
       FROM participants p`;
     for (const b of books) {
       expect(b.ledger).toBe(b.cash_cents);
-      expect(b.spent + 100_000).toBe(b.cash_cents);
+      expect(b.spent + STARTING_CASH).toBe(b.cash_cents);
       expect(b.cash_cents).toBeGreaterThanOrEqual(0);
     }
     const lastAlice = fills(alice.inbox).at(-1) as Extract<ServerMsg, { t: 'fill' }>;
@@ -141,5 +157,35 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
     // After the bell nothing executes.
     await restarted.order(again.client, { t: 'order', id: randomUUID(), side: 'buy', ticker: 'KO', qty: 1 });
     expect(rejects(alice.inbox).at(-1)?.reason).toBe('market_closed');
+  });
+
+  it('lets the host close the market early and start the next round', async () => {
+    const engine = new Engine(sql, config, log);
+    engines.push(engine);
+    await engine.start();
+    expect(engine.nextNow()).toBe(false); // nothing to skip in a lobby
+    const carol = await makeClient('carol');
+    await engine.attach(carol.client);
+    expect(await engine.openNow()).toBe(true);
+    await sleep(700);
+    await engine.order(carol.client, { t: 'order', id: randomUUID(), side: 'buy', ticker: 'SAP', qty: 3 });
+    expect(fills(carol.inbox)).toHaveLength(1);
+    expect(await engine.closeNow()).toBe(true);
+    const bellTick = engine.live!.sim.tick;
+    await sleep(400);
+    expect(engine.sessionInfo()!.phase).toBe('results');
+    expect(carol.inbox.some((m) => m.t === 'results')).toBe(true);
+    expect(engine.live!.sim.tick).toBe(bellTick);
+    // Closing prices are the prices at the moment the host rang the bell.
+    const id = engine.live!.row.id;
+    const [row] = await sql<{ closing_prices: Record<string, number> }[]>`SELECT closing_prices FROM sessions WHERE id = ${id}`;
+    expect(row!.closing_prices.SAP).toBe(engine.live!.history[ASSETS.findIndex((a) => a.ticker === 'SAP')]![bellTick]);
+    expect(await engine.closeNow()).toBe(false);
+    // Skipping the results screen deals carol into a fresh lobby.
+    expect(engine.nextNow()).toBe(true);
+    await sleep(400);
+    expect(engine.sessionInfo()!.phase).toBe('lobby');
+    expect(engine.sessionInfo()!.id).not.toBe(id);
+    expect(engine.sessionInfo()!.players).toBe(1);
   });
 });

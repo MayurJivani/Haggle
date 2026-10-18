@@ -8,7 +8,7 @@ export function connect(url: string, max = 20): Sql {
   return postgres(url, {
     max,
     onnotice: () => {},
-    // bigint columns come back as JS numbers: cents stay far below 2^53 in a €1,000 game.
+    // bigint columns come back as JS numbers: cents stay far below 2^53 in this game.
     types: { bigint: { to: 20, from: [20], serialize: (v: number) => String(v), parse: (v: string) => Number(v) } },
   });
 }

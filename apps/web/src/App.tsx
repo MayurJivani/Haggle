@@ -2,6 +2,7 @@ import { MotionConfig } from 'motion/react';
 import { BarChart3, LineChart, Store, Wallet } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Bell, Join, Lobby, Results, ShareCard, Splash } from './components/ceremony';
+import { Host } from './components/host';
 import { ConnectionPill, Toasts, TopBar, Tape, useMedia, useNow } from './components/chrome';
 import { CompanyPanel, Holdings, OrderPanel, StallList } from './components/floor';
 import { Crier, Feed, Roster } from './components/side';
@@ -132,6 +133,7 @@ function Game() {
 
 export function App() {
   const share = location.pathname.match(/^\/r\/([0-9a-f-]{36})$/i);
+  const isHost = location.pathname.replace(/\/$/, '') === '/host';
   const [me, setMe] = useState<{ user: unknown; session: SessionInfo | null; offset: number } | 'loading' | 'error'>('loading');
 
   const load = useCallback(() => {
@@ -141,11 +143,12 @@ export function App() {
       .catch(() => setMe('error'));
   }, []);
   useEffect(() => {
-    if (!share) load();
-  }, [load, share]);
+    if (!share && !isHost) load();
+  }, [load, share, isHost]);
 
   let body: React.ReactNode;
-  if (share) body = <ShareCard id={share[1]!} />;
+  if (isHost) body = <Host />;
+  else if (share) body = <ShareCard id={share[1]!} />;
   else if (me === 'loading') body = <Splash />;
   else if (me === 'error')
     body = (

@@ -1,7 +1,8 @@
 // Pure accounting in integer cents. The engine runs these against its in-memory mirror to decide
 // an order, and the database constraints enforce the same rules a second time.
 
-export const STARTING_CASH = 100_000;
+/** Every player's purse at the bell, in cents (EUR 10,000). The web client imports this too. */
+export const STARTING_CASH = 1_000_000;
 export const MAX_ORDER_QTY = 100_000;
 
 export interface Position {

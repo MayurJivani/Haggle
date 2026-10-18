@@ -1,7 +1,11 @@
 import { useMemo } from 'react';
+import { moneyWhole } from './format';
 import { useGame, type AssetInfo } from './game';
 
-export const STARTING_CASH = 100_000;
+import { STARTING_CASH } from '../../../server/src/trading/portfolio';
+
+export { STARTING_CASH };
+export const PURSE = moneyWhole(STARTING_CASH);
 
 export interface Holding {
   asset: AssetInfo;

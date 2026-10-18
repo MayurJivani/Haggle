@@ -16,7 +16,7 @@ Players at a hosted live event (meetup, classroom, office party). An organiser r
 
 ## Product Purpose
 
-Haggle is a short, synchronised stock-market competition with virtual money only. Up to 500 players start with exactly €1,000, trade simulated prices for real company names, react to broadcast market events, and finish ranked by portfolio value. Success: a full session runs start to finish with no accounting error, everyone sees the same market at the same moment, and the room cares about the leaderboard.
+Haggle is a short, synchronised stock-market competition with virtual money only. Up to 500 players start with exactly €10,000, trade simulated prices for real company names, react to broadcast market events, and finish ranked by portfolio value. Success: a full session runs start to finish with no accounting error, everyone sees the same market at the same moment, and the room cares about the leaderboard.
 
 ## Positioning
 

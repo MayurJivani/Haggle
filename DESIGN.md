@@ -286,6 +286,9 @@ When an event fires, a night-3 band topped with an awning stripe in the event's 
 ### Roster
 Ranked rows with a display numeral (saffron for first, ink for second and third, ink-3 after), nickname, biggest holding, value and change. The player's row sits on saffron-deep; if they are outside the top list, a pinned saffron-deep row with a 30% saffron outline follows.
 
+### Host console
+A two-panel screen for the organiser's laptop or the room's big screen, behind a host-code gate. Left on night: the phase label and a saffron display clock at up to 12rem (red in last calls), the room count, one primary action at 64px (saffron to open the bell or start the next round, red to close the market, with a confirm), then roster and latest headlines; on results, the awards in saffron display caps and the final roster. Right on night-2: "Scan to join" in display caps, a QR code in night on an ink tile (8px radius, crier lift), the join address in display type and one line of rules. Stacks to one column on phones.
+
 ### Ceremony
 Join, lobby, bell and results open with the all-awnings flag (bands grow in from the top, staggered 50ms). The results podium reuses the awning stripe in saffron, ink-2 and ink-3 for first, second and third; the result card is night-2 with an 8px radius and a 12px flag across its top.
 

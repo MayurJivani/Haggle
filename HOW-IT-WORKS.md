@@ -18,7 +18,7 @@ One Node process owns the live session. That is deliberate: a single authority f
 
 ## Session loop
 
-`lobby` until `opens_at`, then `trading`, then `closing` for the last `CLOSING_SECONDS` (trading continues, the UI calls last orders), then `results` at `closes_at`. After `RESULTS_SECONDS` a new lobby opens and every connected player is dealt in. `phaseAt()` in `ranking.ts` derives the phase from the timestamps alone, so there is no state machine to drift. The organiser can open the bell early with `POST /api/admin/start`. A lobby with nobody in it never opens: the countdown restarts instead, so an always-on server does not write a full session of price history every cycle for an empty room.
+`lobby` until `opens_at`, then `trading`, then `closing` for the last `CLOSING_SECONDS` (trading continues, the UI calls last orders), then `results` at `closes_at`. After `RESULTS_SECONDS` a new lobby opens and every connected player is dealt in. `phaseAt()` in `ranking.ts` derives the phase from the timestamps alone, so there is no state machine to drift. The organiser runs the room from the `/host` console (Bearer `ADMIN_TOKEN`, kept in that browser tab's session storage only): it polls `GET /api/host` once a second for the session, roster and news, shows a QR code of the site's own address for players to join, and calls `POST /api/admin/start` (open the bell), `/close` (ring the final bell now, at the current prices: the session's length becomes the ticks already played) and `/next` (skip the rest of the results). Open is disabled until someone has joined. A lobby with nobody in it never opens: the countdown restarts instead, so an always-on server does not write a full session of price history every cycle for an empty room.
 
 Defaults: 2 min lobby, 10 min trading, 3 min results. All configurable in `.env`.
 
@@ -58,11 +58,11 @@ All money is integer euro cents; quantities are whole shares. An order is a WebS
 
 A replayed order id hits the unique constraint and comes back as `duplicate`, so a retry after a dropped connection can never execute twice. The browser resends unconfirmed orders younger than 5 s on reconnect for exactly this reason.
 
-Portfolio value = cash + sum(quantity x current price). Return = (value - €1,000) / €1,000. The leaderboard is recomputed every 2 s; the final ranking is computed once, at the same closing prices for everyone, ordered by value, then join time, then nickname, so it is deterministic.
+Portfolio value = cash + sum(quantity x current price). Return = (value - €10,000) / €10,000. The amount is one constant, `STARTING_CASH` in `apps/server/src/trading/portfolio.ts`, which the web client imports. The leaderboard is recomputed every 2 s; the final ranking is computed once, at the same closing prices for everyone, ordered by value, then join time, then nickname, so it is deterministic.
 
 ### Awards
 
-The winner is the highest final value. Two secondary awards: *Steadiest hand* (best mean-over-volatility of value samples every 10 ticks, among players who traded and finished up) and *Read the crier* (most value gained across the windows of severity 2 and 3 events). A "best percentage return" award is not offered: with everyone starting at €1,000 it is always the winner.
+The winner is the highest final value. Two secondary awards: *Steadiest hand* (best mean-over-volatility of value samples every 10 ticks, among players who traded and finished up) and *Read the crier* (most value gained across the windows of severity 2 and 3 events). A "best percentage return" award is not offered: with everyone starting at €10,000 it is always the winner.
 
 ## Realtime
 

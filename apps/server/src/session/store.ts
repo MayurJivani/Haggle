@@ -51,6 +51,10 @@ export async function setSessionTimes(sql: Sql, id: string, opensAt: Date, close
   await sql`UPDATE sessions SET opens_at = ${opensAt}, closes_at = ${closesAt} WHERE id = ${id} AND status = 'lobby'`;
 }
 
+export async function setCloseTime(sql: Sql, id: string, closesAt: Date) {
+  await sql`UPDATE sessions SET closes_at = ${closesAt} WHERE id = ${id} AND status = 'trading'`;
+}
+
 export async function markTrading(sql: Sql, id: string) {
   await sql`UPDATE sessions SET status = 'trading' WHERE id = ${id} AND status = 'lobby'`;
 }

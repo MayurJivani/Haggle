@@ -106,14 +106,33 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
     res.json({ results: await sessionResults(sql, id.data, 100) });
   });
 
-  app.post('/api/admin/start', async (req, res) => {
+  // Organiser routes: Bearer ADMIN_TOKEN, used by the /host console and by curl. Unset token = 404.
+  const admin = (req: Request, res: Response, next: NextFunction) => {
     if (!env.ADMIN_TOKEN) return void res.status(404).end();
     if (!bearerMatches(req, env.ADMIN_TOKEN)) {
-      logger.warn({ ip: req.ip }, 'admin start refused');
-      return void res.status(401).json({ error: 'Bad admin token' });
+      logger.warn({ ip: req.ip, path: req.path }, 'admin request refused');
+      return void res.status(401).json({ error: 'That host code is not right' });
     }
+    next();
+  };
+
+  app.get('/api/host', admin, (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store').json(engine.hostView());
+  });
+
+  app.post('/api/admin/start', admin, async (_req, res) => {
     const opened = await engine.openNow();
     res.status(opened ? 200 : 409).json({ opened, session: engine.sessionInfo() });
+  });
+
+  app.post('/api/admin/close', admin, async (_req, res) => {
+    const closed = await engine.closeNow();
+    res.status(closed ? 200 : 409).json({ closed, session: engine.sessionInfo() });
+  });
+
+  app.post('/api/admin/next', admin, (_req, res) => {
+    const next = engine.nextNow();
+    res.status(next ? 200 : 409).json({ next });
   });
 
   app.get('/healthz', async (_req, res) => {
