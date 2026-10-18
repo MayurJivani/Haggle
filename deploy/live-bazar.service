@@ -1,0 +1,22 @@
+[Unit]
+Description=live-bazar (multiplayer stock market game)
+After=network-online.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+User=icarusfalls
+WorkingDirectory=/opt/apps/Live-Bazar
+EnvironmentFile=/etc/apps/live-bazar.env
+ExecStart=/usr/bin/node apps/server/dist/index.js
+Restart=on-failure
+RestartSec=5
+# SIGTERM closes sockets and the pool; a restart mid-session replays the seeded market and resumes.
+TimeoutStopSec=15
+MemoryMax=512M
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

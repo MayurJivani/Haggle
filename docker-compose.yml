@@ -1,0 +1,37 @@
+# One-command stack: Postgres plus the app on http://localhost:4371.
+#   cp .env.example .env   (set ADMIN_TOKEN and POSTGRES_PASSWORD)
+#   docker compose up --build
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bazar
+      POSTGRES_DB: bazar
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U bazar -d bazar']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgres://bazar:${POSTGRES_PASSWORD}@db:5432/bazar
+      PORT: 4371
+    ports:
+      - '${HOST_PORT:-4371}:4371'
+    stop_grace_period: 10s
+
+volumes:
+  pgdata:

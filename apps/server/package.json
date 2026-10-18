@@ -1,0 +1,31 @@
+{
+  "name": "@live-bazar/server",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "NODE_ENV=development PORT=4371 tsx watch --env-file-if-exists=../../.env src/index.ts",
+    "build": "tsc -p tsconfig.json && node -e \"require('fs').cpSync('src/db/migrations','dist/db/migrations',{recursive:true})\"",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.test.json",
+    "test": "vitest run",
+    "loadtest": "tsx scripts/loadtest.ts"
+  },
+  "dependencies": {
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
+    "pino": "^10.4.0",
+    "postgres": "^3.4.9",
+    "ws": "^8.22.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "@types/ws": "^8.18.2",
+    "pino-pretty": "^13.2.0",
+    "tsx": "^4.23.15",
+    "vitest": "^5.0.5"
+  }
+}

@@ -1,0 +1,122 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Big Shoulders Display Variable', 'Archivo Variable', sans-serif;
+
+  /* Night bazaar: indigo-black ground, lamp-warm ink. */
+  --color-night: #0d0b19;
+  --color-night-2: #131026;
+  --color-night-3: #1b1733;
+  --color-night-4: #241f3d;
+  --color-rule: #2e2846;
+  --color-ink: #f1eadb;
+  --color-ink-2: #bdb6a6;
+  --color-ink-3: #8f897b;
+
+  --color-up: #3ddc84;
+  --color-up-deep: #0f3a26;
+  --color-down: #ff5c62;
+  --color-down-deep: #44161b;
+  --color-saffron: #ffb020;
+  --color-saffron-deep: #3d2a07;
+
+  /* Awning colours: sectors only. Eight sectors need eight awnings, and saffron is reserved for
+     action and market-wide calls, so sky and sand join the six named awnings. */
+  --color-technology: #7c83ff; /* indigo */
+  --color-semiconductors: #b27cf2; /* violet */
+  --color-healthcare: #36c2b4; /* teal */
+  --color-finance: #c2dc4c; /* lime */
+  --color-energy: #f07f4f; /* copper */
+  --color-automotive: #f0679a; /* rose */
+  --color-consumer: #5ec3f0; /* sky */
+  --color-industrials: #d9b98a; /* sand */
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-night text-ink font-sans antialiased;
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
+    min-height: 100dvh;
+  }
+  ::selection {
+    background: var(--color-saffron);
+    color: var(--color-night);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-saffron);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  input {
+    caret-color: var(--color-saffron);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-night-4) transparent;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@layer components {
+  /* An awning: diagonal stripes in a sector colour over the night ground. */
+  .awning {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      var(--stripe, var(--color-saffron)) 0 10px,
+      color-mix(in oklab, var(--stripe, var(--color-saffron)) 30%, var(--color-night)) 10px 20px
+    );
+  }
+  /* A price tag: a label with a punched, pointed left end. Five vertices, not an illustration. */
+  .tag {
+    clip-path: polygon(9px 0, 100% 0, 100% 100%, 9px 100%, 0 50%);
+    padding-left: 14px;
+    position: relative;
+  }
+  .tag::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: calc(50% - 2px);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--color-night);
+  }
+  .panel-title {
+    @apply font-display text-[15px] font-bold uppercase tracking-[0.06em] text-ink-2;
+  }
+}
+
+@keyframes flash-up {
+  from { color: var(--color-up); }
+}
+@keyframes flash-down {
+  from { color: var(--color-down); }
+}
+@keyframes struck {
+  0%, 100% { background-color: transparent; }
+  20% { background-color: color-mix(in oklab, var(--stripe) 26%, transparent); }
+}
+@keyframes tape {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.flash-up { animation: flash-up 0.9s var(--ease-out-expo); }
+.flash-down { animation: flash-down 0.9s var(--ease-out-expo); }
+.struck { animation: struck 1.6s ease-out 3; }
+.tape { animation: tape var(--tape-duration, 90s) linear infinite; }
+.tape:hover { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .flash-up, .flash-down, .struck { animation: none; }
+  .tape { animation: none; }
+}
