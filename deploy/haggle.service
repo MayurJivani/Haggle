@@ -1,12 +1,12 @@
 [Unit]
-Description=live-bazar (multiplayer stock market game)
+Description=haggle (multiplayer stock market game)
 After=network-online.target postgresql.service
 Wants=postgresql.service
 
 [Service]
 User=icarusfalls
-WorkingDirectory=/opt/apps/Live-Bazar
-EnvironmentFile=/etc/apps/live-bazar.env
+WorkingDirectory=/opt/apps/Haggle
+EnvironmentFile=/etc/apps/haggle.env
 ExecStart=/usr/bin/node apps/server/dist/index.js
 Restart=on-failure
 RestartSec=5

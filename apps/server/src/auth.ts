@@ -5,7 +5,7 @@ import type { Sql } from './db/db.js';
 // Nickname-only accounts: the cookie token IS the credential, so it is random (32 bytes) and only its
 // SHA-256 digest is stored. A leaked users table cannot be replayed as live sessions.
 
-export const COOKIE = 'lb_token';
+export const COOKIE = 'hg_token';
 export const COOKIE_MAX_AGE_MS = 30 * 24 * 3600 * 1000;
 
 export const nicknameSchema = z

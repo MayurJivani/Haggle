@@ -44,7 +44,7 @@ export function Change({ bps, className = '' }: { bps: number; className?: strin
 export function Wordmark({ className = '' }: { className?: string }) {
   return (
     <span className={`font-display font-black uppercase leading-none tracking-[0.02em] ${className}`}>
-      Live <span className="text-saffron">Bazar</span>
+      Ha<span className="text-saffron">gg</span>le
     </span>
   );
 }

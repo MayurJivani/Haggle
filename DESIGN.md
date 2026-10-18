@@ -1,5 +1,5 @@
 ---
-name: Live Bazar
+name: Haggle
 description: A night bazaar trading floor under one clock, for a whole room playing one simulated market.
 colors:
   night: "#0d0b19"
@@ -138,7 +138,7 @@ components:
     height: "56px"
 ---
 
-# Design System: Live Bazar
+# Design System: Haggle
 
 ## Overview
 
@@ -198,7 +198,7 @@ Eight sector colours, one per row of stalls: **Indigo** (technology), **Violet**
 **Character:** A tall, condensed market-sign face for what is shouted, over a sturdy grotesque that keeps every figure on a fixed grid. The contrast between them is the hierarchy; size steps are secondary.
 
 ### Hierarchy
-- **Display** (900, clamp(3.5rem, 12vw, 9rem), 0.85, uppercase): ceremony only. "The bazar is open", "The bazar is closed", the lobby clock (up to clamp(6rem, 22vw, 13rem) in saffron), the join wordmark (clamp(4rem, 16vw, 8.5rem)).
+- **Display** (900, clamp(3.5rem, 12vw, 9rem), 0.85, uppercase): ceremony only. "The market is open", "The market is closed", the lobby clock (up to clamp(6rem, 22vw, 13rem) in saffron), the join wordmark (clamp(4rem, 16vw, 8.5rem)).
 - **Headline** (800, 26px, 34px at severity 3, 0.95, uppercase): the crier banner headline. Phones set it at 20px, 24px at severity 3.
 - **Ticker** (900, 44px, 0.9): the selected company's ticker. Rank numerals use the same face at 20 to 24px, 800.
 - **Price tag** (800, 34px, 1, night on ink): the live price inside the tag shape.
@@ -270,7 +270,7 @@ Solid, bold, and few.
 Four blocks, nothing repeated from the company panel: the Buy/Sell toggle; a Shares label with a saffron Max link on the same line over a 44px stepper; one line with cost (or proceeds) and cash after; the Buy or Sell button. Beneath it a single status line shows the problem when the order cannot go (no cash, market closed, offline) and otherwise the player's position and its P/L. No preset quantity chips, no market-price row (the tag shows it).
 
 ### Navigation
-- **Top bar:** night-2, wordmark (Big Shoulders 900, "Bazar" in saffron), Simulated chip, centred countdown with a 3px progress bar, right-aligned stats (label over 15px semibold value).
+- **Top bar:** night-2, wordmark (Big Shoulders 900, "Haggle" with the doubled "gg" in saffron), Simulated chip, centred countdown with a 3px progress bar, right-aligned stats (label over 15px semibold value).
 - **Ticker tape:** a 32px night strip scrolling linearly, pausing on hover, static and horizontally scrollable under reduced motion.
 - **Phone tab bar:** four equal 56px cells, icon over uppercase 11px label, saffron when current, ink-3 otherwise.
 

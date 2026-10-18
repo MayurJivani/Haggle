@@ -300,7 +300,7 @@ export class Engine {
       if (pick) awards.push({ id, label, nickname: pick.p.nickname, detail });
     };
     const winner = scored[0];
-    if (winner) award('winner', 'Top of the bazar', winner, `finished with ${eur(winner.value)}`);
+    if (winner) award('winner', 'Top of the market', winner, `finished with ${eur(winner.value)}`);
     const steady = scored.filter((s) => s.sharpe !== null && s.value > 100_000).sort((a, b) => b.sharpe! - a.sharpe!)[0];
     award('steady', 'Steadiest hand', steady, 'best risk-adjusted return');
     const eventer = scored.filter((s) => s.p.eventGain > 0).sort((a, b) => b.p.eventGain - a.p.eventGain || compareRank(a, b))[0];

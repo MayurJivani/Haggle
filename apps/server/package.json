@@ -1,5 +1,5 @@
 {
-  "name": "@live-bazar/server",
+  "name": "@haggle/server",
   "private": true,
   "version": "1.0.0",
   "type": "module",

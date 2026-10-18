@@ -6,13 +6,13 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: bazar
-      POSTGRES_DB: bazar
+      POSTGRES_USER: haggle
+      POSTGRES_DB: haggle
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U bazar -d bazar']
+      test: ['CMD-SHELL', 'pg_isready -U haggle -d haggle']
       interval: 5s
       timeout: 3s
       retries: 10
@@ -27,7 +27,7 @@ services:
       - path: .env
         required: false
     environment:
-      DATABASE_URL: postgres://bazar:${POSTGRES_PASSWORD}@db:5432/bazar
+      DATABASE_URL: postgres://haggle:${POSTGRES_PASSWORD}@db:5432/haggle
       PORT: 4371
     ports:
       - '${HOST_PORT:-4371}:4371'

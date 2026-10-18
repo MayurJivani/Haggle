@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-Brief-specified: React + TypeScript + Vite + Tailwind (web), Node + TypeScript with WebSockets (server), PostgreSQL, Docker Compose. Follows the FRC "app shape" (npm workspace, `apps/web` + `apps/server`). Charts: Lightweight Charts. Motion: Motion (motion.dev). Redis deliberately omitted while one Node process owns the session. Also ships a Jinx systemd + Caddy deploy script (DEPLOY.md shape), not run.
+Brief-specified: React + TypeScript + Vite + Tailwind (web), Node + TypeScript with WebSockets (server), PostgreSQL, Docker Compose. Follows the FRC "app shape" (npm workspace, `apps/web` + `apps/server`). Charts: Lightweight Charts. Motion: Motion (motion.dev). Redis deliberately omitted while one Node process owns the session. Deployed to Jinx with a systemd unit and Caddy block (DEPLOY.md shape) at haggle.futile.studio.
 
 ## Users
 
@@ -16,7 +16,7 @@ Players at a hosted live event (meetup, classroom, office party). An organiser r
 
 ## Product Purpose
 
-Live Bazar is a short, synchronised stock-market competition with virtual money only. Up to 500 players start with exactly €1,000, trade simulated prices for real company names, react to broadcast market events, and finish ranked by portfolio value. Success: a full session runs start to finish with no accounting error, everyone sees the same market at the same moment, and the room cares about the leaderboard.
+Haggle is a short, synchronised stock-market competition with virtual money only. Up to 500 players start with exactly €1,000, trade simulated prices for real company names, react to broadcast market events, and finish ranked by portfolio value. Success: a full session runs start to finish with no accounting error, everyone sees the same market at the same moment, and the room cares about the leaderboard.
 
 ## Positioning
 
@@ -40,7 +40,7 @@ A shared live event, not a solo trading simulator: one market, one clock, one ev
 
 ## Brand Commitments
 
-- Name: Live Bazar.
+- Name: Haggle (renamed from Live Bazar on 2026-10-19).
 - Brief-pinned visual direction: dark trading-terminal aesthetic, high-contrast type, green/red market indicators, animated charts and tickers, a striking opening bell and results ceremony.
 - FRC writing rules: no em dashes in UI copy or docs.
 

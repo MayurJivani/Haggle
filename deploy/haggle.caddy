@@ -1,4 +1,4 @@
-http://bazar.futile.studio {
+http://haggle.futile.studio {
 	encode zstd gzip
 	# One WebSocket carries every price tick; buffered, prices land late and out of step between phones.
 	reverse_proxy 127.0.0.1:4371 {

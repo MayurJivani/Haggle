@@ -27,7 +27,7 @@ await engine.start();
 
 const server = createServer(createApp(sql, engine, env));
 const wss = attachSockets(server, sql, engine, env.ALLOWED_ORIGINS);
-server.listen(env.PORT, () => logger.info({ port: env.PORT }, 'live bazar listening'));
+server.listen(env.PORT, () => logger.info({ port: env.PORT }, 'haggle listening'));
 
 async function shutdown(signal: string) {
   logger.info({ signal }, 'shutting down');

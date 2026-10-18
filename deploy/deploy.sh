@@ -3,14 +3,14 @@
 # webdeploy sudo rules. Shape follows FRC/DEPLOY.md ("private or no-remote repo").
 #
 # First deploy only (by hand, on the box):
-#   sudo -u postgres createuser live_bazar -P && sudo -u postgres createdb -O live_bazar live_bazar
-#   /etc/apps/live-bazar.env (chmod 600): DATABASE_URL, ADMIN_TOKEN, TRUST_PROXY=true
-#   sudo install -m 644 deploy/live-bazar.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable live-bazar
-#   Cloudflare tunnel: bazar.futile.studio -> http://localhost:80
+#   sudo -u postgres createuser haggle -P && sudo -u postgres createdb -O haggle haggle
+#   /etc/apps/haggle.env (chmod 600): DATABASE_URL, ADMIN_TOKEN, TRUST_PROXY=true
+#   sudo install -m 644 deploy/haggle.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable haggle
+#   Cloudflare tunnel: haggle.futile.studio -> http://localhost:80
 set -eu
 cd "$(dirname "$0")/.."
-HOST=ssh.futile.studio
-NAME=live-bazar
+HOST=${HOST:-ssh.futile.studio}
+NAME=haggle
 
 # Ship committed code only, so uncommitted work never goes live by accident.
 if git rev-parse --verify -q HEAD >/dev/null; then
@@ -44,10 +44,10 @@ ssh $HOST "
   fi
 "
 
-rsync -a --delete --relative package.json package-lock.json apps/server/package.json apps/server/dist apps/web/package.json apps/web/dist $HOST:/opt/apps/Live-Bazar/
-ssh $HOST "cd /opt/apps/Live-Bazar && npm ci --omit=dev -w apps/server --include-workspace-root && sudo -n systemctl restart $NAME"
+rsync -a --delete --relative package.json package-lock.json apps/server/package.json apps/server/dist apps/web/package.json apps/web/dist $HOST:/opt/apps/Haggle/
+ssh $HOST "cd /opt/apps/Haggle && npm ci --omit=dev -w apps/server --include-workspace-root && sudo -n systemctl restart $NAME"
 
 sleep 3
-code=$(ssh $HOST 'curl -s -o /dev/null -w "%{http_code}" -H "Host: bazar.futile.studio" http://127.0.0.1/healthz' || true)
+code=$(ssh $HOST 'curl -s -o /dev/null -w "%{http_code}" -H "Host: haggle.futile.studio" http://127.0.0.1/healthz' || true)
 [ "$code" = "200" ] || { echo "$NAME: not healthy through Caddy (HTTP $code)"; exit 1; }
-echo "$NAME: deployed to https://bazar.futile.studio"
+echo "$NAME: deployed to https://haggle.futile.studio"

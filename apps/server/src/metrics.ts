@@ -18,17 +18,17 @@ export const metrics = {
 export function renderMetrics(): string {
   const m = metrics;
   return [
-    `lb_sockets ${m.sockets}`,
-    `lb_players ${m.players}`,
-    `lb_ticks_total ${m.ticks}`,
-    `lb_tick_lag_ms ${m.tickLagMs}`,
-    ...Object.entries(m.orders).map(([k, v]) => `lb_orders_total{result="${k}"} ${v}`),
-    `lb_order_latency_ms_sum ${m.orderLatencyMs.sum}`,
-    `lb_order_latency_ms_count ${m.orderLatencyMs.count}`,
-    `lb_bytes_out_total ${m.bytesOut}`,
-    `lb_db_errors_total ${m.dbErrors}`,
-    `lb_event_loop_delay_p99_ms ${(loop.percentile(99) / 1e6).toFixed(2)}`,
-    `lb_heap_used_bytes ${process.memoryUsage().heapUsed}`,
+    `hg_sockets ${m.sockets}`,
+    `hg_players ${m.players}`,
+    `hg_ticks_total ${m.ticks}`,
+    `hg_tick_lag_ms ${m.tickLagMs}`,
+    ...Object.entries(m.orders).map(([k, v]) => `hg_orders_total{result="${k}"} ${v}`),
+    `hg_order_latency_ms_sum ${m.orderLatencyMs.sum}`,
+    `hg_order_latency_ms_count ${m.orderLatencyMs.count}`,
+    `hg_bytes_out_total ${m.bytesOut}`,
+    `hg_db_errors_total ${m.dbErrors}`,
+    `hg_event_loop_delay_p99_ms ${(loop.percentile(99) / 1e6).toFixed(2)}`,
+    `hg_heap_used_bytes ${process.memoryUsage().heapUsed}`,
     '',
   ].join('\n');
 }

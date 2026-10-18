@@ -1,4 +1,4 @@
-# How Live Bazar works
+# How Haggle works
 
 ## The shape
 
@@ -133,4 +133,4 @@ Afterwards, every participant's ledger summed to its cash, every position matche
 ## Deployment
 
 - **Docker Compose**: `docker compose up --build` runs Postgres and the app; see the README.
-- **Jinx** (the FRC box, no Docker): `deploy/deploy.sh` builds locally from the committed tree, installs `deploy/live-bazar.caddy` with validate-then-restore, rsyncs the builds and restarts the `live-bazar` systemd unit (`deploy/live-bazar.service`). The one-time setup (database, env file, unit, tunnel hostname) is listed at the top of the script.
+- **Jinx** (the FRC box, no Docker): `deploy/deploy.sh` builds locally from the committed tree, installs `deploy/haggle.caddy` with validate-then-restore, rsyncs the builds and restarts the `haggle` systemd unit (`deploy/haggle.service`). The one-time setup (database, env file, unit, tunnel hostname) is listed at the top of the script.

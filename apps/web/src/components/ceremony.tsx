@@ -9,7 +9,7 @@ import { StallList } from './floor';
 const ease = [0.16, 1, 0.3, 1] as const;
 const AWNINGS = Object.values(SECTOR_COLOR);
 
-/** A row of awning panels in every sector colour: the bazar's flag. */
+/** A row of awning panels in every sector colour: the market's flag. */
 function AwningRow({ className = '', grow = false }: { className?: string; grow?: boolean }) {
   return (
     <div className={`flex ${className}`} aria-hidden>
@@ -27,7 +27,7 @@ function AwningRow({ className = '', grow = false }: { className?: string; grow?
   );
 }
 
-export function Splash({ text = 'Opening the bazar' }: { text?: string }) {
+export function Splash({ text = 'Opening the market' }: { text?: string }) {
   return (
     <div className="grid min-h-dvh place-items-center bg-night px-6">
       <div className="flex flex-col items-center gap-5">
@@ -55,7 +55,7 @@ export function Join({ session, offset, onJoined }: { session: SessionInfo | nul
       if (!r.ok) throw new Error(body.error ?? 'Could not join. Try again.');
       onJoined();
     } catch (err) {
-      setError(err instanceof Error && err.message !== 'Failed to fetch' ? err.message : 'The bazar is not reachable right now. Check your connection.');
+      setError(err instanceof Error && err.message !== 'Failed to fetch' ? err.message : 'Haggle is not reachable right now. Check your connection.');
     } finally {
       setBusy(false);
     }
@@ -101,7 +101,7 @@ export function Join({ session, offset, onJoined }: { session: SessionInfo | nul
               className="h-14 min-w-0 flex-1 rounded-md border border-rule bg-night-2 px-4 text-xl font-semibold placeholder:font-normal placeholder:text-ink-3 focus:border-saffron/70 focus:outline-none"
             />
             <button type="submit" disabled={busy || name.trim().length < 2} className="h-14 rounded-md bg-saffron px-6 text-lg font-bold text-night hover:brightness-110 disabled:opacity-40">
-              {busy ? 'Joining' : 'Enter the bazar'}
+              {busy ? 'Joining' : 'Enter the market'}
             </button>
           </div>
           <p id="nick-help" className={`text-sm ${error ? 'text-down' : 'text-ink-3'}`} role={error ? 'alert' : undefined}>
@@ -179,7 +179,7 @@ export function Lobby() {
   );
 }
 
-/** The opening bell: awnings unroll across the screen, the bazar opens, then it lifts away. */
+/** The opening bell: awnings unroll across the screen, the market opens, then it lifts away. */
 export function Bell() {
   const bellAt = useGame((s) => s.bellAt);
   const [show, setShow] = useState(false);
@@ -208,7 +208,7 @@ export function Bell() {
               transition={{ delay: 0.35, duration: 0.8, ease }}
               className="font-display text-[clamp(3.5rem,12vw,9rem)] font-black uppercase leading-[0.85]"
             >
-              The bazar is <span className="text-saffron">open</span>
+              The market is <span className="text-saffron">open</span>
             </motion.p>
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }} className="text-lg text-ink-2">
               €1,000 in your purse. Prices are simulated. Go.
@@ -230,15 +230,15 @@ function CountUp({ cents, delay = 0 }: { cents: number; delay?: number }) {
   return <motion.span>{text}</motion.span>;
 }
 
-const AWARD_COPY: Record<string, string> = { winner: 'Top of the bazar', steady: 'Steadiest hand', crier: 'Read the crier' };
+const AWARD_COPY: Record<string, string> = { winner: 'Top of the market', steady: 'Steadiest hand', crier: 'Read the crier' };
 
 export function ResultCard({ r, share = true }: { r: PlayerResult; share?: boolean }) {
   const [copied, setCopied] = useState(false);
   const url = `${location.origin}/r/${r.participantId}`;
   const doShare = async () => {
-    const text = `I finished ${ordinal(r.rank)} of ${r.of} at Live Bazar with ${money(r.value)} (${pct(r.bps)}).`;
+    const text = `I finished ${ordinal(r.rank)} of ${r.of} at Haggle with ${money(r.value)} (${pct(r.bps)}).`;
     try {
-      if (navigator.share) return await navigator.share({ title: 'Live Bazar', text, url });
+      if (navigator.share) return await navigator.share({ title: 'Haggle', text, url });
       await navigator.clipboard.writeText(`${text} ${url}`);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -318,7 +318,7 @@ export function Results() {
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <Wordmark className="text-3xl" />
-            <h1 className="mt-2 font-display text-[clamp(3rem,10vw,6.5rem)] font-black uppercase leading-[0.85]">The bazar is closed</h1>
+            <h1 className="mt-2 font-display text-[clamp(3rem,10vw,6.5rem)] font-black uppercase leading-[0.85]">The market is closed</h1>
           </div>
           {session?.nextAt && <p className="text-ink-2">Next session opens in <span className="font-semibold text-ink">{clock(session.nextAt - t)}</span></p>}
         </header>
@@ -409,7 +409,7 @@ export function ShareCard({ id }: { id: string }) {
         const body = (await res.json()) as { result?: PlayerResult; error?: string };
         setState(res.ok && body.result ? { r: body.result } : { error: body.error ?? 'Result not found' });
       })
-      .catch(() => setState({ error: 'The bazar is not reachable right now.' }));
+      .catch(() => setState({ error: 'Haggle is not reachable right now.' }));
   }, [id]);
   if (!state.r && !state.error) return <Splash text="Fetching the result" />;
   return (
@@ -419,7 +419,7 @@ export function ShareCard({ id }: { id: string }) {
         {state.r ? <ResultCard r={state.r} share={false} /> : <p className="rounded-lg bg-night-2 p-6 text-center text-ink-2">{state.error}. The link may be from a session that never finished.</p>}
       </div>
       <a href="/" className="rounded-md bg-saffron px-6 py-3 font-bold text-night hover:brightness-110">
-        Play Live Bazar
+        Play Haggle
       </a>
     </main>
   );

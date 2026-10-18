@@ -151,7 +151,7 @@ export function App() {
     body = (
       <div className="grid min-h-dvh place-items-center px-6 text-center">
         <div className="flex flex-col items-center gap-4">
-          <p className="text-lg">The bazar is not reachable right now.</p>
+          <p className="text-lg">Haggle is not reachable right now.</p>
           <button type="button" onClick={load} className="rounded-md bg-saffron px-5 py-2.5 font-bold text-night">
             Try again
           </button>

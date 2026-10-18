@@ -13,7 +13,7 @@ const log = pino({ level: 'silent' });
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
-  const name = `bazar_test_${Date.now()}`;
+  const name = `haggle_test_${Date.now()}`;
   let admin: Sql;
   let sql: Sql;
   const engines: Engine[] = [];
