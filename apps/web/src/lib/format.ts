@@ -3,6 +3,9 @@ const eurWhole = new Intl.NumberFormat('en-IE', { style: 'currency', currency: '
 
 /** Cents to "€1,234.56". */
 export const money = (cents: number) => eur.format(cents / 100);
+const pointsFmt = new Intl.NumberFormat('en-IE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+/** Index levels in hundredths of a point to "1,234.56". */
+export const points = (hundredths: number) => pointsFmt.format(hundredths / 100);
 export const moneyWhole = (cents: number) => eurWhole.format(cents / 100);
 /** Cents to "+€12.34" / "−€12.34" with a real minus sign. */
 export const signedMoney = (cents: number) => (cents > 0 ? '+' : cents < 0 ? '−' : '') + eur.format(Math.abs(cents) / 100);

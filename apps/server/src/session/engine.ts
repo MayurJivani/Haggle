@@ -6,7 +6,8 @@ import { schedule } from '../market/events.js';
 import { seedReports, summarize, type Report, type Summary } from '../market/fundamentals.js';
 import { initialState, MarketSim, type SimEvent } from '../market/sim.js';
 import { metrics } from '../metrics.js';
-import type { AssetInfo, Board, BookInfo, ClientMsg, EventInfo, PlayerResult, Regime, Results, ServerMsg, SessionInfo } from '../protocol.js';
+import { reactionBps, reactionMembers } from '../market/dashboard.js';
+import type { Activity, AssetInfo, Board, BookInfo, ClientMsg, EventInfo, PlayerResult, Reaction, Regime, Results, ServerMsg, SessionInfo } from '../protocol.js';
 import { apply, pnlByTicker, quote, returnBps, STARTING_CASH, valueOf, type Book } from '../trading/portfolio.js';
 import { compareRank, phaseAt, sharpe, type Phase } from './ranking.js';
 import * as store from './store.js';
@@ -45,6 +46,14 @@ interface Player {
   eventGain: number;
 }
 
+/** Prices around one story: the tick before it landed, and the end of its reaction window once reached. */
+interface Tape {
+  seq: number;
+  endSeq: number;
+  before: number[];
+  after: number[] | null;
+}
+
 interface Window {
   endSeq: number;
   start: Map<string, number>;
@@ -78,6 +87,8 @@ const NEWS_KEPT = 40;
 /** Initial market seed when none is configured: the first market is the same on every install. */
 const GENESIS_SEED = 0x4a6716;
 const LOCK_KEY = 4373;
+/** How long after a story its reaction is measured. */
+const REACTION_MS = 60_000;
 
 const TICKERS = ASSETS.map((a) => a.ticker);
 const TICKER_INDEX = new Map(ASSETS.map((a, i) => [a.ticker, i]));
@@ -113,6 +124,8 @@ export class Engine {
   private summaries: Summary[] = [];
   private readonly events = new Map<number, store.StoredEvent>();
   private news: EventInfo[] = [];
+  private readonly tapes = new Map<number, Tape>();
+  private activityCache: { until: number; body: Activity } | null = null;
   private regime: Regime = 'calm';
   private lastAt = Date.now();
   private savedSeq = 0;
@@ -181,6 +194,7 @@ export class Engine {
     this.regime = this.market.regime();
     for (const ev of await store.liveEvents(this.sql, state.seq, ASSETS)) this.track(ev);
     this.news = await store.recentNews(this.sql, NEWS_KEPT);
+    await this.loadTapes();
 
     const row = await store.liveSession(this.sql);
     if (row) await this.resume(row);
@@ -279,8 +293,11 @@ export class Engine {
 
   private stepOnce(live: Live, broadcast: boolean) {
     const next = this.market.seq + 1;
+    let before: number[] | null = null;
     for (const ev of this.events.values()) {
-      if (ev.seq === next && ev.status === 'scheduled' && ev.severity >= 2) live.windows.push({ endSeq: ev.seq + ev.duration, start: this.values(live) });
+      if (ev.seq !== next || ev.status !== 'scheduled') continue;
+      before ??= Array.from(this.market.prices);
+      if (ev.severity >= 2) live.windows.push({ endSeq: ev.seq + ev.duration, start: this.values(live) });
     }
 
     const fired = this.market.step();
@@ -294,8 +311,13 @@ export class Engine {
 
     for (const sim of fired) {
       const ev = this.events.get(sim.id);
-      if (ev) this.publish(ev, at, broadcast);
+      if (!ev) continue;
+      this.publish(ev, at, broadcast);
+      const endSeq = Math.min(seq + Math.round(REACTION_MS / live.cfg.tickMs), live.startSeq! + live.cfg.totalTicks);
+      if (before) this.tapes.set(ev.id, { seq, endSeq, before, after: null });
     }
+    for (const t of this.tapes.values()) if (!t.after && seq >= t.endSeq) t.after = Array.from(this.market.prices);
+    if (fired.length) for (const id of this.tapes.keys()) if (!this.news.some((n) => n.id === id)) this.tapes.delete(id);
     const regime = this.market.regime();
     if (regime !== this.regime) {
       this.regime = regime;
@@ -455,6 +477,8 @@ export class Engine {
     // shortcut: value samples and event windows before the restart are lost, so the two secondary
     // awards only cover the time since; persist samples if restarts mid-session become routine.
     const now = Date.now();
+    // Set before the catch-up: replayed ticks record snapshots, which read the live competition.
+    this.live = live;
     // Only a competition that actually opened has ticks to catch up. A lobby whose bell time passed
     // while the server was down never traded: the pump restarts its countdown.
     if (live.startSeq !== null && now > live.opensAt) {
@@ -462,7 +486,6 @@ export class Engine {
       while (this.market.seq < target) this.stepOnce(live, false);
     }
     live.phase = phaseAt(now, live.opensAt, live.closesAt, live.cfg.closingSeconds, false);
-    this.live = live;
     metrics.players = live.players.size;
     this.log.info({ session: row.id, seq: this.market.seq, players: live.players.size }, 'session resumed');
   }
@@ -471,6 +494,8 @@ export class Engine {
     if (!live.finishing) {
       live.finishing = true;
       while (this.localTick(live) < live.cfg.totalTicks) this.stepOnce(live, true);
+      // An early close ends every reaction window at the final bell.
+      for (const t of this.tapes.values()) if (!t.after) [t.after, t.endSeq] = [Array.from(this.market.prices), this.market.seq];
       // Orders that passed the phase check before the bell still settle; nothing new gets in.
       await Promise.allSettled([...live.players.values()].map((p) => p.chain));
       // Stories that never landed (an early close) are cancelled, never carried into the next competition.
@@ -584,6 +609,53 @@ export class Engine {
       })),
     });
     return this.marketJson;
+  }
+
+  /**
+   * Prices around the stored news after a restart. Stories still inside their window when the process
+   * stopped are measured again as the replayed ticks land; a window the market never reached stays open.
+   */
+  private async loadTapes() {
+    const news = this.news.filter((n) => n.seq > 0);
+    if (!news.length) return;
+    const ends = await store.sessionEndSeqs(this.sql, [...new Set(news.map((n) => n.sessionId))]);
+    const window = Math.round(REACTION_MS / this.cfg.tickMs);
+    const spans = news.map((n) => ({ id: n.id, seq: n.seq, endSeq: Math.min(n.seq + window, ends.get(n.sessionId) ?? Infinity) }));
+    const at = await store.pricesAtSeqs(this.sql, TICKERS, [...new Set(spans.flatMap((s) => [s.seq - 1, ...(Number.isFinite(s.endSeq) ? [s.endSeq] : [])]))]);
+    const row = (m: Map<string, number> | undefined) => (m && m.size === TICKERS.length ? TICKERS.map((t) => m.get(t)!) : null);
+    for (const s of spans) {
+      const before = row(at.get(s.seq - 1));
+      if (!before) continue;
+      const reached = Number.isFinite(s.endSeq) && s.endSeq <= this.market.seq;
+      this.tapes.set(s.id, { seq: s.seq, endSeq: s.endSeq, before, after: reached ? row(at.get(s.endSeq)) : null });
+    }
+  }
+
+  /** The observed move after each recent story; stories without a recorded tape are left out. */
+  reactions(): Reaction[] {
+    const now = this.market.prices;
+    return this.news.flatMap((ev) => {
+      const tape = this.tapes.get(ev.id);
+      if (!tape) return [];
+      const { subject, tickers } = reactionMembers(ev, ASSETS);
+      const after = tape.after ?? now;
+      const price = (row: ArrayLike<number>) => (t: string) => row[TICKER_INDEX.get(t)!];
+      const r = reactionBps(tickers, price(tape.before), price(after));
+      if (!r) return [];
+      return [{
+        id: ev.id, subject, bps: r.bps, ticks: (tape.after ? tape.endSeq : this.market.seq) - tape.seq + 1, settled: tape.after !== null,
+        moves: subject === 'company' ? r.moves.slice(0, 6) : [],
+      }];
+    });
+  }
+
+  /** Trading activity per company in the current competition, cached briefly: a whole room asks at once. */
+  async activity(): Promise<Activity> {
+    const id = this.live?.row.id ?? null;
+    if (this.activityCache && this.activityCache.until > Date.now() && this.activityCache.body.sessionId === id) return this.activityCache.body;
+    const body: Activity = { sessionId: id, rows: id ? await store.tradeActivity(this.sql, id) : [] };
+    this.activityCache = { until: Date.now() + 5000, body };
+    return body;
   }
 
   companyReports(ticker: string): Report[] | null {

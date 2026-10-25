@@ -22,15 +22,18 @@ export interface Series {
   bars: Bar[];
   span: PriceHistory['span'];
   sessions: PriceHistory['sessions'];
+  /** Index histories only: each member's base price, to fold live ticks into the same levels. */
+  base?: Record<string, number>;
 }
 
-export const fromHistory = (h: PriceHistory): Series => ({
+export const fromHistory = (h: PriceHistory & { base?: Record<string, number> }): Series => ({
   ticker: h.ticker,
   range: h.range,
   bucketMs: h.bucketMs,
   bars: h.bars.map(([t, o, hi, l, c, seq]) => ({ t, o, h: hi, l, c, seq })),
   span: h.span,
   sessions: h.sessions,
+  base: h.base,
 });
 
 /**

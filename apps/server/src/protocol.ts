@@ -89,6 +89,36 @@ export interface PriceHistory {
   sessions: { id: string; opensAt: number; closesAt: number }[];
 }
 
+/**
+ * GET /api/index?range=&sector=: the equal-weighted index of the whole listing or one sector, as bars in
+ * hundredths of a point. `base` is each member's first recorded price, so a client folds live ticks
+ * into exactly the levels the server computed.
+ */
+export interface IndexHistory extends PriceHistory {
+  base: Record<string, number>;
+}
+
+/** GET /api/activity: executed trades per company in the current competition. */
+export interface Activity {
+  sessionId: string | null;
+  rows: { ticker: string; trades: number; shares: number; turnover: number }[];
+}
+
+/**
+ * GET /api/reactions: what the tape did after each recent story, measured from the tick before it
+ * landed. `settled` once the window has passed or the competition closed; until then it runs to now.
+ */
+export interface Reaction {
+  id: number;
+  subject: 'market' | 'sector' | 'company';
+  bps: number;
+  /** Ticks the move covers so far. */
+  ticks: number;
+  settled: boolean;
+  /** Per company, for company news only (sector and market reactions are averages over many). */
+  moves: { ticker: string; bps: number }[];
+}
+
 export interface PositionInfo {
   ticker: string;
   qty: number;

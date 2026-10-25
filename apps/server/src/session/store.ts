@@ -366,3 +366,66 @@ export async function tradesFor(sql: Sql, participantId: string, limit: number):
     WHERE participant_id = ${participantId} ORDER BY id DESC LIMIT ${limit}`;
   return rows.map((r) => ({ id: r.id, at: r.executed_at.getTime(), ticker: r.ticker, side: r.side, qty: r.quantity, price: r.price_cents, total: r.total_cents, realized: r.realized_cents }));
 }
+
+// ---------------------------------------------------------------- dashboard
+
+/** Each company's first recorded price: the base of the equal-weighted indices. */
+export async function firstPrices(sql: Sql, tickers: string[]): Promise<Record<string, number>> {
+  const rows = await sql<{ ticker: string; price_cents: number | null }[]>`
+    SELECT t.ticker, (SELECT price_cents FROM market_prices m WHERE m.ticker = t.ticker ORDER BY seq LIMIT 1) AS price_cents
+    FROM unnest(${tickers}::text[]) AS t(ticker)`;
+  return Object.fromEntries(rows.flatMap((r) => (r.price_cents ? [[r.ticker, r.price_cents]] : [])));
+}
+
+/** Equal-weighted index bars since `from`: the mean of each member's bucket close over its base. */
+export async function indexBars(sql: Sql, base: Record<string, number>, from: Date, bucketMs: number): Promise<PricePoint[]> {
+  const tickers = Object.keys(base);
+  const rows = await sql<{ t: Date; r: number; seq: number }[]>`
+    SELECT x.t, avg(x.c::float8 / b.base) AS r, max(x.seq) AS seq FROM (
+      SELECT ticker, date_bin(make_interval(secs => ${bucketMs / 1000}), at, timestamptz 'epoch') AS t,
+        (array_agg(price_cents ORDER BY seq DESC))[1] AS c, max(seq) AS seq
+      FROM market_prices WHERE ticker = ANY(${tickers}::text[]) AND at >= ${from} GROUP BY 1, 2) x
+    JOIN unnest(${tickers}::text[], ${tickers.map((t) => base[t]!)}::int[]) AS b(ticker, base) USING (ticker)
+    GROUP BY x.t ORDER BY x.t`;
+  return rows.map((row) => {
+    const level = Math.round(row.r * 100_000);
+    return { at: row.t.getTime(), o: level, h: level, l: level, c: level, seq: Number(row.seq) };
+  });
+}
+
+/** Executed trades per company in one competition. */
+export async function tradeActivity(sql: Sql, sessionId: string) {
+  const rows = await sql<{ ticker: string; trades: number; shares: number; turnover: number }[]>`
+    SELECT t.ticker, count(*)::int AS trades, sum(t.quantity)::int AS shares, sum(t.total_cents)::float8 AS turnover
+    FROM trades t JOIN participants p ON p.id = t.participant_id WHERE p.session_id = ${sessionId}
+    GROUP BY t.ticker ORDER BY trades DESC`;
+  return rows;
+}
+
+/**
+ * Every company's price at each of these market seqs, or the latest one before it when the market did
+ * not tick there. The lookback is bounded (a thousand ticks) so each lookup stays a short index scan.
+ */
+export async function pricesAtSeqs(sql: Sql, tickers: string[], seqs: number[]): Promise<Map<number, Map<string, number>>> {
+  const out = new Map<number, Map<string, number>>();
+  if (!seqs.length) return out;
+  const rows = await sql<{ want: number; ticker: string; price_cents: number }[]>`
+    SELECT w.want, t.ticker, p.price_cents FROM unnest(${seqs}::bigint[]) AS w(want) CROSS JOIN unnest(${tickers}::text[]) AS t(ticker)
+    CROSS JOIN LATERAL (SELECT price_cents FROM market_prices m WHERE m.ticker = t.ticker AND m.seq <= w.want AND m.seq > w.want - 1000
+      ORDER BY m.seq DESC LIMIT 1) p`;
+  for (const r of rows) {
+    const want = Number(r.want);
+    if (!out.has(want)) out.set(want, new Map());
+    out.get(want)!.set(r.ticker, r.price_cents);
+  }
+  return out;
+}
+
+/** The last market seq of each competition: its bell seq plus the ticks it actually played. */
+export async function sessionEndSeqs(sql: Sql, ids: string[]): Promise<Map<string, number>> {
+  const rows = await sql<{ id: string; end_seq: number }[]>`
+    SELECT id, start_seq + least((config->>'totalTicks')::int,
+      floor(extract(epoch FROM closes_at - opens_at) * 1000 / (config->>'tickMs')::int)::int) AS end_seq
+    FROM sessions WHERE id = ANY(${ids}::uuid[]) AND start_seq IS NOT NULL`;
+  return new Map(rows.map((r) => [r.id, Number(r.end_seq)]));
+}

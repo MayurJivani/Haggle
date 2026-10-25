@@ -11,8 +11,9 @@ import type { Env } from './env.js';
 import { logger } from './logger.js';
 import { metrics, renderMetrics } from './metrics.js';
 import type { Engine } from './session/engine.js';
-import type { PriceHistory, Range } from './protocol.js';
-import { priceBars, priceSpan, resultFor, sessionResults, sessionsBetween, tradesFor } from './session/store.js';
+import { ASSETS, SECTORS } from './market/assets.js';
+import type { IndexHistory, PriceHistory, Range } from './protocol.js';
+import { firstPrices, indexBars, priceBars, priceSpan, resultFor, sessionResults, sessionsBetween, tradesFor, type PricePoint } from './session/store.js';
 
 const RANGE_MS: Record<Exclude<Range, 'all'>, number> = {
   '1m': 60_000, '5m': 300_000, '15m': 900_000, '1h': 3_600_000, '1d': 86_400_000, '1w': 604_800_000, '1mo': 2_592_000_000,
@@ -105,6 +106,23 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
   // Research data. Prices and reports are the same for everyone, so a short shared cache absorbs a
   // whole room opening the same chart at the same moment.
   const cache = new Map<string, { until: number; body: PriceHistory }>();
+  const remember = (key: string, body: PriceHistory, ms: number) => {
+    if (cache.size > 2000) cache.clear();
+    cache.set(key, { until: Date.now() + ms, body });
+  };
+
+  /** Bars for a range counted back from the latest stored price, sized to stay under MAX_BARS. */
+  const history = async (subject: string, range: Range, span: PriceHistory['span'], bars: (from: Date, bucketMs: number) => Promise<PricePoint[]>): Promise<PriceHistory> => {
+    const tickMs = engine.sessionInfo()?.tickMs ?? 1000;
+    const body: PriceHistory = { ticker: subject, range, bucketMs: tickMs, bars: [], span, sessions: [] };
+    if (!span) return body;
+    // Ranges count back from the latest stored price, so a lobby still shows the last competition.
+    const from = range === 'all' ? span.first : Math.max(span.first, span.last - RANGE_MS[range]);
+    const wanted = Math.ceil((span.last - from + tickMs) / MAX_BARS / 1000) * 1000;
+    const bucketMs = Math.max(tickMs, wanted);
+    const [rows, sessions] = await Promise.all([bars(new Date(from), bucketMs), sessionsBetween(sql, new Date(from), new Date(span.last))]);
+    return { ...body, bucketMs, bars: rows.map((b) => [b.at, b.o, b.h, b.l, b.c, b.seq]), sessions };
+  };
   const researchLimiter = rateLimit({
     windowMs: 60_000,
     limit: 240,
@@ -133,22 +151,43 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
     const hit = cache.get(key);
     if (hit && hit.until > Date.now()) return void res.json(hit.body);
     const span = await priceSpan(sql, ticker.data);
-    const tickMs = engine.sessionInfo()?.tickMs ?? 1000;
-    let body: PriceHistory = { ticker: ticker.data, range: range.data, bucketMs: tickMs, bars: [], span, sessions: [] };
-    if (span) {
-      // Ranges count back from the latest stored price, so a lobby still shows the last competition.
-      const from = range.data === 'all' ? span.first : Math.max(span.first, span.last - RANGE_MS[range.data]);
-      const wanted = Math.ceil((span.last - from + tickMs) / MAX_BARS / 1000) * 1000;
-      const bucketMs = Math.max(tickMs, wanted);
-      const [bars, sessions] = await Promise.all([
-        priceBars(sql, ticker.data, new Date(from), bucketMs),
-        sessionsBetween(sql, new Date(from), new Date(span.last)),
-      ]);
-      body = { ...body, bucketMs, bars: bars.map((b) => [b.at, b.o, b.h, b.l, b.c, b.seq]), sessions };
-    }
-    if (cache.size > 2000) cache.clear();
-    cache.set(key, { until: Date.now() + 1000, body });
+    const body = await history(ticker.data, range.data, span, (from, bucketMs) => priceBars(sql, ticker.data, from, bucketMs));
+    remember(key, body, 1000);
     res.json(body);
+  });
+
+  // Each company's first price never changes once recorded; a company not yet traded is asked again.
+  let bases: Record<string, number> = {};
+  const indexBase = async () => {
+    if (Object.keys(bases).length < ASSETS.length) bases = await firstPrices(sql, ASSETS.map((a) => a.ticker));
+    return bases;
+  };
+
+  app.get('/api/index', researchLimiter, async (req, res) => {
+    const range = rangeSchema.safeParse(req.query.range ?? 'all');
+    const sector = z.enum(SECTORS).optional().safeParse(req.query.sector || undefined);
+    if (!range.success || !sector.success) return void res.status(400).json({ error: 'Unknown sector or range' });
+    const subject = sector.data ?? 'market';
+    const key = `index:${subject}:${range.data}`;
+    const hit = cache.get(key);
+    if (hit && hit.until > Date.now()) return void res.json(hit.body);
+    const all = await indexBase();
+    const base = Object.fromEntries(ASSETS.filter((a) => !sector.data || a.sector === sector.data).flatMap((a) => (all[a.ticker] ? [[a.ticker, all[a.ticker]!]] : [])));
+    const members = Object.keys(base);
+    // Every company ticks together, so any member's span is the index's span.
+    const span = members.length ? await priceSpan(sql, members[0]!) : null;
+    const body: IndexHistory = { ...(await history(subject, range.data, span, (from, bucketMs) => indexBars(sql, base, from, bucketMs))), base };
+    // Long ranges aggregate the whole tape; the client folds live ticks in, so they can be cached longer.
+    remember(key, body, Math.min(30_000, Math.max(1000, body.bucketMs)));
+    res.json(body);
+  });
+
+  app.get('/api/activity', researchLimiter, async (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache').json(await engine.activity());
+  });
+
+  app.get('/api/reactions', researchLimiter, (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache').json({ reactions: engine.reactions() });
   });
 
   app.get('/api/me/trades', async (req, res) => {

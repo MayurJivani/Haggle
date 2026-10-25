@@ -2,6 +2,7 @@ import { MotionConfig } from 'motion/react';
 import { ArrowLeft, BarChart3, LineChart, Newspaper, Store, Wallet } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Bell, Join, Lobby, Results, ShareCard, Splash } from './components/ceremony';
+import { Overview, Screener } from './components/dashboard';
 import { Host } from './components/host';
 import { ConnectionPill, Toasts, TopBar, useMedia, useNow } from './components/chrome';
 import { CompanyPanel, Holdings, OrderPanel, SectorList, SectorPanel, StockList } from './components/floor';
@@ -31,14 +32,18 @@ function LastCalls() {
   );
 }
 
-/** Stocks or sectors: the two ways into the listing. */
-function Browse({ view, setView, selected, onSelect, onSector }: {
-  view: 'stocks' | 'sectors'; setView: (v: 'stocks' | 'sectors') => void; selected: string; onSelect: (t: string) => void; onSector: (s: string) => void;
+type View = 'overview' | 'stocks' | 'sectors';
+
+/** The ways into the listing: the market overview (phones only), stocks and sectors. */
+function Browse({ view, setView, selected, onSelect, onSector, onHoldings, onRoster, phone = false }: {
+  view: View; setView: (v: View) => void; selected: string; onSelect: (t: string) => void; onSector: (s: string) => void;
+  onHoldings: () => void; onRoster: () => void; phone?: boolean;
 }) {
+  const views: View[] = phone ? ['overview', 'stocks', 'sectors'] : ['stocks', 'sectors'];
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div role="tablist" aria-label="Browse" className="grid shrink-0 grid-cols-2 border-b border-rule">
-        {(['stocks', 'sectors'] as const).map((v) => (
+      <div role="tablist" aria-label="Browse" className={`grid shrink-0 border-b border-rule ${phone ? 'grid-cols-3' : 'grid-cols-2'}`}>
+        {views.map((v) => (
           <button
             key={v}
             type="button"
@@ -51,7 +56,13 @@ function Browse({ view, setView, selected, onSelect, onSector }: {
           </button>
         ))}
       </div>
-      {view === 'stocks' ? <StockList selected={selected} onSelect={onSelect} /> : <SectorList onSector={onSector} />}
+      {view === 'overview' ? (
+        <div className="min-h-0 flex-1 overflow-y-auto"><Overview onSelect={onSelect} onSector={onSector} onHoldings={onHoldings} onRoster={onRoster} /></div>
+      ) : view === 'stocks' ? (
+        phone ? <div className="min-h-0 flex-1 overflow-y-auto"><Screener onSelect={onSelect} /></div> : <StockList selected={selected} onSelect={onSelect} />
+      ) : (
+        <SectorList onSector={onSector} />
+      )}
     </div>
   );
 }
@@ -62,8 +73,10 @@ function Terminal() {
   const unread = useGame((s) => s.unread);
   const [ticker, setTicker] = useState<string | null>(null);
   const [sector, setSector] = useState<string | null>(null);
-  const [browse, setBrowse] = useState<'stocks' | 'sectors'>('stocks');
+  const [browse, setBrowse] = useState<View>('overview');
   const [tab, setTab] = useState<Tab>('market');
+  // Desktop centre column: the overview, the screener, or the company last opened.
+  const [main, setMain] = useState<'overview' | 'screener' | 'company'>('overview');
   const phone = useMedia('(max-width: 767px)');
   const wide = useMedia('(min-width: 1280px)');
   const selected = ticker ?? assets[0]?.ticker ?? '';
@@ -71,13 +84,20 @@ function Terminal() {
     setTicker(t);
     setSector(null);
     setTab('stock');
+    setMain('company');
   }, []);
-  const openNews = () => {
-    setTab('news');
-    document.getElementById('news')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  // Each target is a phone tab, or a panel of the desktop layout scrolled into view.
+  const show = (t: Tab, id: string) => () => {
+    setTab(t);
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
+  const openNews = show('news', 'news');
+  const openHoldings = show('portfolio', 'holdings');
+  const openRoster = show('board', 'roster');
 
-  const browseProps = { view: browse, setView: setBrowse, selected, onSelect: pick, onSector: setSector };
+  const browseProps = {
+    view: browse === 'overview' ? 'stocks' as const : browse, setView: setBrowse, selected, onSelect: pick, onSector: setSector, onHoldings: openHoldings, onRoster: openRoster,
+  };
 
   if (phone) {
     return (
@@ -98,7 +118,7 @@ function Terminal() {
               </button>
               <SectorPanel sector={sector} onSelect={pick} />
             </div>
-          ) : <Browse {...browseProps} />)}
+          ) : <Browse {...browseProps} view={browse} phone />)}
           {tab === 'stock' && selected && (
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="min-h-0 flex-1 overflow-y-auto"><CompanyPanel ticker={selected} onSelect={pick} /></div>
@@ -136,7 +156,7 @@ function Terminal() {
 
   const side = (
     <>
-      <Roster />
+      <div id="roster"><Roster /></div>
       <div id="news" className="flex min-h-[24rem] flex-col border-t border-rule"><Feed onSelect={pick} /></div>
     </>
   );
@@ -155,20 +175,42 @@ function Terminal() {
           <Browse {...browseProps} />
         </aside>
         <main className="flex min-h-0 flex-col overflow-y-auto">
+          <nav aria-label="Views" className="flex h-10 shrink-0 items-stretch gap-1 border-b border-rule px-3">
+            {([['overview', 'Overview'], ['screener', 'Screener'], ['company', selected]] as const).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => {
+                  setSector(null);
+                  setMain(id);
+                }}
+                aria-current={main === id && !sector ? 'page' : undefined}
+                className={`relative px-3 font-display text-[15px] font-bold uppercase tracking-[0.06em] ${main === id && !sector ? 'text-ink' : 'text-ink-3 hover:text-ink'}`}
+              >
+                {label}
+                {main === id && !sector && <span className="absolute inset-x-2 bottom-0 h-[2px] bg-saffron" aria-hidden />}
+              </button>
+            ))}
+            {sector && <span className="flex items-center px-3 font-display text-[15px] font-bold uppercase tracking-[0.06em] text-ink" aria-current="page">{sector}</span>}
+          </nav>
           {sector ? (
             <>
               <button type="button" onClick={() => setSector(null)} className="flex h-9 shrink-0 items-center gap-1.5 border-b border-rule px-4 text-[13px] font-semibold text-ink-2 hover:text-ink">
-                <ArrowLeft size={15} aria-hidden /> Back to {selected}
+                <ArrowLeft size={15} aria-hidden /> Back to {main === 'company' ? selected : main}
               </button>
               <SectorPanel sector={sector} onSelect={pick} />
             </>
+          ) : main === 'overview' ? (
+            <Overview onSelect={pick} onSector={setSector} onHoldings={openHoldings} onRoster={openRoster} />
+          ) : main === 'screener' ? (
+            <Screener onSelect={pick} />
           ) : (
             <div className="flex shrink-0 flex-col lg:min-h-[560px] lg:flex-[1_0_auto] lg:flex-row">
               <div className="flex min-h-[440px] min-w-0 flex-1 flex-col">{selected && <CompanyPanel ticker={selected} onSelect={pick} />}</div>
               <div className="border-rule lg:w-[300px] lg:shrink-0 lg:border-l">{selected && <OrderPanel ticker={selected} />}</div>
             </div>
           )}
-          <div className="border-t border-rule">
+          <div id="holdings" className="scroll-mt-2 border-t border-rule">
             <Holdings onSelect={pick} />
           </div>
           {!wide && <div className="grid grid-cols-2 border-t border-rule [&>*:last-child]:border-l [&>*:last-child]:border-t-0 [&>*:last-child]:border-rule">{side}</div>}

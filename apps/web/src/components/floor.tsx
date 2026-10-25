@@ -6,7 +6,7 @@ import { game, useGame, type Report } from '../lib/game';
 import { usePortfolio } from '../lib/portfolio';
 import { peText, SECTOR_NOTES, useResearch, type Metrics } from '../lib/research';
 import { concerns, PriceChart } from './chart';
-import { Change, Pnl, useMedia } from './chrome';
+import { Change, Pnl, useKept, useMedia } from './chrome';
 import { NewsItem } from './side';
 
 // ---------------------------------------------------------------- discovery
@@ -33,7 +33,7 @@ const sortKey = (m: Metrics, s: Sort): number | null => {
   }
 };
 
-function FavStar({ ticker, size = 16 }: { ticker: string; size?: number }) {
+export function FavStar({ ticker, size = 16 }: { ticker: string; size?: number }) {
   const on = useGame((s) => s.favourites.includes(ticker));
   return (
     <button
@@ -84,11 +84,12 @@ export function StockList({ selected, onSelect, readOnly = false }: { selected?:
   const favourites = useGame((s) => s.favourites);
   const recent = useGame((s) => s.recent);
   const p = usePortfolio();
-  const [q, setQ] = useState('');
-  const [sector, setSector] = useState('');
-  const [sort, setSort] = useState<Sort>('sector');
-  const [desc, setDesc] = useState(true);
-  const [show, setShow] = useState<Show>('all');
+  const [q, setQ] = useKept('stocks.q', '');
+  const [sector, setSector] = useKept('stocks.sector', '');
+  const [sort, setSort] = useKept<Sort>('stocks.sort', 'sector');
+  const [desc, setDesc] = useKept('stocks.desc', true);
+  const [show, setShow] = useKept<Show>('stocks.show', 'all');
+  const id = useId();
   const sectors = useMemo(() => [...new Set(rows.map((r) => r.asset.sector))], [rows]);
 
   const list = useMemo(() => {
@@ -128,10 +129,16 @@ export function StockList({ selected, onSelect, readOnly = false }: { selected?:
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && q && list[0]) onSelect?.(list[0].asset.ticker);
+              if (e.key === 'Escape') setQ('');
+            }}
+            aria-describedby={q && onSelect ? `${id}-hint` : undefined}
             placeholder={`Search ${rows.length} companies by name or ticker`}
             className="h-10 w-full rounded-md border border-rule bg-night pl-9 pr-3 text-[16px] text-ink placeholder:text-ink-3 focus:border-saffron/60 focus:outline-none sm:text-sm"
           />
         </label>
+        {q && onSelect && list[0] && <p id={`${id}-hint`} className="-mt-1 text-[12px] text-ink-3">Enter opens {list[0].asset.ticker}</p>}
         {!readOnly && (
           <div role="group" aria-label="Show" className="flex gap-1 overflow-x-auto">
             {(['all', 'favourites', 'held', 'recent'] as const).map((id) => (
@@ -468,11 +475,11 @@ function Fig({ label, value, hint, tone: t }: { label: string; value: string; hi
 type Tab = 'chart' | 'financials' | 'news';
 
 export function CompanyPanel({ ticker, onSelect }: { ticker: string; onSelect: (t: string) => void }) {
-  const { byTicker } = useResearch();
+  const { byTicker, rows } = useResearch();
   const prev = useGame((s) => s.prev[s.index.get(ticker) ?? -1]);
   const events = useGame((s) => s.events);
   const p = usePortfolio();
-  const [tab, setTab] = useState<Tab>('chart');
+  const [tab, setTab] = useKept<Tab>('company.tab', 'chart');
   const id = useId();
   const m = byTicker.get(ticker);
   useEffect(() => game.visit(ticker), [ticker]);
@@ -480,6 +487,15 @@ export function CompanyPanel({ ticker, onSelect }: { ticker: string; onSelect: (
   const a = m.asset;
   const held = p.byTicker.get(ticker);
   const news = events.filter((e) => concerns(e, ticker, a.sector));
+  const f = a.fund;
+  const peers = rows.filter((r) => r.asset.sector === a.sector && r.asset.ticker !== ticker);
+  const key: [string, string, number?][] = [
+    ['P/E', peText(m.pe)],
+    ['EPS', f.epsTtm === null ? 'N/A' : eps(f.epsTtm), f.epsTtm ?? 0],
+    ['Revenue', f.revenueTtm === null ? 'N/A' : millions(f.revenueTtm)],
+    ['Net income', f.netIncomeTtm === null ? 'N/A' : millions(f.netIncomeTtm), f.netIncomeTtm ?? 0],
+    ['vs fair value', m.vsFair === null ? 'N/A' : ratio(m.vsFair - 1, 0)],
+  ];
   return (
     <div className="flex min-h-0 flex-1 flex-col" style={{ ['--stripe' as string]: SECTOR_COLOR[a.sector] }}>
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 px-4 pt-3">
@@ -517,11 +533,20 @@ export function CompanyPanel({ ticker, onSelect }: { ticker: string; onSelect: (
         {a.description}
         {held && held.qty > 0 && (
           <span className="ml-1 text-ink">
-            You hold {held.qty} at {money(Math.round(held.cost / held.qty))} (<Pnl cents={held.unrealized} />).
+            You hold {held.qty} at {money(Math.round(held.cost / held.qty))} <span className="whitespace-nowrap">(<Pnl cents={held.unrealized} />).</span>
           </span>
         )}
       </p>
-      <div role="tablist" aria-label={`${a.ticker} research`} className="mt-2 flex gap-1 border-b border-rule px-3">
+      {/* The figures a first look needs, without opening Financials. Simulated, like the price. */}
+      <dl aria-label="Key figures: simulated price, simulated trailing twelve months" className="mt-2 flex gap-x-6 overflow-x-auto border-t border-rule px-4 py-2">
+        {key.map(([label, value, t]) => (
+          <div key={label} className="shrink-0">
+            <dt className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3" title={label === 'P/E' || label === 'vs fair value' ? 'At the simulated price' : 'Last four quarters, simulated'}>{label}</dt>
+            <dd className={`text-[14px] font-semibold ${t !== undefined && t < 0 ? 'text-down' : ''}`}>{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <div role="tablist" aria-label={`${a.ticker} research`} className="flex gap-1 border-b border-t border-rule px-3">
         {(['chart', 'financials', 'news'] as const).map((t) => (
           <button
             key={t}
@@ -556,6 +581,17 @@ export function CompanyPanel({ ticker, onSelect }: { ticker: string; onSelect: (
           </div>
         )}
       </div>
+      {peers.length > 0 && (
+        <nav aria-label={`Other ${a.sector} companies`} className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-t border-rule px-4 py-2">
+          <span className="shrink-0 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">Also in {a.sector}</span>
+          {peers.map((r) => (
+            <button key={r.asset.ticker} type="button" onClick={() => onSelect(r.asset.ticker)} className="flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-rule px-2 text-[12px] hover:border-ink-3">
+              <span className="font-bold">{r.asset.ticker}</span>
+              <Change bps={r.bps} />
+            </button>
+          ))}
+        </nav>
+      )}
     </div>
   );
 }

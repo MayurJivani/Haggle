@@ -1,5 +1,5 @@
 import {
-  BaselineSeries, ColorType, createChart, createSeriesMarkers, CrosshairMode, LineStyle,
+  BaselineSeries, ColorType, createChart, createSeriesMarkers, CrosshairMode, LineStyle, TickMarkType,
   type IChartApi, type ISeriesApi, type ISeriesMarkersPluginApi, type SeriesMarker, type Time, type UTCTimestamp,
 } from 'lightweight-charts';
 import { Radio } from 'lucide-react';
@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { changeBps, money, pct, tone, when } from '../lib/format';
 import { game, useGame, type EventInfo, type Range } from '../lib/game';
 import { availableRanges, defaultRange, fold, fromHistory, RANGE_LABEL, toLine, type Series } from '../lib/series';
+import { useKept } from './chrome';
 
 const C = {
   up: '#3ddc84',
@@ -21,10 +22,27 @@ const C = {
 /** History per company and range, kept across mounts: reopening a chart shows it at once. */
 const cache = new Map<string, Series>();
 const sec = (ms: number) => Math.floor(ms / 1000) as UTCTimestamp;
+const axisTime = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' });
+const axisDay = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' });
 
 /** Whether a story bears on this company: about it, about its sector, or about the whole economy. */
 export function concerns(ev: EventInfo, ticker: string, sector: string) {
   return ev.related.includes(ticker) || ev.target === ticker || ev.target === sector || ev.category === 'macro';
+}
+
+/** What a chart follows: one company, or an equal-weighted index of many. */
+export interface ChartSubject {
+  /** Cache key, unique per subject. */
+  key: string;
+  label: string;
+  url: (range: Range) => string;
+  /** The subject's value in one tick's prices, given the loaded history. */
+  value: (p: number[], s: Series) => number | undefined;
+  /** Where the baseline splits green from red: the value at the opening bell. */
+  baseline: (s: Series | null) => number | undefined;
+  format: (v: number) => string;
+  /** Stories marked on the timeline. */
+  concerns: (ev: EventInfo) => boolean;
 }
 
 interface Hover {
@@ -36,24 +54,40 @@ interface Hover {
   note: string | null;
 }
 
+/** One company's simulated price. */
+export function PriceChart({ ticker, wheel = true }: { ticker: string; wheel?: boolean }) {
+  const index = useGame((s) => s.index.get(ticker) ?? -1);
+  const asset = useGame((s) => s.assets[index]);
+  const open = useGame((s) => s.open[index]);
+  const subject = useMemo<ChartSubject>(() => ({
+    key: ticker,
+    label: `Simulated price chart for ${asset?.name ?? ticker}`,
+    url: (range) => `/api/prices/${ticker}?range=${range}`,
+    value: (p) => (index >= 0 ? p[index] : undefined),
+    baseline: () => open,
+    format: money,
+    concerns: (ev) => !!asset && concerns(ev, ticker, asset.sector),
+  }), [ticker, index, asset, open]);
+  return <TimelineChart subject={subject} wheel={wheel} />;
+}
+
 /**
- * The full timeline for one company: stored history for the chosen range, extended (never replaced)
+ * The full timeline for one subject: stored history for the chosen range, extended (never replaced)
  * by live ticks. A player who pans into the past keeps their view while the market moves on; a
  * marker says newer prices are waiting and Back to live returns to them.
  */
-export function PriceChart({ ticker }: { ticker: string }) {
+export function TimelineChart({ subject, wheel = true }: { subject: ChartSubject; wheel?: boolean }) {
   const el = useRef<HTMLDivElement>(null);
   const chart = useRef<IChartApi | null>(null);
   const line = useRef<ISeriesApi<'Baseline'> | null>(null);
   const markers = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
-  const index = useGame((s) => s.index.get(ticker) ?? -1);
-  const asset = useGame((s) => s.assets[index]);
-  const open = useGame((s) => s.open[index]);
   const events = useGame((s) => s.events);
   const session = useGame((s) => s.session);
   const competitionMs = (session?.totalTicks ?? 600) * (session?.tickMs ?? 1000);
-  const [range, setRange] = useState<Range>(() => defaultRange(competitionMs));
-  const key = `${ticker}:${range}`;
+  const [range, setRange] = useKept<Range>('chart.range', () => defaultRange(competitionMs));
+  const key = `${subject.key}:${range}`;
+  const format = useRef(subject.format);
+  format.current = subject.format;
   const [series, setSeries] = useState<Series | null>(() => cache.get(key) ?? null);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>(cache.has(key) ? 'ready' : 'loading');
   const [away, setAway] = useState(false);
@@ -70,13 +104,18 @@ export function PriceChart({ ticker }: { ticker: string }) {
       layout: { background: { type: ColorType.Solid, color: 'transparent' }, textColor: C.ink3, fontFamily: 'Archivo Variable, sans-serif', fontSize: 11, attributionLogo: false },
       grid: { vertLines: { color: C.grid }, horzLines: { color: C.grid } },
       rightPriceScale: { borderColor: C.rule, scaleMargins: { top: 0.14, bottom: 0.1 } },
-      timeScale: { borderColor: C.rule, timeVisible: true, secondsVisible: false, rightOffset: 4, shiftVisibleRangeOnNewBar: true },
+      timeScale: {
+        borderColor: C.rule, timeVisible: true, secondsVisible: false, rightOffset: 4, shiftVisibleRangeOnNewBar: true,
+        // Axis labels in the player's own time zone, like the crosshair (the library defaults to UTC).
+        tickMarkFormatter: (t: Time, type: TickMarkType) => (type < TickMarkType.Time ? axisDay : axisTime).format((t as number) * 1000),
+      },
       crosshair: { mode: CrosshairMode.Normal, vertLine: { color: C.ink3, labelBackgroundColor: '#241f3d' }, horzLine: { color: C.ink3, labelBackgroundColor: '#241f3d' } },
       // Pan and pinch-zoom horizontally; a vertical swipe still scrolls the page on a phone.
-      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
-      handleScale: { mouseWheel: true, pinch: true, axisPressedMouseMove: true },
+      // In a page that scrolls (wheel = false) the wheel scrolls the page; drag, pinch and the axes still zoom and pan.
+      handleScroll: { mouseWheel: wheel, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
+      handleScale: { mouseWheel: wheel, pinch: true, axisPressedMouseMove: true },
       localization: {
-        priceFormatter: (v: number) => money(v),
+        priceFormatter: (v: number) => format.current(v),
         timeFormatter: (t: Time) => when((t as number) * 1000),
       },
     });
@@ -90,7 +129,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
       bottomFillColor2: 'rgba(255, 92, 98, 0.22)',
       priceLineColor: C.saffron,
       priceLineStyle: LineStyle.Dotted,
-      priceFormat: { type: 'custom', formatter: (v: number) => money(v), minMove: 1 },
+      priceFormat: { type: 'custom', formatter: (v: number) => format.current(v), minMove: 1 },
     });
     markers.current = createSeriesMarkers(line.current, []);
     chart.current = c;
@@ -123,10 +162,10 @@ export function PriceChart({ ticker }: { ticker: string }) {
   // Stories and bells marked on the chart, looked up again for the tooltip.
   const marks = useMemo(() => {
     const out: { at: number; text: string; kind: 'news' | 'bell' }[] = [];
-    if (asset) for (const ev of events) if (concerns(ev, ticker, asset.sector)) out.push({ at: ev.at, text: ev.headline, kind: 'news' });
+    for (const ev of events) if (subject.concerns(ev)) out.push({ at: ev.at, text: ev.headline, kind: 'news' });
     for (const s of series?.sessions ?? []) out.push({ at: s.opensAt, text: 'Opening bell', kind: 'bell' });
     return out.sort((a, b) => a.at - b.at);
-  }, [events, series?.sessions, ticker, asset]);
+  }, [events, series?.sessions, subject]);
   const marksRef = useRef(marks);
   marksRef.current = marks;
   const noteAt = (at: number, bucket: number) => marksRef.current.find((m) => m.at >= at && m.at < at + bucket)?.text ?? null;
@@ -147,6 +186,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
     markers.current?.setMarkers(list);
   }, [marks, series]);
 
+  const open = subject.baseline(series);
   useEffect(() => {
     if (line.current && open) line.current.applyOptions({ baseValue: { type: 'price', price: open } });
   }, [open]);
@@ -162,12 +202,18 @@ export function PriceChart({ ticker }: { ticker: string }) {
       line.current.setData(toLine(cached) as never);
       chart.current?.timeScale().fitContent();
     }
-    fetch(`/api/prices/${ticker}?range=${range}`)
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    const load = () => fetch(subject.url(range))
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((h) => {
         if (!live) return;
         const s = fromHistory(h);
-        if (index >= 0) for (const t of game.ticks) fold(s, t.seq, t.at, t.p[index]!);
+        // Nothing stored yet (a brand-new market): ask again once the first prices are durable.
+        if (!s.bars.length) retry = setTimeout(load, 5000);
+        for (const t of game.ticks) {
+          const v = subject.value(t.p, s);
+          if (v !== undefined) fold(s, t.seq, t.at, v);
+        }
         cache.set(key, s);
         setSeries(s);
         setState('ready');
@@ -175,26 +221,29 @@ export function PriceChart({ ticker }: { ticker: string }) {
         if (!awayRef.current) chart.current?.timeScale().fitContent();
       })
       .catch(() => live && setState(cached ? 'ready' : 'error'));
+    void load();
     return () => {
       live = false;
+      clearTimeout(retry);
     };
-  }, [key, ticker, range, index]);
+  }, [key, range, subject]);
 
   // Live: each tick extends the series in place, the earlier history untouched.
   useEffect(
     () =>
       game.onTick((t) => {
         const s = cache.get(key);
-        if (!s || index < 0) return;
+        const v = s && subject.value(t.p, s);
+        if (!s || v === undefined) return;
         const prevLast = s.bars.at(-1);
-        const what = fold(s, t.seq, t.at, t.p[index]!);
+        const what = fold(s, t.seq, t.at, v);
         if (what === 'skip' || !line.current) return;
         const bar = s.bars.at(-1)!;
         if (what === 'append' && prevLast && bar.t - prevLast.t > s.bucketMs * 3) line.current.update({ time: sec(prevLast.t + s.bucketMs) } as never);
         line.current.update({ time: sec(bar.t), value: bar.c });
         if (what === 'append' && awayRef.current) setNewer(true);
       }),
-    [key, index],
+    [key, subject],
   );
 
   const ranges = availableRanges(series?.span ?? null);
@@ -224,10 +273,10 @@ export function PriceChart({ ticker }: { ticker: string }) {
         </div>
         <dl className="flex gap-x-3 text-[12px] text-ink-3">
           {open !== undefined && (
-            <div className="flex gap-1"><dt>Bell</dt><dd className="text-ink-2">{money(open)}</dd></div>
+            <div className="flex gap-1"><dt>Bell</dt><dd className="text-ink-2">{subject.format(open)}</dd></div>
           )}
           {lo !== null && hi !== null && (
-            <div className="flex gap-1"><dt>Range</dt><dd className="text-ink-2">{money(lo)} to {money(hi)}</dd></div>
+            <div className="flex gap-1"><dt>Range</dt><dd className="text-ink-2">{subject.format(lo)} to {subject.format(hi)}</dd></div>
           )}
         </dl>
       </div>
@@ -236,7 +285,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
           ref={el}
           className="absolute inset-0"
           role="img"
-          aria-label={`Simulated price chart for ${asset?.name ?? ticker}, ${RANGE_LABEL[range]} range${bars.length ? `, last ${money(bars.at(-1)!.c)}` : ''}`}
+          aria-label={`${subject.label}, ${RANGE_LABEL[range]} range${bars.length ? `, last ${subject.format(bars.at(-1)!.c)}` : ''}`}
         />
         {state !== 'ready' && (
           <p className="pointer-events-none absolute inset-0 grid place-items-center text-sm text-ink-3">
@@ -255,7 +304,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
           >
             <p className="text-ink-3">{when(hover.at)}</p>
             <p className="font-semibold">
-              {money(hover.price)} <span className={tone(changeBps(hover.price, hover.from))}>{pct(changeBps(hover.price, hover.from))}</span>
+              {subject.format(hover.price)} <span className={tone(changeBps(hover.price, hover.from))}>{pct(changeBps(hover.price, hover.from))}</span>
               <span className="font-normal text-ink-3"> in range</span>
             </p>
             {hover.note && <p className="mt-0.5 leading-snug text-saffron">{hover.note}</p>}

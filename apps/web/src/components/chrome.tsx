@@ -17,6 +17,17 @@ export function useMedia(query: string) {
   return match;
 }
 
+const kept = new Map<string, unknown>();
+/**
+ * useState that outlives its component for the life of the tab, so a view keeps its search, filters,
+ * sort and chart range when the player opens a company and comes back.
+ */
+export function useKept<T>(key: string, init: T | (() => T)) {
+  const [v, setV] = useState<T>(() => (kept.has(key) ? (kept.get(key) as T) : init instanceof Function ? init() : init));
+  useEffect(() => void kept.set(key, v), [key, v]);
+  return [v, setV] as const;
+}
+
 export function useNow(offset: number, every = 250) {
   const [t, setT] = useState(() => now(offset));
   useEffect(() => {
