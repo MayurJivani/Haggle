@@ -8,7 +8,8 @@ import { ConnectionPill, Toasts, TopBar, useMedia, useNow } from './components/c
 import { CompanyPanel, Holdings, OrderPanel, SectorList, SectorPanel, StockList } from './components/floor';
 import { Feed, NewsStrip, Roster } from './components/side';
 import { clock } from './lib/format';
-import { game, useGame, type SessionInfo } from './lib/game';
+import { game, ROOM, roomQuery, useGame, type SessionInfo } from './lib/game';
+import { RoomBar, RoomsPage } from './components/rooms';
 
 type Tab = 'market' | 'stock' | 'portfolio' | 'news' | 'board';
 const TABS: { id: Tab; label: string; Icon: typeof Store }[] = [
@@ -67,9 +68,21 @@ function Browse({ view, setView, selected, onSelect, onSector, onHoldings, onRos
   );
 }
 
+function Spectating() {
+  const spectating = useGame((s) => s.spectating);
+  const room = useGame((s) => s.session?.room);
+  if (spectating !== 'full' && spectating !== 'late') return null;
+  return (
+    <p className="shrink-0 bg-saffron-deep px-4 py-1.5 text-center text-[13px] text-saffron" role="status">
+      {spectating === 'late'
+        ? 'This room does not take traders after the bell, so you are watching.'
+        : `This competition is full, so you are watching.${room ? '' : ' You will be dealt into the next one.'}`}
+    </p>
+  );
+}
+
 function Terminal() {
   const assets = useGame((s) => s.assets);
-  const spectating = useGame((s) => s.spectating);
   const unread = useGame((s) => s.unread);
   const [ticker, setTicker] = useState<string | null>(null);
   const [sector, setSector] = useState<string | null>(null);
@@ -105,11 +118,8 @@ function Terminal() {
         <TopBar />
         <NewsStrip onOpen={openNews} />
         <LastCalls />
-        {spectating === 'full' && (
-          <p className="shrink-0 bg-saffron-deep px-4 py-1.5 text-center text-[13px] text-saffron" role="status">
-            This competition is full, so you are watching. You will be dealt into the next one.
-          </p>
-        )}
+        <RoomBar />
+        <Spectating />
         <main className="flex min-h-0 flex-1 flex-col">
           {tab === 'market' && (sector ? (
             <div className="flex min-h-0 flex-1 flex-col">
@@ -165,11 +175,8 @@ function Terminal() {
       <TopBar />
       <NewsStrip onOpen={openNews} />
       <LastCalls />
-      {spectating === 'full' && (
-        <p className="shrink-0 bg-saffron-deep px-4 py-1.5 text-center text-[13px] text-saffron" role="status">
-          This competition is full, so you are watching. You will be dealt into the next one.
-        </p>
-      )}
+      <RoomBar />
+      <Spectating />
       <div className="grid min-h-0 flex-1 grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)_340px]">
         <aside aria-label="Stocks and sectors" className="flex min-h-0 flex-col border-r border-rule bg-night-2">
           <Browse {...browseProps} />
@@ -252,12 +259,16 @@ function Game() {
 export function App() {
   const share = location.pathname.match(/^\/r\/([0-9a-f-]{36})$/i);
   const isHost = location.pathname.replace(/\/$/, '') === '/host';
-  const [me, setMe] = useState<{ user: unknown; session: SessionInfo | null; offset: number } | 'loading' | 'error'>('loading');
+  const isRooms = location.pathname.replace(/\/$/, '') === '/rooms';
+  const badRoom = location.pathname.startsWith('/room/') && !ROOM;
+  const [me, setMe] = useState<{ user: unknown; session: SessionInfo | null; offset: number } | 'loading' | 'error' | 'noroom'>('loading');
 
   const load = useCallback(() => {
-    fetch('/api/me')
-      .then((r) => r.json() as Promise<{ user: unknown; session: SessionInfo | null; serverNow: number }>)
-      .then((m) => setMe({ user: m.user, session: m.session, offset: m.serverNow - Date.now() }))
+    Promise.all([
+      fetch(`/api/me${roomQuery}`).then((r) => r.json() as Promise<{ user: unknown; session: SessionInfo | null; serverNow: number }>),
+      ROOM ? fetch(`/api/rooms/${ROOM}`).then((r) => r.ok) : true,
+    ])
+      .then(([m, found]) => setMe(found ? { user: m.user, session: m.session, offset: m.serverNow - Date.now() } : 'noroom'))
       .catch(() => setMe('error'));
   }, []);
   useEffect(() => {
@@ -267,7 +278,17 @@ export function App() {
   let body: React.ReactNode;
   if (isHost) body = <Host />;
   else if (share) body = <ShareCard id={share[1]!} />;
+  else if (badRoom || me === 'noroom')
+    body = (
+      <div className="grid min-h-dvh place-items-center px-6 text-center">
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-lg">There is no room with that code.</p>
+          <a href="/rooms" className="rounded-md bg-saffron px-5 py-2.5 font-bold text-night">See open rooms</a>
+        </div>
+      </div>
+    );
   else if (me === 'loading') body = <Splash />;
+  else if (isRooms && me !== 'error') body = <RoomsPage signedIn={!!me.user} />;
   else if (me === 'error')
     body = (
       <div className="grid min-h-dvh place-items-center px-6 text-center">

@@ -19,6 +19,7 @@ const engine = new Engine(
     resultsSeconds: env.RESULTS_SECONDS,
     tickMs: env.TICK_MS,
     maxPlayers: env.MAX_PLAYERS,
+    maxRooms: env.MAX_ROOMS,
     seed: env.MARKET_SEED,
     marketSeed: env.MARKET_SEED,
   },

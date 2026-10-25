@@ -41,10 +41,9 @@ const raw = (asset: number, pct: number, over: Partial<SimEvent> = {}): SimEvent
 const logDiff = (a: number, b: number) => Math.log(a / b);
 
 describe('stock universe', () => {
-  it('lists 100-150 identified companies across every sector', () => {
-    expect(ASSETS.length).toBeGreaterThanOrEqual(100);
-    expect(ASSETS.length).toBeLessThanOrEqual(150);
-    expect(new Set(ASSETS.map((a) => a.sector))).toEqual(new Set(SECTORS));
+  it('lists exactly five identified companies in every sector', () => {
+    for (const s of SECTORS) expect(ASSETS.filter((a) => a.sector === s)).toHaveLength(5);
+    expect(ASSETS).toHaveLength(SECTORS.length * 5);
     expect(new Set(ASSETS.map((a) => a.ticker)).size).toBe(ASSETS.length);
     expect(new Set(ASSETS.map((a) => a.name)).size).toBe(ASSETS.length);
     for (const a of ASSETS) {
@@ -52,6 +51,7 @@ describe('stock universe', () => {
       expect(a.exchange && a.industry && a.description).toBeTruthy();
       expect(a.base).toBeGreaterThan(0);
       expect(a.vol).toBeGreaterThan(0);
+      expect(seedReports(a).length).toBeGreaterThan(0);
     }
   });
 });
@@ -125,7 +125,6 @@ describe('market simulation', () => {
     const delta = (t: string) => b[idx(t)]! - a[idx(t)]!;
     expect(delta('XOM')).toBeGreaterThan(0);
     expect(delta('RYA')).toBeLessThan(0);
-    expect(delta('LHA')).toBeLessThan(0);
     expect(delta('MSFT')).toBe(0);
   });
 

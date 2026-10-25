@@ -3,7 +3,7 @@ import { ArrowDownUp, Minus, Plus, Search, Star } from 'lucide-react';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { eps, millions, money, pct, ratio, SECTOR_COLOR, signedMoney, tone, when } from '../lib/format';
 import { game, useGame, type Report } from '../lib/game';
-import { usePortfolio } from '../lib/portfolio';
+import { usePortfolio, type Holding } from '../lib/portfolio';
 import { peText, SECTOR_NOTES, useResearch, type Metrics } from '../lib/research';
 import { concerns, PriceChart } from './chart';
 import { Change, Pnl, useKept, useMedia } from './chrome';
@@ -472,6 +472,51 @@ function Fig({ label, value, hint, tone: t }: { label: string; value: string; hi
   );
 }
 
+/**
+ * The player's position in this company, live: what it is worth at the current price and what it has
+ * made or lost, unrealised on the shares still held and realised on the ones already sold.
+ */
+function Position({ h }: { h: Holding }) {
+  const avg = h.qty ? Math.round(h.cost / h.qty) : 0;
+  const bps = h.cost ? Math.round((h.unrealized * 10_000) / h.cost) : 0;
+  return (
+    <section aria-label="Your position" className="mx-4 mt-2.5 rounded-md border border-saffron/30 bg-saffron-deep/50 px-3 py-2">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:flex sm:flex-wrap sm:items-end sm:gap-x-6">
+        {h.qty > 0 ? (
+          <>
+            <div>
+              <dt className="text-[11px] font-medium uppercase tracking-[0.08em] text-saffron">Your position</dt>
+              <dd className="text-[15px] font-semibold">{h.qty} {h.qty === 1 ? 'share' : 'shares'} <span className="font-normal text-ink-3">at {money(avg)}</span></dd>
+            </div>
+            <div>
+              <dt className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">Worth now</dt>
+              <dd className="text-[15px] font-semibold">{money(h.value)}</dd>
+            </div>
+            <div className="col-span-2 sm:col-span-1">
+              <dt className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">Profit / loss</dt>
+              <dd className="flex items-baseline gap-2 text-[17px] font-bold">
+                <Pnl cents={h.unrealized} />
+                <span className={`text-[13px] font-semibold ${tone(h.unrealized)}`}>{pct(bps)}</span>
+              </dd>
+            </div>
+          </>
+        ) : (
+          <div className="col-span-2">
+            <dt className="text-[11px] font-medium uppercase tracking-[0.08em] text-saffron">Your position</dt>
+            <dd className="text-[15px] font-semibold">Sold out</dd>
+          </div>
+        )}
+        {h.realized !== 0 && (
+          <div>
+            <dt className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">Realised</dt>
+            <dd className="text-[15px] font-semibold"><Pnl cents={h.realized} /></dd>
+          </div>
+        )}
+      </dl>
+    </section>
+  );
+}
+
 type Tab = 'chart' | 'financials' | 'news';
 
 export function CompanyPanel({ ticker, onSelect }: { ticker: string; onSelect: (t: string) => void }) {
@@ -529,14 +574,8 @@ export function CompanyPanel({ ticker, onSelect }: { ticker: string; onSelect: (
           </div>
         </div>
       </div>
-      <p className="max-w-[75ch] px-4 pt-1.5 text-[13px] text-ink-2">
-        {a.description}
-        {held && held.qty > 0 && (
-          <span className="ml-1 text-ink">
-            You hold {held.qty} at {money(Math.round(held.cost / held.qty))} <span className="whitespace-nowrap">(<Pnl cents={held.unrealized} />).</span>
-          </span>
-        )}
-      </p>
+      <p className="max-w-[75ch] px-4 pt-1.5 text-[13px] text-ink-2">{a.description}</p>
+      {held && (held.qty > 0 || held.realized !== 0) && <Position h={held} />}
       {/* The figures a first look needs, without opening Financials. Simulated, like the price. */}
       <dl aria-label="Key figures: simulated price, simulated trailing twelve months" className="mt-2 flex gap-x-6 overflow-x-auto border-t border-rule px-4 py-2">
         {key.map(([label, value, t]) => (
@@ -659,7 +698,13 @@ export function OrderPanel({ ticker, dock = false }: { ticker: string; dock?: bo
       <div className="flex items-center gap-3 px-3 py-2">
         <span className="min-w-0 flex-1 text-[12px] leading-tight text-ink-3">
           <span className="block text-[15px] font-semibold text-ink">{money(price)}</span>
-          {owned ? `You hold ${owned}` : `${money(p.cash)} cash`}
+          {owned && held ? (
+            <>
+              You hold {owned} <Pnl cents={held.unrealized} className="font-semibold" />
+            </>
+          ) : (
+            `${money(p.cash)} cash`
+          )}
         </span>
         <button type="button" onClick={() => setExpanded(true)} aria-expanded={false} className="h-11 shrink-0 rounded-md bg-saffron px-5 text-[15px] font-bold text-night hover:brightness-110">
           Trade {ticker}

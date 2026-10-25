@@ -10,10 +10,14 @@ import type { Sql } from './db/db.js';
 import type { Env } from './env.js';
 import { logger } from './logger.js';
 import { metrics, renderMetrics } from './metrics.js';
-import type { Engine } from './session/engine.js';
+import { HOUSE, type Engine } from './session/engine.js';
 import { ASSETS, SECTORS } from './market/assets.js';
-import type { IndexHistory, PriceHistory, Range } from './protocol.js';
-import { firstPrices, indexBars, priceBars, priceSpan, resultFor, sessionResults, sessionsBetween, tradesFor, type PricePoint } from './session/store.js';
+import type { IndexHistory, PlayerResult, PriceHistory, Range } from './protocol.js';
+import {
+  firstPrices, indexBars, participantId, priceBars, priceSpan, resultFor, sessionById, sessionByCode, sessionResults, sessionsBetween, tradesFor,
+  type PricePoint,
+} from './session/store.js';
+import { ROOM_CODE } from './ws.js';
 
 const RANGE_MS: Record<Exclude<Range, 'all'>, number> = {
   '1m': 60_000, '5m': 300_000, '15m': 900_000, '1h': 3_600_000, '1d': 86_400_000, '1w': 604_800_000, '1mo': 2_592_000_000,
@@ -75,9 +79,14 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
 
   const secure = (req: Request) => req.secure;
 
+  const userOf = (req: Request) => userForToken(sql, cookieFrom(req.headers.cookie, COOKIE));
+  const codeSchema = z.string().regex(ROOM_CODE);
+
   app.get('/api/me', async (req, res) => {
-    const user = await userForToken(sql, cookieFrom(req.headers.cookie, COOKIE));
-    res.json({ user, session: engine.sessionInfo(), serverNow: Date.now() });
+    const user = await userOf(req);
+    const code = codeSchema.safeParse(req.query.room);
+    const live = code.success ? engine.liveByCode(code.data) : engine.house;
+    res.json({ user, session: engine.sessionInfo(live ?? null), serverNow: Date.now() });
   });
 
   app.post('/api/join', joinLimiter, async (req, res) => {
@@ -182,18 +191,126 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
     res.json(body);
   });
 
-  app.get('/api/activity', researchLimiter, async (_req, res) => {
-    res.setHeader('Cache-Control', 'no-cache').json(await engine.activity());
+  // Trades per company in the house competition, or in a room by its code (private rooms: their own traders).
+  app.get('/api/activity', researchLimiter, async (req, res) => {
+    const code = codeSchema.safeParse(req.query.room);
+    const live = code.success ? engine.liveByCode(code.data) : engine.house;
+    if (live && live !== engine.house && !engine.canView(live, (await userOf(req))?.id ?? null)) return void res.status(403).json({ error: 'This room is private' });
+    res.setHeader('Cache-Control', 'no-cache').json(await engine.activity(live ?? null));
   });
 
   app.get('/api/reactions', researchLimiter, (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache').json({ reactions: engine.reactions() });
   });
 
+  // The player's own trades in the house competition, or in a room (live or finished) by its code.
   app.get('/api/me/trades', async (req, res) => {
-    const user = await userForToken(sql, cookieFrom(req.headers.cookie, COOKIE));
-    const participant = user ? engine.participantOf(user.id) : null;
-    res.setHeader('Cache-Control', 'no-store').json({ trades: participant ? await tradesFor(sql, participant, 200) : [] });
+    const user = await userOf(req);
+    const code = codeSchema.safeParse(req.query.room);
+    let participant: string | null = null;
+    if (user && !code.success) participant = engine.participantOf(user.id, HOUSE);
+    else if (user && code.success) {
+      const id = await engine.resolveRoom(code.data);
+      participant = id ? await participantId(sql, id, user.id) : null;
+    }
+    res.setHeader('Cache-Control', 'no-store').json({ trades: participant ? await tradesFor(sql, participant, 500) : [] });
+  });
+
+  // ---------------------------------------------------------------- custom rooms
+
+  const roomLimiter = rateLimit({
+    windowMs: 10 * 60_000,
+    limit: 6,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    keyGenerator: (req) => cookieFrom(req.headers.cookie, COOKIE) ?? ipKeyGenerator(req.ip ?? ''),
+    handler: (_req, res) => void res.status(429).json({ error: 'You have opened several rooms just now. Wait a few minutes.' }),
+  });
+
+  const roomSchema = z.object({
+    name: z.string().trim().min(1, 'Give the room a name').max(40),
+    description: z.string().trim().max(200).optional().transform((v) => v || null),
+    visibility: z.enum(['public', 'private']).default('public'),
+    maxPlayers: z.number().int().min(2).max(env.MAX_PLAYERS).default(Math.min(50, env.MAX_PLAYERS)),
+    /** Whole euros. */
+    startingCash: z.number().int().min(1_000).max(1_000_000).default(10_000),
+    durationMinutes: z.number().int().min(2).max(120).default(10),
+    /** Epoch ms of a scheduled bell; omitted = the host starts it. */
+    startAt: z.number().int().optional(),
+    lateJoin: z.boolean().default(true),
+    peek: z.boolean().default(false),
+    reveal: z.boolean().default(true),
+    publicResults: z.boolean().default(false),
+  });
+
+  app.post('/api/rooms', roomLimiter, async (req, res) => {
+    const user = await userOf(req);
+    if (!user) return void res.status(401).json({ error: 'Pick a trader name first' });
+    const parsed = roomSchema.safeParse(req.body);
+    if (!parsed.success) return void res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Those room settings are not valid' });
+    const r = parsed.data;
+    const now = Date.now();
+    if (r.startAt !== undefined && (r.startAt < now + 30_000 || r.startAt > now + 7 * 86_400_000)) {
+      return void res.status(400).json({ error: 'Schedule the bell between 30 seconds and 7 days from now' });
+    }
+    const made = await engine.createRoom(user, {
+      name: r.name, description: r.description, visibility: r.visibility, maxPlayers: r.maxPlayers, startingCash: r.startingCash * 100,
+      durationSeconds: r.durationMinutes * 60, startAt: r.startAt ?? null, lateJoin: r.lateJoin, peek: r.peek, reveal: r.reveal,
+      publicResults: r.visibility === 'public' || r.publicResults,
+    });
+    if ('error' in made) return void res.status(409).json(made);
+    res.status(201).json(made);
+  });
+
+  app.get('/api/rooms', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store').json({ rooms: engine.listRooms() });
+  });
+
+  /** What a room is, for the page someone lands on from an invite link. The code is the invitation. */
+  app.get('/api/rooms/:code', async (req, res) => {
+    const code = codeSchema.safeParse(req.params.code);
+    const live = code.success ? engine.liveByCode(code.data) : undefined;
+    if (live) return void res.setHeader('Cache-Control', 'no-store').json({ session: engine.sessionInfo(live), finished: false });
+    const row = code.success ? await sessionByCode(sql, code.data) : null;
+    if (!row) return void res.status(404).json({ error: 'There is no room with that code' });
+    res.json({ name: row.name, finished: true });
+  });
+
+  const hostAction = (act: 'start' | 'close') => async (req: Request, res: Response) => {
+    const user = await userOf(req);
+    const code = codeSchema.safeParse(req.params.code);
+    const live = code.success ? engine.liveByCode(code.data) : undefined;
+    if (!live) return void res.status(404).json({ error: 'There is no live room with that code' });
+    if (!user || !engine.isHost(live, user.id)) return void res.status(403).json({ error: 'Only the host can do that' });
+    const done = act === 'start' ? await engine.openNow(live) : await engine.closeNow(live);
+    res.status(done ? 200 : 409).json({ ok: done, session: engine.sessionInfo(live) });
+  };
+  app.post('/api/rooms/:code/start', hostAction('start'));
+  app.post('/api/rooms/:code/close', hostAction('close'));
+
+  // ---------------------------------------------------------------- leaderboards and portfolios
+
+  /** Every trader in a live competition at one valuation time. Private rooms show it to their own traders only. */
+  app.get('/api/sessions/:id/board', researchLimiter, async (req, res) => {
+    const id = z.uuid().safeParse(req.params.id);
+    const live = id.success ? engine.rooms.get(id.data) : undefined;
+    if (!live) return void res.status(404).json({ error: 'That competition is not live' });
+    const user = await userOf(req);
+    if (!engine.canView(live, user?.id ?? null)) return void res.status(403).json({ error: 'This room is private' });
+    res.setHeader('Cache-Control', 'no-store').json(engine.fullBoard(live));
+  });
+
+  /** A rival's portfolio during the game, only where the room allows peeking and only to its own traders. */
+  app.get('/api/sessions/:id/portfolio/:participantId', researchLimiter, async (req, res) => {
+    const id = z.uuid().safeParse(req.params.id);
+    const pid = z.uuid().safeParse(req.params.participantId);
+    const live = id.success ? engine.rooms.get(id.data) : undefined;
+    const user = await userOf(req);
+    if (!live || !pid.success) return void res.status(404).json({ error: 'That competition is not live' });
+    if (!live.cfg.peek || !user || !live.players.has(user.id)) return void res.status(403).json({ error: 'Portfolios are private in this room' });
+    const view = engine.portfolioOf(live, pid.data);
+    if (!view) return void res.status(404).json({ error: 'No such trader in this room' });
+    res.setHeader('Cache-Control', 'no-store').json(view);
   });
 
   app.get('/api/results/:participantId', async (req, res) => {
@@ -203,10 +320,23 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
     res.json({ result });
   });
 
-  app.get('/api/sessions/:id/results', async (req, res) => {
+  // The whole final roster with everyone's portfolio, published only once a competition has closed
+  // (results do not exist before), so nobody can copy a rival's book while trading is open. A private
+  // room shows it to its own traders only, unless the host made the results public; a room that keeps
+  // portfolios private shows each trader only their own holdings.
+  app.get('/api/sessions/:id/results', researchLimiter, async (req, res) => {
     const id = z.uuid().safeParse(req.params.id);
-    if (!id.success) return void res.status(404).json({ error: 'Unknown session' });
-    res.json({ results: await sessionResults(sql, id.data, 100) });
+    const limit = z.coerce.number().int().min(1).max(5000).default(100).safeParse(req.query.limit);
+    const row = id.success ? await sessionById(sql, id.data) : null;
+    if (!row || !limit.success) return void res.status(404).json({ error: 'Unknown session' });
+    const user = await userOf(req);
+    const mine = user ? await participantId(sql, row.id, user.id) : null;
+    if (row.visibility === 'private' && !row.config.publicResults && !mine) return void res.status(403).json({ error: 'This room is private' });
+    let results: PlayerResult[] = await sessionResults(sql, row.id, limit.data);
+    if (row.config.reveal === false) results = results.map((r) => (r.participantId === mine ? r : { ...r, holdings: undefined }));
+    // A finished competition's results never change; who may see them depends on the cookie.
+    res.setHeader('Cache-Control', row.visibility === 'private' || row.config.reveal === false ? 'private, max-age=300' : 'public, max-age=300');
+    res.json({ results });
   });
 
   // Organiser routes: Bearer ADMIN_TOKEN, used by the /host console and by curl. Unset token = 404.

@@ -6,8 +6,14 @@ import { money } from './format';
 import { uuid } from './uuid';
 
 export type {
-  AssetInfo, Board, BookInfo, EventInfo, PlayerResult, PriceHistory, Range, Regime, Report, Results, SessionInfo, Summary, TradeInfo,
+  AssetInfo, Board, BoardRow, BookInfo, EventInfo, FullBoard, HoldingResult, PlayerResult, PortfolioView, PriceHistory, Range, Regime, Report, Results,
+  RoomInfo, RoomListing, SessionInfo, Summary, TradeInfo,
 } from '../../../server/src/protocol';
+
+/** The custom room this page is in (/room/CODE), or null for the house competition. */
+export const ROOM = globalThis.location?.pathname.match(/^\/room\/([A-Z2-9]{8})\/?$/)?.[1] ?? null;
+/** `?room=CODE` for every request that is about this page's competition. */
+export const roomQuery = ROOM ? `?room=${ROOM}` : '';
 
 export type Conn = 'connecting' | 'open' | 'reconnecting';
 
@@ -64,7 +70,7 @@ export interface GameState {
   unread: number;
   book: BookInfo | null;
   trades: TradeInfo[];
-  spectating: 'full' | 'closed' | null;
+  spectating: 'full' | 'closed' | 'late' | null;
   board: Board;
   results: Results | null;
   /** Set when the bell rings while we watch, so the ceremony plays once. */
@@ -112,7 +118,7 @@ class Game {
   private state: GameState = {
     conn: 'connecting', signedOut: false, offset: 0, you: null, session: null, assets: [], index: new Map(), prices: [], prev: [], open: [],
     seq: 0, at: 0, receivedAt: 0, regime: 'calm', events: [], breaking: null, unread: 0, book: null, trades: [], spectating: null,
-    board: { top: [], count: 0, me: null }, results: null, bellAt: null, pending: 0, outcome: null, toasts: [], ...loadPrefs(),
+    board: { top: [], count: 0, me: null, at: 0 }, results: null, bellAt: null, pending: 0, outcome: null, toasts: [], ...loadPrefs(),
   };
   /** Recent ticks, outside React state: charts read them, nothing re-renders on them. */
   readonly ticks: Tick[] = [];
@@ -157,7 +163,7 @@ class Game {
   }
 
   private connect() {
-    const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+    const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws${roomQuery}`);
     this.ws = ws;
     ws.onmessage = (e) => this.receive(JSON.parse(e.data as string) as ServerMsg);
     ws.onopen = () => (this.retries = 0);
@@ -191,7 +197,7 @@ class Game {
   }
 
   loadTrades() {
-    fetch('/api/me/trades')
+    fetch(`/api/me/trades${roomQuery}`)
       .then((r) => r.json() as Promise<{ trades: TradeInfo[] }>)
       .then(({ trades }) => this.set({ trades }))
       .catch(() => {});

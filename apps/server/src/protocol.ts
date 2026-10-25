@@ -25,6 +25,45 @@ export interface SessionInfo {
   maxPlayers: number;
   /** The purse this competition was started with, in cents. */
   startingCash: number;
+  /** Null for the house competition that loops by itself. */
+  room: RoomInfo | null;
+}
+
+export interface RoomSettings {
+  /** The bell waits for the host instead of a clock. */
+  manualStart: boolean;
+  /** Players may join after the bell. */
+  lateJoin: boolean;
+  /** Participants may inspect each other's portfolios while trading. */
+  peek: boolean;
+  /** Every portfolio is shown on the results page. */
+  reveal: boolean;
+  /** A private room's results are visible outside it. */
+  publicResults: boolean;
+}
+
+export interface RoomInfo {
+  code: string;
+  name: string;
+  description: string | null;
+  visibility: 'public' | 'private';
+  hostId: string | null;
+  host: string | null;
+  settings: RoomSettings;
+}
+
+/** GET /api/rooms: public rooms still open to join or watch. */
+export interface RoomListing {
+  code: string;
+  name: string;
+  host: string | null;
+  phase: Phase;
+  players: number;
+  maxPlayers: number;
+  startingCash: number;
+  opensAt: number;
+  closesAt: number;
+  manualStart: boolean;
 }
 
 export interface AssetInfo {
@@ -133,10 +172,13 @@ export interface BookInfo {
   trades: number;
 }
 
+/** One trader on a leaderboard. Holdings are worth value - cash; profit is value - startingCash. */
 export interface BoardRow {
   rank: number;
+  participantId: string;
   nickname: string;
   value: number;
+  cash: number;
   bps: number;
   trades: number;
   /** Ticker of the player's largest holding by value, or null when all cash. */
@@ -146,7 +188,32 @@ export interface BoardRow {
 export interface Board {
   top: BoardRow[];
   count: number;
-  me: { rank: number; value: number } | null;
+  me: BoardRow | null;
+  /** Server time the ranking was valued at: every row uses the prices of that one moment. */
+  at: number;
+}
+
+/** GET /api/sessions/:id/board: every trader, ranked at one valuation time. */
+export interface FullBoard {
+  rows: BoardRow[];
+  at: number;
+}
+
+/** One trader's book, valued at the given prices (the results page and the in-game peek). */
+export interface PortfolioView {
+  participantId: string;
+  nickname: string;
+  cash: number;
+  holdings: HoldingResult[];
+}
+
+/** A position at a given price: shares still held (0 when sold out), their cost, realised profit, the price. */
+export interface HoldingResult {
+  ticker: string;
+  qty: number;
+  cost: number;
+  realized: number;
+  close: number;
 }
 
 export interface PlayerResult {
@@ -160,6 +227,11 @@ export interface PlayerResult {
   start?: number;
   cash: number;
   trades: number;
+  /**
+   * Every company the player traded, at the closing prices: shares still held (0 when sold out), the
+   * cost of those shares, profit already realised, and the closing price. Missing on older results.
+   */
+  holdings?: HoldingResult[];
   best: { ticker: string; pnl: number } | null;
   worst: { ticker: string; pnl: number } | null;
   awards: string[];
@@ -172,6 +244,10 @@ export interface Results {
   top: PlayerResult[];
   awards: { id: string; label: string; nickname: string; detail: string }[];
   me: PlayerResult | null;
+  /** Whether other traders' holdings are published (a room may keep them private). */
+  portfolios: boolean;
+  /** A private room's results, withheld from someone who did not play in it. */
+  restricted: boolean;
 }
 
 export type ServerMsg =
@@ -192,8 +268,8 @@ export type ServerMsg =
       /** Latest published news, newest first. */
       events: EventInfo[];
       book: BookInfo | null;
-      /** Why there is no book: the session is full, or it already closed. */
-      spectating: 'full' | 'closed' | null;
+      /** Why there is no book: the competition is full, already closed, or past the bell in a room without late joining. */
+      spectating: 'full' | 'closed' | 'late' | null;
       board: Board;
       results: Results | null;
     }

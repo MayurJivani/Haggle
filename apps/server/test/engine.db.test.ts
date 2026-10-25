@@ -6,7 +6,7 @@ import pino from 'pino';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { connect, migrate, type Sql } from '../src/db/db.js';
 import type { ServerMsg } from '../src/protocol.js';
-import { Engine, type Client } from '../src/session/engine.js';
+import { Engine, HOUSE, type Client } from '../src/session/engine.js';
 import { STARTING_CASH } from '../src/trading/portfolio.js';
 import { ASSETS } from '../src/market/assets.js';
 import { seedReports, summarize } from '../src/market/fundamentals.js';
@@ -23,12 +23,12 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
   let sql: Sql;
   const engines: Engine[] = [];
 
-  const config = { lobbySeconds: 600, tradingSeconds: 4, closingSeconds: 1, resultsSeconds: 600, tickMs: 250, maxPlayers: 3, seed: 777 };
+  const config = { lobbySeconds: 600, tradingSeconds: 4, closingSeconds: 1, resultsSeconds: 600, tickMs: 250, maxPlayers: 3, maxRooms: 5, seed: 777 };
 
-  const makeClient = async (nickname: string) => {
+  const makeClient = async (nickname: string, room = HOUSE) => {
     const [u] = await sql<{ id: string }[]>`INSERT INTO users (nickname, token_hash) VALUES (${nickname}, ${Buffer.from(randomUUID())}) RETURNING id`;
     const inbox: ServerMsg[] = [];
-    const client: Client = { userId: u!.id, nickname, send: (d) => inbox.push(JSON.parse(d)) };
+    const client: Client = { userId: u!.id, nickname, room, send: (d) => inbox.push(JSON.parse(d)) };
     return { client, inbox };
   };
   const fills = (inbox: ServerMsg[]) => inbox.filter((m) => m.t === 'fill');
@@ -73,13 +73,13 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
   });
 
   it('does not replay a lobby whose bell time passed while the server was down', async () => {
-    const id = engines[0]!.live!.row.id;
+    const id = engines[0]!.house!.row.id;
     await sql`UPDATE sessions SET opens_at = now() - interval '1 hour', closes_at = now() - interval '50 minutes' WHERE id = ${id}`;
     const engine = new Engine(sql, config, log);
     engines.push(engine);
     await engine.start();
     await sleep(300);
-    expect(engine.live!.row.id).toBe(id);
+    expect(engine.house!.row.id).toBe(id);
     expect(engine.sessionInfo()!.tick).toBe(0);
     expect(engine.sessionInfo()!.phase).toBe('lobby');
     expect(engine.sessionInfo()!.opensAt).toBeGreaterThan(Date.now());
@@ -185,6 +185,13 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
       const [cash] = await sql<{ cash_cents: number }[]>`SELECT cash_cents FROM participants WHERE id = ${b.id}`;
       const held = pos.filter((p) => p.participant_id === b.id).reduce((s, p) => s + p.quantity * session!.closing_prices[p.ticker]!, 0);
       expect(r!.final_value_cents).toBe(cash!.cash_cents + held);
+      // The published portfolio matches the books and adds up to the final value.
+      const [row] = await sql<{ stats: { holdings: { ticker: string; qty: number; close: number }[] } }[]>`SELECT stats FROM results WHERE participant_id = ${b.id}`;
+      const stats = row!.stats;
+      const mine = pos.filter((p) => p.participant_id === b.id && p.quantity > 0);
+      expect(stats.holdings.filter((h) => h.qty > 0).map((h) => [h.ticker, h.qty]).sort()).toEqual(mine.map((p) => [p.ticker, p.quantity]).sort());
+      expect(stats.holdings.every((h) => h.close === session!.closing_prices[h.ticker])).toBe(true);
+      expect(cash!.cash_cents + stats.holdings.reduce((sum, h) => sum + h.qty * h.close, 0)).toBe(r!.final_value_cents);
     }
     // After the bell nothing executes.
     await restarted.order(again.client, { t: 'order', id: randomUUID(), side: 'buy', ticker: 'KO', qty: 1 });
@@ -212,7 +219,7 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
     expect(carol.inbox.some((m) => m.t === 'results')).toBe(true);
     expect(engine.market.seq).toBe(bellSeq);
     // Closing prices are the prices at the moment the host rang the bell, and they are durable.
-    const id = engine.live!.row.id;
+    const id = engine.house!.row.id;
     const [row] = await sql<{ closing_prices: Record<string, number> }[]>`SELECT closing_prices FROM sessions WHERE id = ${id}`;
     expect(row!.closing_prices.SAP).toBe(bellPrices[ASSETS.findIndex((a) => a.ticker === 'SAP')]);
     const [head] = await sql<{ seq: number }[]>`SELECT max(seq) AS seq FROM market_checkpoints`;
@@ -236,5 +243,98 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
     const hello = carol.inbox.filter((m) => m.t === 'hello').at(-1) as Extract<ServerMsg, { t: 'hello' }>;
     expect(hello.book?.cash).toBe(STARTING_CASH);
     expect(hello.prices).toEqual(bellPrices);
+  });
+
+  it('runs custom rooms side by side on one shared market, each with its own books and frozen results', async () => {
+    await Promise.all(engines.map((e) => e.stop()));
+    const engine = new Engine(sql, { ...config, lobbySeconds: 3600 }, log);
+    engines.push(engine);
+    await engine.start();
+    const room = (over: Partial<Parameters<Engine['createRoom']>[1]>) => ({
+      name: 'Room', description: null, visibility: 'public' as const, maxPlayers: 5, startingCash: 500_000, durationSeconds: 2, startAt: null,
+      lateJoin: true, peek: false, reveal: true, publicResults: false, ...over,
+    });
+    const hostA = await makeClient('host a');
+    const hostB = await makeClient('host b');
+    const a = await engine.createRoom({ id: hostA.client.userId, nickname: 'host a' }, room({ name: 'Short' }));
+    const b = await engine.createRoom({ id: hostB.client.userId, nickname: 'host b' }, room({ name: 'Long', visibility: 'private', durationSeconds: 4, lateJoin: false }));
+    if ('error' in a || 'error' in b) throw new Error('room refused');
+    const roomA = engine.liveByCode(a.code)!;
+    const roomB = engine.liveByCode(b.code)!;
+    expect(engine.listRooms().map((r) => r.code)).toEqual([a.code]); // private rooms are not listed
+
+    const dana = await makeClient('dana', roomA.row.id);
+    const danaInB = { client: { ...dana.client, room: roomB.row.id, send: (d: string) => danaB.push(JSON.parse(d)) } };
+    const danaB: ServerMsg[] = [];
+    await engine.attach(dana.client);
+    await engine.attach(dana.client); // a second tab: still one seat and one purse
+    await engine.attach(danaInB.client);
+    hostA.client.room = roomA.row.id;
+    hostB.client.room = roomB.row.id;
+    await engine.attach(hostA.client);
+    await engine.attach(hostB.client);
+    const [row0] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM participants WHERE user_id = ${dana.client.userId}`;
+    expect(row0!.n).toBe(2);
+    expect(dana.inbox[0]).toMatchObject({ t: 'hello', book: { cash: 500_000 }, session: { room: { code: a.code, name: 'Short' } } });
+
+    // Only the host rings a manual bell, and the room waits for it.
+    expect(engine.isHost(roomA, hostA.client.userId)).toBe(true);
+    expect(engine.isHost(roomA, dana.client.userId)).toBe(false);
+    await sleep(300);
+    expect([roomA.startSeq, roomA.phase]).toEqual([null, 'lobby']);
+    expect(await engine.openNow(roomA)).toBe(true);
+    await sleep(600);
+    expect(await engine.openNow(roomB)).toBe(true);
+    await sleep(400);
+    // Both rooms trade one tape on one tick grid.
+    expect(roomB.startSeq).toBeGreaterThan(roomA.startSeq!);
+    expect((roomB.opensAt - roomA.opensAt) % config.tickMs).toBe(0);
+
+    // Books are per room: dana's buy in A leaves her purse in B untouched.
+    await engine.order(dana.client, { t: 'order', id: randomUUID(), side: 'buy', ticker: 'KO', qty: 10 });
+    expect(fills(dana.inbox)).toHaveLength(1);
+    expect(fills(danaB)).toHaveLength(0);
+    expect(engine.portfolioOf(roomB, engine.participantOf(dana.client.userId, roomB.row.id)!)!.cash).toBe(500_000);
+    // B allows no late joiners: someone arriving after its bell watches.
+    const late = await makeClient('late', roomB.row.id);
+    await engine.attach(late.client);
+    expect(late.inbox[0]).toMatchObject({ t: 'hello', book: null, spectating: 'late' });
+    await engine.order(late.client, { t: 'order', id: randomUUID(), side: 'buy', ticker: 'KO', qty: 1 });
+    expect(rejects(late.inbox).at(-1)?.reason).toBe('not_in_session');
+    // B is private: its board and results are for its own traders.
+    expect(engine.canView(roomB, dana.client.userId)).toBe(true);
+    expect(engine.canView(roomB, hostA.client.userId)).toBe(false);
+    expect(engine.canView(roomA, late.client.userId)).toBe(true);
+
+    // A closes while B keeps the market running; A's results stay on its own closing tick.
+    await sleep(2200);
+    const resA = dana.inbox.find((m) => m.t === 'results') as Extract<ServerMsg, { t: 'results' }>;
+    expect(resA).toBeDefined();
+    expect(roomB.finishedAt).toBeNull();
+    const endA = roomA.startSeq! + roomA.cfg.totalTicks;
+    const [stored] = await sql<{ closing_prices: Record<string, number> }[]>`SELECT closing_prices FROM sessions WHERE id = ${roomA.row.id}`;
+    const atEnd = await sql<{ ticker: string; price_cents: number }[]>`SELECT ticker, price_cents FROM market_prices WHERE seq = ${endA}`;
+    expect(Object.fromEntries(atEnd.map((r) => [r.ticker, r.price_cents]))).toEqual(stored!.closing_prices);
+    const before = (await sql<{ final_value_cents: number }[]>`SELECT final_value_cents FROM results WHERE session_id = ${roomA.row.id} ORDER BY rank`).map((r) => r.final_value_cents);
+    await sleep(800);
+    expect(engine.market.seq).toBeGreaterThan(endA);
+    const after = (await sql<{ final_value_cents: number }[]>`SELECT final_value_cents FROM results WHERE session_id = ${roomA.row.id} ORDER BY rank`).map((r) => r.final_value_cents);
+    expect(after).toEqual(before);
+    expect(engine.fullBoard(roomA).rows.map((r) => r.value)).toEqual(before);
+    // Every trader in A appears in its results, including the one who never traded.
+    expect(resA.results.top.map((r) => r.nickname).sort()).toEqual(['dana', 'host a']);
+    expect(resA.results.top.find((r) => r.nickname === 'host a')).toMatchObject({ trades: 0, holdings: [], value: 500_000 });
+
+    await sleep(2000);
+    expect(danaB.some((m) => m.t === 'results')).toBe(true);
+    // Once both rooms are done the market stops.
+    const stopped = engine.market.seq;
+    await sleep(500);
+    expect(engine.market.seq).toBe(stopped);
+    // An outsider who reaches the finished private room by its code sees no results.
+    const nosy = await makeClient('nosy', roomB.row.id);
+    await engine.attach(nosy.client);
+    expect(nosy.inbox[0]).toMatchObject({ t: 'hello', results: { restricted: true, top: [] } });
+    await engine.stop();
   });
 });

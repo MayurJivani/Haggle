@@ -6,7 +6,7 @@ A modular monolith in one npm workspace, following the FRC "app shape":
 
 ```
 apps/server   Node + TypeScript: Express for a handful of routes, one WebSocket server, Postgres
-  src/market    assets.ts (120 companies), fundamentals.ts (simulated reports, fair value, P/E),
+  src/market    assets.ts (75 companies, five per sector), fundamentals.ts (simulated reports, fair value, P/E),
                 events.ts (news templates and the competition schedule), sim.ts (price model)
   src/trading   portfolio.ts (pure accounting in integer cents)
   src/session   engine.ts (clock, ticks, checkpoints, orders, results), store.ts (every SQL statement), ranking.ts
@@ -86,6 +86,8 @@ A replayed order id hits the unique constraint and comes back as `duplicate`, so
 
 Portfolio value = cash + sum(quantity x current price). Profit = value - starting capital; return = profit / starting capital. A new competition deals `STARTING_CASH` (€10,000, in `apps/server/src/trading/portfolio.ts`, the one place it is set) and records it in its config as `startingCash`; every return, award threshold and result card is computed against the amount recorded for that competition, so changing the constant never rewrites an old result. Competitions from before the amount was recorded were backfilled from their own grant ledger rows (they were €1,000). The leaderboard is recomputed every 2 s; the final ranking is computed once, at the same closing prices for everyone, ordered by value, then join time, then nickname, so it is deterministic.
 
+Cost basis is average cost: a buy adds its cost, a sale removes the sold shares' share of it (exactly the remainder when the position is closed, so no cent strands) and books the difference as realised profit into cash. Realised profit is therefore already in the portfolio value and is shown, never added again. In the browser every screen (top bar, holdings, position panel, results) derives its figures from one function, `valuation()` in `apps/web/src/lib/portfolio.ts`, applied to the book the server sends with each fill and the latest tick, so a trade shows everywhere at once without a reload (`portfolio.test.ts` drives the store with a fill, a tick and a partial sale). A custom room may deal its own purse; returns use the amount that room recorded.
+
 ### Awards
 
 The winner is the highest final value. Two secondary awards: *Steadiest hand* (best mean-over-volatility of value samples every 10 ticks, among players who traded and finished up) and *Read the crier* (most value gained across the windows of severity 2 and 3 events). A "best percentage return" award is not offered: with everyone in a competition starting from the same purse it is always the winner.
@@ -97,11 +99,11 @@ One WebSocket per tab at `/ws`, authenticated by the nickname cookie and an Orig
 | Message | When | Size |
 | --- | --- | --- |
 | `hello` | on connect | session, prices, opening prices, the market's sequence number, the 40 latest stories, your book, board, results (6 KB, up to about 20 KB once 40 stories are stored) |
-| `tick` | every tick | `{t,k,at,p:[120 prices]}`, about 750 bytes; `k` is the market sequence number |
+| `tick` | every tick | `{t,k,at,p:[75 prices]}`, about 500 bytes; `k` is the market sequence number |
 | `event` | when a story is published | one story, no price impact |
 | `fund` | when a report is filed | that company's new summary |
 | `regime` | when market stress changes band | |
-| `board` | every 2 s | top 10 serialised once, plus each player's own rank appended |
+| `board` | every 2 s | top 10 serialised once, plus each player's own row appended; every row carries value, cash, return and trades, all valued at one tick (`at`) |
 | `fill` / `reject` | per order | to that player's sockets only; a fill carries the trade record |
 | `phase`, `results` | on transitions | |
 
@@ -131,7 +133,18 @@ Migrations live in `apps/server/src/db/migrations/*.sql` and run at startup in f
 
 The market: `assets` (upserted from code at boot, with exchange and industry), `market_checkpoints` (sequence number and state), `market_prices` (every tick of every company, keyed by company and sequence, indexed by company and time), `market_events` (every story with its status, the tick it lands on and the report it files) and `market_event_effects` (its per-company move), `financial_reports` (one row per company and fiscal quarter, with source and timestamps).
 
-A competition: `sessions` (one live at a time, enforced by a partial unique index; config including `startingCash`, the opening sequence number and opening and closing prices), `participants` (cash), `positions`, `trades` (executed orders), `ledger` (every cash movement with the balance after), `leaderboard_snapshots` (every 30 ticks and at the close), `results` (final rank, value, return and the shareable stats). The original per-competition `price_history` table is kept read-only for competitions played before the market became persistent.
+A competition: `sessions` (one live house competition at a time, enforced by a partial unique index, plus any number of custom rooms with a code, name, host and visibility; config including `startingCash`, the opening sequence number and opening and closing prices), `participants` (cash), `positions`, `trades` (executed orders), `ledger` (every cash movement with the balance after), `leaderboard_snapshots` (every 30 ticks and at the close), `results` (final rank, value, return and the shareable stats). The original per-competition `price_history` table is kept read-only for competitions played before the market became persistent.
+
+## Rooms
+
+A custom room is a competition like the house one, with a host and its own rules: name and description, public (listed at `/rooms`) or private (reached only by its eight-letter code), most traders, starting purse, trading length, a scheduled bell or one the host rings, whether people may join after the bell, whether traders may open each other's portfolios while trading, and whether every portfolio is shown on the results page. A private room's standings and results are shown only to its own traders unless the host makes them public. Everything is validated on the server (`POST /api/rooms`, Zod), creation is rate limited per player, a host may run three rooms at once and `MAX_ROOMS` caps them all.
+
+- **One market, many competitions.** Prices, news and reports stay global; cash, positions, trades, leaderboards and results stay per competition, because each room is a row in `sessions` and every book hangs off its `participants`. The market ticks while any competition is trading. The first one to open on an idle market anchors the tick grid; a room that opens while it runs is aligned to the same grid, so every room trades exactly the same tape. Each room's news schedule is added to that tape, so overlapping rooms see each other's stories (the news is denser while several rooms trade at once, noted in code).
+- **Frozen results.** A room's last tick captures every price on that tick. From then on its orders are refused and its ranking, results and closing prices use only those prices, however long the market keeps running for other rooms. A restart after a room's last tick but before its results reads the close back from `market_prices`.
+- **Sockets.** A socket joins one competition (`/ws?room=CODE`, none = the house). Ticks, news, reports and the regime go to every socket; phase, board, results and fills go only to that competition's sockets, so a second tab in another room never sees them.
+- **Joining.** The unique `(session, user)` participant row means a reconnect, a second tab or a repeated request never deals a second purse, and a book from one room never enters another. Nickname accounts cannot stop one person opening several accounts; the per-IP join limit only slows it.
+- **The host.** Only the host may ring a manual bell or close the market early. If the host disconnects the room carries on by its clock; a manual room nobody starts is closed with no results after 24 hours.
+- **Leaderboard.** `GET /api/sessions/:id/board` returns every trader at one valuation time (cached a second); `GET /api/sessions/:id/portfolio/:participant` returns a rival's book only where the room allows peeking, and only to its own traders.
 
 ## Monitoring
 
@@ -181,4 +194,4 @@ What was wrong before the persistent market, and what replaced it.
 - **Restart after an early close changed the news.** The schedule was regenerated from the seed with the shortened length, so a restart between the early bell and the results replayed a different tape. Schedules are now stored when the bell rings and never regenerated.
 - **Charts lost and invented history.** `hello` down-sampled the session to 150 points and the client interpolated between them, and a chart only ever showed the current session. History now comes from stored bars, live ticks only extend it, and gaps stay gaps.
 - **The crier covered the order ticket.** The banner was an absolute overlay on the trading floor; on phones it sat over whatever tab was open. It is now a reserved row of the layout.
-- **The universe.** 40 companies in 8 sectors became 120 in 15, with exchanges, industries and simulated financials.
+- **The universe.** 40 companies in 8 sectors became 120 in 15, with exchanges, industries and simulated financials, then exactly five per sector (75), enforced by a test.

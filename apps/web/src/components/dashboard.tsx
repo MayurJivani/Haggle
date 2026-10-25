@@ -3,7 +3,7 @@ import { useId, useMemo, useState } from 'react';
 import { indexLevel } from '../../../server/src/market/dashboard';
 import { eps, money, ordinal, pct, points, ratio, SECTOR_COLOR, tone, when } from '../lib/format';
 import { marketStats, summarize, usePoll, type MarketStats } from '../lib/dashboard';
-import { useGame, type EventInfo } from '../lib/game';
+import { roomQuery, useGame, type EventInfo } from '../lib/game';
 import { usePortfolio } from '../lib/portfolio';
 import { peText, useResearch, type Metrics } from '../lib/research';
 import { marginOf, NO_FILTERS, screen, sortRows, type Column, type Filters, type ScreenRow } from '../lib/screener';
@@ -201,7 +201,7 @@ function Headline({ s }: { s: MarketStats }) {
 function Movers({ s, onSelect }: { s: MarketStats; onSelect: Pick }) {
   const research = useResearch();
   const session = useGame((g) => g.session?.id);
-  const { data, failed } = usePoll<Activity>('/api/activity', 10_000, session);
+  const { data, failed } = usePoll<Activity>(`/api/activity${roomQuery}`, 10_000, session);
   const active = (data && data.sessionId === session ? data.rows : []).slice(0, 5);
   const list = (title: string, rows: Metrics[], empty: string) => (
     <section aria-label={title} className="flex min-w-0 flex-col border-b border-rule lg:border-b-0 lg:border-r lg:last:border-r-0">
@@ -512,7 +512,7 @@ export function Screener({ onSelect }: { onSelect: Pick }) {
   const favourites = useGame((s) => s.favourites);
   const p = usePortfolio();
   const phone = useMedia('(max-width: 767px)');
-  const { data } = usePoll<Activity>('/api/activity', 10_000, session);
+  const { data } = usePoll<Activity>(`/api/activity${roomQuery}`, 10_000, session);
   const [f, setF] = useKept<Filters>('screener.filters', NO_FILTERS);
   const [sort, setSort] = useKept<{ col: Column; desc: boolean }>('screener.sort', { col: 'change', desc: true });
   const [filtersOpen, setFiltersOpen] = useState(false);

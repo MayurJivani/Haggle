@@ -4,19 +4,25 @@ import { useEffect, useMemo, useState } from 'react';
 import { money, ordinal, pct, SECTOR_COLOR, tone, when } from '../lib/format';
 import { game, useGame, type EventInfo } from '../lib/game';
 import { usePortfolio } from '../lib/portfolio';
+import { Leaderboard } from './rooms';
 
 const spring = { type: 'spring', stiffness: 380, damping: 34 } as const;
 
 export function Roster({ limit = 10 }: { limit?: number }) {
   const board = useGame((s) => s.board);
   const you = useGame((s) => s.you?.nickname);
+  const conn = useGame((s) => s.conn);
   const rows = board.top.slice(0, limit);
   const meInTop = rows.some((r) => r.nickname === you);
   return (
     <section aria-label="Leaderboard" className="flex flex-col">
       <div className="flex items-baseline justify-between px-4 pb-2 pt-3">
         <h2 className="panel-title">Roster</h2>
-        <span className="text-[12px] text-ink-3">ranked by return · {board.count} {board.count === 1 ? 'trader' : 'traders'}</span>
+        <span className="text-[12px] text-ink-3">ranked by value · {board.count} {board.count === 1 ? 'trader' : 'traders'}</span>
+      </div>
+      <div className="flex items-center justify-between gap-2 px-4 pb-1.5">
+        <Leaderboard />
+        {conn !== 'open' && <span className="text-[12px] font-semibold text-saffron" role="status">Reconnecting, ranks paused</span>}
       </div>
       {rows.length === 0 ? (
         <p className="px-4 pb-4 text-sm text-ink-2">Nobody at the stalls yet.</p>

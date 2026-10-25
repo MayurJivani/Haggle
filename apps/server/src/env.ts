@@ -28,6 +28,8 @@ const envSchema = z
     RESULTS_SECONDS: seconds(180),
     TICK_MS: z.coerce.number().int().min(250).max(5000).default(1000),
     MAX_PLAYERS: z.coerce.number().int().min(1).max(5000).default(500),
+    // Custom rooms live at once across every host; each host may run three.
+    MAX_ROOMS: z.coerce.number().int().min(0).max(1000).default(50),
     // Joins per IP per minute. A hosted event puts a whole room behind one NAT, so this is generous.
     JOIN_RATE_LIMIT: z.coerce.number().int().min(1).default(120),
     // Fixed market seed for reproducible demos; unset = random per session.

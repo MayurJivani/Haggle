@@ -1,11 +1,12 @@
 import { AnimatePresence, animate, motion, useMotionValue, useTransform } from 'motion/react';
-import { Check, Copy, Share2 } from 'lucide-react';
+import { Check, ChevronRight, Copy, Share2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { clock, money, moneyWhole, ordinal, pct, SECTOR_COLOR, tone } from '../lib/format';
-import { useGame, type PlayerResult, type SessionInfo } from '../lib/game';
+import { changeBps, clock, money, moneyWhole, ordinal, pct, SECTOR_COLOR, signedMoney, tone, when } from '../lib/format';
+import { useGame, type PlayerResult, type Results as ResultsInfo, type SessionInfo, type TradeInfo } from '../lib/game';
 import { Pnl, SimulatedChip, useNow, Wordmark, leave } from './chrome';
 import { StallList } from './floor';
-import { PURSE, STARTING_CASH } from '../lib/portfolio';
+import { PURSE, STARTING_CASH, usePortfolio } from '../lib/portfolio';
+import { CopyInvite, HostControls, PortfolioTable } from './rooms';
 
 const ease = [0.16, 1, 0.3, 1] as const;
 const AWNINGS = Object.values(SECTOR_COLOR);
@@ -62,13 +63,14 @@ export function Join({ session, offset, onJoined }: { session: SessionInfo | nul
     }
   };
 
+  const purse = moneyWhole(session?.startingCash ?? STARTING_CASH);
   const status = !session
     ? null
     : session.phase === 'lobby'
       ? `Next bell in ${clock(session.opensAt - t)}. ${session.players} traders waiting.`
       : session.phase === 'results'
         ? 'Results are in. You will be dealt into the next session.'
-        : `Market open, ${clock(session.closesAt - t)} left. ${session.players} trading. Late arrivals still get ${PURSE}.`;
+        : `Market open, ${clock(session.closesAt - t)} left. ${session.players} trading.${session.room?.settings.lateJoin === false ? '' : ` Late arrivals still get ${purse}.`}`;
 
   return (
     <main className="flex min-h-dvh flex-col bg-night">
@@ -78,9 +80,15 @@ export function Join({ session, offset, onJoined }: { session: SessionInfo | nul
           <h1>
             <Wordmark className="block text-[clamp(4rem,16vw,8.5rem)]" />
           </h1>
-          <p className="mt-4 max-w-md text-lg text-ink-2">
-            A live stock market for the whole room. Everyone gets {PURSE}. The fattest purse at the closing bell wins.
-          </p>
+          {session?.room ? (
+            <p className="mt-4 max-w-md text-lg text-ink-2">
+              You are invited to <strong className="text-ink">{session.room.name}</strong>{session.room.host ? `, hosted by ${session.room.host}` : ''}. Everyone gets {purse}. The fattest purse at the closing bell wins.
+            </p>
+          ) : (
+            <p className="mt-4 max-w-md text-lg text-ink-2">
+              A live stock market for the whole room. Everyone gets {PURSE}. The fattest purse at the closing bell wins.
+            </p>
+          )}
         </div>
         <form onSubmit={submit} className="flex flex-col gap-3">
           <label htmlFor="nick" className="text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-2">
@@ -118,6 +126,7 @@ export function Join({ session, offset, onJoined }: { session: SessionInfo | nul
         <p className="flex flex-wrap items-center gap-2 text-[13px] text-ink-3">
           <SimulatedChip /> Virtual money only. Company names are real; every price and headline is simulated.
         </p>
+        {!session?.room && <a href="/rooms" className="text-[14px] font-semibold text-ink-2 underline decoration-ink-3 underline-offset-4 hover:text-ink">Or open a room of your own</a>}
       </div>
     </main>
   );
@@ -129,9 +138,13 @@ export function Lobby() {
   const you = useGame((s) => s.you);
   const spectating = useGame((s) => s.spectating);
   const listed = useGame((s) => s.assets.length);
+  const board = useGame((s) => s.board);
   const t = useNow(offset);
   const left = session.opensAt - t;
   const minutes = Math.round((session.closesAt - session.opensAt) / 60_000);
+  const room = session.room;
+  const purse = moneyWhole(session.startingCash);
+  const waiting = !!room?.settings.manualStart;
   return (
     <main className="flex min-h-dvh flex-col bg-night lg:h-dvh lg:flex-row">
       <section className="flex flex-1 flex-col">
@@ -141,10 +154,26 @@ export function Lobby() {
             <Wordmark className="text-4xl" />
             <SimulatedChip />
           </div>
-          <p className="flex flex-wrap items-baseline gap-x-5 font-display font-black leading-[0.85]" role="timer">
-            <span className="text-[clamp(2.5rem,7vw,5rem)] uppercase text-ink">Bell in</span>
-            <span className="text-[clamp(6rem,22vw,13rem)] text-saffron">{clock(left)}</span>
-          </p>
+          {room && (
+            <div className="flex flex-col gap-2">
+              <h1 className="font-display text-[clamp(2rem,5vw,3.25rem)] font-black uppercase leading-[0.9]">{room.name}</h1>
+              {room.description && <p className="max-w-2xl text-ink-2">{room.description}</p>}
+              <div className="flex flex-wrap items-center gap-2">
+                <CopyInvite code={room.code} />
+                <HostControls session={session} />
+              </div>
+            </div>
+          )}
+          {waiting ? (
+            <p className="font-display text-[clamp(2.5rem,7vw,5rem)] font-black uppercase leading-[0.85] text-ink" role="status">
+              Waiting for {room?.hostId === you?.userId ? 'you to ring the bell' : `${room?.host ?? 'the host'} to ring the bell`}
+            </p>
+          ) : (
+            <p className="flex flex-wrap items-baseline gap-x-5 font-display font-black leading-[0.85]" role="timer">
+              <span className="text-[clamp(2.5rem,7vw,5rem)] uppercase text-ink">Bell in</span>
+              <span className="text-[clamp(6rem,22vw,13rem)] text-saffron">{clock(left)}</span>
+            </p>
+          )}
           <p className="max-w-2xl text-xl leading-relaxed text-ink-2">
             <strong className="text-ink">{session.players}</strong> {session.players === 1 ? 'trader' : 'traders'} at the stalls
             {session.players >= session.maxPlayers ? ' (full)' : ''}.{' '}
@@ -152,11 +181,32 @@ export function Lobby() {
               'This session is full, so you are watching.'
             ) : (
               <>
-                <strong className="text-ink">{PURSE}</strong> in your purse at the bell,
+                <strong className="text-ink">{purse}</strong> in your purse at the bell,
               </>
             )}{' '}
             then <strong className="text-ink">{minutes} minutes</strong> of trading before the final bell.
           </p>
+          {room && (
+            <dl className="grid max-w-2xl grid-cols-2 gap-x-6 gap-y-2 text-[14px] sm:grid-cols-4" aria-label="Room rules">
+              <div><dt className="text-ink-3">Who can join</dt><dd>{room.visibility === 'private' ? 'Invite code' : 'Anyone'}{room.settings.lateJoin ? ', also after the bell' : ', before the bell'}</dd></div>
+              <div><dt className="text-ink-3">Most traders</dt><dd>{session.maxPlayers}</dd></div>
+              <div><dt className="text-ink-3">Portfolios</dt><dd>{room.settings.peek ? 'Open while trading' : 'Private while trading'}</dd></div>
+              <div><dt className="text-ink-3">Results</dt><dd>{room.settings.reveal ? 'Every portfolio shown' : 'Standings only'}</dd></div>
+            </dl>
+          )}
+          {room && board.top.length > 0 && (
+            <section aria-label="Traders in the room">
+              <h2 className="panel-title mb-2">In the room</h2>
+              <ul className="flex max-w-2xl flex-wrap gap-2">
+                {board.top.map((r) => (
+                  <li key={r.participantId} className={`rounded-md px-2.5 py-1 text-[14px] ${r.participantId === board.me?.participantId ? 'bg-saffron-deep text-saffron' : 'bg-night-3'}`}>
+                    {r.nickname}{room.host === r.nickname ? ' (host)' : ''}
+                  </li>
+                ))}
+                {board.count > board.top.length && <li className="px-2.5 py-1 text-[14px] text-ink-3">and {board.count - board.top.length} more</li>}
+              </ul>
+            </section>
+          )}
           <ol className="grid max-w-2xl gap-2 text-[15px] text-ink-2 sm:grid-cols-3 sm:gap-5">
             <li><strong className="text-ink">Buy and sell</strong> any of {listed} companies at the live simulated price.</li>
             <li><strong className="text-ink">Listen to the crier.</strong> News hits everyone at once and moves whole sectors.</li>
@@ -183,6 +233,7 @@ export function Lobby() {
 /** The opening bell: awnings unroll across the screen, the market opens, then it lifts away. */
 export function Bell() {
   const bellAt = useGame((s) => s.bellAt);
+  const purse = moneyWhole(useGame((s) => s.session?.startingCash ?? STARTING_CASH));
   const [show, setShow] = useState(false);
   useEffect(() => {
     if (!bellAt || Date.now() - bellAt > 4000) return;
@@ -212,7 +263,7 @@ export function Bell() {
               The market is <span className="text-saffron">open</span>
             </motion.p>
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }} className="text-lg text-ink-2">
-              {PURSE} in your purse. Prices are simulated. Go.
+              {purse} in your purse. Prices are simulated. Go.
             </motion.p>
           </div>
         </motion.div>
@@ -251,7 +302,7 @@ export function ResultCard({ r, share = true }: { r: PlayerResult; share?: boole
     <article className="overflow-hidden rounded-lg bg-night-2" aria-label={`Result for ${r.nickname}`}>
       <AwningRow className="h-3" />
       <div className="flex flex-col gap-5 p-5 sm:p-6">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
           <div>
             <p className="font-display text-7xl font-black leading-[0.85]">
               {ordinal(r.rank)}
@@ -303,12 +354,202 @@ export function ResultCard({ r, share = true }: { r: PlayerResult; share?: boole
   );
 }
 
+function TradeRows({ trades, showTicker }: { trades: TradeInfo[]; showTicker: boolean }) {
+  return (
+    <ul className="flex flex-col text-[13px]">
+      {trades.map((t) => (
+        <li key={t.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-t border-rule/60 py-1.5 first:border-0">
+          <span className="min-w-0">
+            <span className={`mr-1.5 text-[11px] font-bold uppercase ${t.side === 'buy' ? 'text-saffron' : 'text-down'}`}>{t.side}</span>
+            {t.qty}{showTicker ? ` ${t.ticker}` : ''} at {money(t.price)}
+            <span className="ml-1.5 text-ink-3">{when(t.at)}</span>
+          </span>
+          <span className="text-right">
+            {t.side === 'buy' ? '−' : '+'}{money(t.total)}
+            {t.side === 'sell' && <span className={`ml-1.5 ${tone(t.realized)}`}>{signedMoney(t.realized)}</span>}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * Everything the player ended with, valued at the closing prices: cash, every position including the
+ * ones sold out of, and each position's trades on demand. Built from the book and prices this tab
+ * already holds; the market stops at the bell, so the prices on hand are the closing prices.
+ */
+function FinalPortfolio() {
+  const p = usePortfolio();
+  const book = useGame((s) => s.book);
+  const assets = useGame((s) => s.assets);
+  const index = useGame((s) => s.index);
+  const prices = useGame((s) => s.prices);
+  const trades = useGame((s) => s.trades);
+  if (!book) return null;
+  const positions = book.positions
+    .flatMap((pos) => {
+      const i = index.get(pos.ticker);
+      if (i === undefined) return [];
+      const price = prices[i] ?? 0;
+      const value = pos.qty * price;
+      return [{ ...pos, asset: assets[i]!, price, value, unrealized: value - pos.cost, total: value - pos.cost + pos.realized }];
+    })
+    .sort((a, b) => b.value - a.value || b.total - a.total);
+  return (
+    <details className="group rounded-lg bg-night-2 open:pb-2">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-5 py-4 hover:bg-night-3 [&::-webkit-details-marker]:hidden">
+        <span>
+          <span className="panel-title block">Your whole portfolio</span>
+          <span className="text-[13px] text-ink-3">
+            {positions.length ? `${positions.length} ${positions.length === 1 ? 'company' : 'companies'} traded, ${trades.length} ${trades.length === 1 ? 'trade' : 'trades'}` : 'All cash, no trades'} · at closing prices
+          </span>
+        </span>
+        <ChevronRight size={18} className="shrink-0 text-ink-3 transition-transform group-open:rotate-90 motion-reduce:transition-none" aria-hidden />
+      </summary>
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-rule px-5 py-4 text-sm sm:grid-cols-4">
+        <div><dt className="text-ink-3">Cash</dt><dd className="font-semibold">{money(p.cash)}</dd></div>
+        <div><dt className="text-ink-3">In shares</dt><dd className="font-semibold">{money(p.invested)}</dd></div>
+        <div><dt className="text-ink-3">Unrealised</dt><dd><Pnl cents={p.unrealized} className="font-semibold" /></dd></div>
+        <div><dt className="text-ink-3">Realised</dt><dd><Pnl cents={p.realized} className="font-semibold" /></dd></div>
+      </dl>
+      {positions.length > 0 && (
+        <ul className="border-t border-rule">
+          {positions.map((pos) => {
+            const own = trades.filter((t) => t.ticker === pos.ticker);
+            return (
+              <li key={pos.ticker} className="border-b border-rule/60 last:border-0">
+                <details className="group/pos">
+                  <summary className="grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto_1rem] items-center gap-3 px-5 py-2.5 hover:bg-night-3 [&::-webkit-details-marker]:hidden">
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ background: SECTOR_COLOR[pos.asset.sector] }} aria-hidden />
+                        <span className="font-bold">{pos.ticker}</span>
+                        <span className="truncate text-[13px] text-ink-3">{pos.asset.name}</span>
+                      </span>
+                      <span className="block text-[13px] text-ink-3">
+                        {pos.qty ? `${pos.qty} at ${money(Math.round(pos.cost / pos.qty))}, closed at ${money(pos.price)}` : `Sold out, closed at ${money(pos.price)}`}
+                      </span>
+                    </span>
+                    <span className="text-right">
+                      <span className="block font-semibold">{pos.qty ? money(pos.value) : 'None held'}</span>
+                      <Pnl cents={pos.total} className="text-[13px]" />
+                      {pos.qty > 0 && pos.cost > 0 && <span className={`ml-1 text-[12px] ${tone(pos.unrealized)}`}>{pct(changeBps(pos.value, pos.cost))}</span>}
+                    </span>
+                    <ChevronRight size={15} className="text-ink-3 transition-transform group-open/pos:rotate-90 motion-reduce:transition-none" aria-hidden />
+                  </summary>
+                  <div className="px-5 pb-3">
+                    <p className="mb-1 text-[12px] text-ink-3">
+                      Unrealised {signedMoney(pos.unrealized)} · realised {signedMoney(pos.realized)}
+                    </p>
+                    {own.length ? <TradeRows trades={own} showTicker={false} /> : <p className="text-[13px] text-ink-3">Trade details are not available on this device.</p>}
+                  </div>
+                </details>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {trades.length > 0 && (
+        <details className="group/all mx-5 mt-2 border-t border-rule pt-2">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 py-1.5 text-[13px] font-semibold text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
+            <ChevronRight size={15} className="transition-transform group-open/all:rotate-90 motion-reduce:transition-none" aria-hidden />
+            Every trade, newest first
+          </summary>
+          <TradeRows trades={trades} showTicker />
+        </details>
+      )}
+    </details>
+  );
+}
+
+/** One trader in the final standings; opens to the portfolio they ended with, at the closing prices. */
+function RosterRow({ r, you, start }: { r: PlayerResult; you: boolean; start: number }) {
+  const invested = (r.holdings ?? []).reduce((sum, h) => sum + h.qty * h.close, 0);
+  const cells = [r.rank, r.nickname, money(r.start ?? start), money(r.value), money(r.cash), money(r.holdings ? invested : r.value - r.cash), r.value - (r.start ?? start), r.bps, r.trades] as const;
+  return (
+    <li className="border-b border-rule/60 [contain-intrinsic-size:auto_44px] [content-visibility:auto]">
+      <details className="group">
+        <summary className={`grid cursor-pointer list-none grid-cols-[2.25rem_minmax(0,1fr)_auto_4.5rem_1rem] items-baseline gap-2 rounded-md px-1 py-2 hover:bg-night-2 sm:grid-cols-[2.25rem_minmax(0,1fr)_6.5rem_6rem_6rem_6rem_4.5rem_3rem_1rem] [&::-webkit-details-marker]:hidden ${you ? 'bg-saffron-deep' : ''}`}>
+          <span className={`font-display text-2xl font-extrabold ${r.rank === 1 ? 'text-saffron' : ''}`}>{cells[0]}</span>
+          <span className="truncate font-semibold">
+            {cells[1]}
+            {you && <span className="ml-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-saffron">you</span>}
+          </span>
+          <span className="text-right">{cells[3]}</span>
+          <span className="hidden text-right text-ink-2 sm:block">{cells[4]}</span>
+          <span className="hidden text-right text-ink-2 sm:block">{cells[5]}</span>
+          <span className="hidden text-right sm:block"><Pnl cents={cells[6]} /></span>
+          <span className={`text-right text-sm ${tone(r.bps)}`}>{pct(cells[7])}</span>
+          <span className="hidden text-right text-ink-2 sm:block">{cells[8]}</span>
+          <ChevronRight size={15} className="self-center text-ink-3 transition-transform group-open:rotate-90 motion-reduce:transition-none" aria-hidden />
+        </summary>
+        <div className="px-1 pb-3 pl-10 text-[13px]">
+          <p className="mb-1.5 text-ink-3">
+            Started with {cells[2]} · {money(r.cash)} cash · {cells[5]} in shares · <Pnl cents={cells[6]} /> · {r.trades} {r.trades === 1 ? 'trade' : 'trades'}
+          </p>
+          {r.holdings ? <PortfolioTable holdings={r.holdings} cash={r.cash} start={r.start ?? start} /> : <p className="text-ink-3">This room keeps portfolios private.</p>}
+        </div>
+      </details>
+    </li>
+  );
+}
+
+/** The final roster: the top of it arrives with the results, the rest on request. */
+function FinalRoster({ results, start }: { results: ResultsInfo; start: number }) {
+  const me = results.me?.participantId;
+  const of = results.top[0]?.of ?? 0;
+  const [all, setAll] = useState<PlayerResult[] | null>(null);
+  const [state, setState] = useState<'idle' | 'loading' | 'error'>('idle');
+  const load = () => {
+    setState('loading');
+    fetch(`/api/sessions/${results.sessionId}/results?limit=${of}`)
+      .then((r) => (r.ok ? (r.json() as Promise<{ results: PlayerResult[] }>) : Promise.reject(new Error(String(r.status)))))
+      .then((d) => {
+        setAll(d.results);
+        setState('idle');
+      })
+      .catch(() => setState('error'));
+  };
+  const rows = all ?? results.top;
+  return (
+    <div>
+      <h2 className="panel-title mb-3">Final standings</h2>
+      <div className="hidden grid-cols-[2.25rem_minmax(0,1fr)_6.5rem_6rem_6rem_6rem_4.5rem_3rem_1rem] gap-2 px-1 pb-1 text-[11px] uppercase tracking-[0.08em] text-ink-3 sm:grid" aria-hidden>
+        <span>#</span><span>Trader</span><span className="text-right">Final value</span><span className="text-right">Cash</span><span className="text-right">Holdings</span>
+        <span className="text-right">P/L</span><span className="text-right">Return</span><span className="text-right">Trades</span><span />
+      </div>
+      {results.top.length === 0 && <p className="rounded-lg bg-night-2 p-5 text-ink-2">Nobody traded this session. The next bell deals in everyone who is connected.</p>}
+      <ol className="flex flex-col">
+        {rows.map((r) => <RosterRow key={r.participantId} r={r} you={r.participantId === me} start={start} />)}
+      </ol>
+      {!all && of > results.top.length && (
+        <button
+          type="button"
+          onClick={load}
+          disabled={state === 'loading'}
+          className="mt-3 h-10 w-full rounded-md border border-rule text-[14px] font-semibold text-ink-2 hover:border-saffron/60 hover:text-ink disabled:opacity-50"
+        >
+          {state === 'loading' ? 'Loading every trader' : state === 'error' ? 'That did not load. Try again' : `Show all ${of} traders`}
+        </button>
+      )}
+      <p className="mt-3 text-[13px] text-ink-3">
+        Every purse valued at the same closing prices, frozen at the final bell. {results.portfolios ? 'Open a trader to see what they held.' : 'This room shows each trader only their own holdings.'} Ties go to whoever joined first.
+      </p>
+    </div>
+  );
+}
+
+
 export function Results() {
   const results = useGame((s) => s.results);
   const session = useGame((s) => s.session);
   const offset = useGame((s) => s.offset);
   const t = useNow(offset, 1000);
   if (!results) return <Splash text="The final bell has rung. Counting every purse at the same closing prices." />;
+  const room = session?.room ?? null;
+  const start = session?.startingCash ?? STARTING_CASH;
+  const winner = results.top[0];
   const podium = [results.top[1], results.top[0], results.top[2]];
   const heights = ['h-28', 'h-40', 'h-20'];
   const order = [1, 2, 0]; // reveal third, then second, then first
@@ -321,8 +562,25 @@ export function Results() {
             <Wordmark className="text-3xl" />
             <h1 className="mt-2 font-display text-[clamp(3rem,10vw,6.5rem)] font-black uppercase leading-[0.85]">The market is closed</h1>
           </div>
-          {session?.nextAt && <p className="text-ink-2">Next session opens in <span className="font-semibold text-ink">{clock(session.nextAt - t)}</span></p>}
+          {session?.nextAt ? (
+            <p className="text-ink-2">Next session opens in <span className="font-semibold text-ink">{clock(session.nextAt - t)}</span></p>
+          ) : (
+            <a href="/rooms" className="font-semibold text-ink-2 underline decoration-ink-3 underline-offset-4 hover:text-ink">Back to rooms</a>
+          )}
         </header>
+
+        {session && (
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-lg bg-night-2 px-5 py-4 text-sm sm:grid-cols-3 lg:grid-cols-6" aria-label="Competition summary">
+            <div><dt className="text-ink-3">Competition</dt><dd className="font-semibold">{room?.name ?? 'Main market'}</dd></div>
+            <div><dt className="text-ink-3">Starting capital</dt><dd className="font-semibold">{money(start)}</dd></div>
+            <div><dt className="text-ink-3">Traders</dt><dd className="font-semibold">{results.top[0]?.of ?? session.players}</dd></div>
+            <div><dt className="text-ink-3">Duration</dt><dd className="font-semibold">{Math.max(1, Math.round((session.closesAt - session.opensAt) / 60_000))} min</dd></div>
+            <div><dt className="text-ink-3">Final prices at</dt><dd className="font-semibold">{new Date(session.closesAt).toLocaleString()}</dd></div>
+            <div><dt className="text-ink-3">Winner</dt><dd className="font-semibold">{winner ? <>{winner.nickname} <span className={tone(winner.bps)}>{pct(winner.bps)}</span></> : 'Nobody'}</dd></div>
+          </dl>
+        )}
+
+        {results.restricted && <p className="rounded-lg bg-night-2 p-5 text-ink-2">This is a private room. Its standings are shown only to the traders who played in it.</p>}
 
         {results.top.length > 0 && (
           <section aria-label="Podium" className="grid grid-cols-3 items-end gap-2 sm:gap-4">
@@ -353,17 +611,18 @@ export function Results() {
         )}
 
         <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr]">
-          <section aria-label="Your result">
+          <section aria-label="Your result" className="min-w-0">
             <h2 className="panel-title mb-3">Your purse</h2>
             {results.me ? (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.6, duration: 0.6, ease }}>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.6, duration: 0.6, ease }} className="flex flex-col gap-3">
                 <ResultCard r={results.me} />
+                <FinalPortfolio />
               </motion.div>
             ) : (
-              <p className="rounded-lg bg-night-2 p-5 text-ink-2">You watched this one. You will be dealt into the next session automatically.</p>
+              <p className="rounded-lg bg-night-2 p-5 text-ink-2">You watched this one.{room ? '' : ' You will be dealt into the next session automatically.'}</p>
             )}
           </section>
-          <section aria-label="Final roster" className="flex flex-col gap-6">
+          <section aria-label="Awards" className="flex min-w-0 flex-col gap-6">
             {results.awards.length > 0 && (
               <div>
                 <h2 className="panel-title mb-3">Awards</h2>
@@ -380,23 +639,9 @@ export function Results() {
                 </ul>
               </div>
             )}
-            <div>
-              <h2 className="panel-title mb-3">Final roster</h2>
-              {results.top.length === 0 && <p className="rounded-lg bg-night-2 p-5 text-ink-2">Nobody traded this session. The next bell deals in everyone who is connected.</p>}
-              <ol className="flex flex-col">
-                {results.top.map((r) => (
-                  <li key={r.participantId} className="grid grid-cols-[2.5rem_minmax(0,1fr)_auto_4.5rem] items-baseline gap-2 border-b border-rule/60 py-2">
-                    <span className="font-display text-2xl font-extrabold">{r.rank}</span>
-                    <span className="truncate font-semibold">{r.nickname}</span>
-                    <span>{money(r.value)}</span>
-                    <span className={`text-right text-sm ${tone(r.bps)}`}>{pct(r.bps)}</span>
-                  </li>
-                ))}
-              </ol>
-              <p className="mt-3 text-[13px] text-ink-3">Every purse valued at the same closing prices. Ties go to whoever joined first.</p>
-            </div>
           </section>
         </div>
+        {!results.restricted && <section aria-label="Final standings"><FinalRoster results={results} start={start} /></section>}
       </div>
     </main>
   );

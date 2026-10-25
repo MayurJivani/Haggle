@@ -3,11 +3,18 @@ import type { Asset } from '../market/assets.js';
 import type { Category, Figure, ScheduledEvent, Scope } from '../market/events.js';
 import { sharesOf, type Report } from '../market/fundamentals.js';
 import type { MarketState } from '../market/sim.js';
-import type { EventInfo, PlayerResult, TradeInfo } from '../protocol.js';
+import type { EventInfo, PlayerResult, Results, TradeInfo } from '../protocol.js';
 import type { Fill, Position } from '../trading/portfolio.js';
 
 export interface SessionRow {
   id: string;
+  /** Room code; null for the house competition that loops by itself. */
+  code: string | null;
+  name: string | null;
+  description: string | null;
+  host_user_id: string | null;
+  visibility: 'public' | 'private';
+  awards: Results['awards'] | null;
   seed: number;
   start_seq: number | null;
   opening_prices: Record<string, number> | null;
@@ -26,7 +33,19 @@ export interface SessionConfig {
   maxPlayers: number;
   /** The purse every player of this competition starts with, in cents. */
   startingCash: number;
+  /** Custom rooms only: the bell waits for the host (opens_at is then the lobby's expiry). */
+  manualStart?: boolean;
+  /** Players may join after the bell. Missing = true, as in the house competition. */
+  lateJoin?: boolean;
+  /** Participants may inspect each other's portfolios while trading. Missing = false. */
+  peek?: boolean;
+  /** Every portfolio is shown on the results page. Missing = true. */
+  reveal?: boolean;
+  /** A private room's results are visible to people outside it. Missing = false. */
+  publicResults?: boolean;
 }
+
+const COLS = 'id, code, name, description, host_user_id, visibility, awards, seed, status, config, opens_at, closes_at, finished_at, start_seq, opening_prices';
 
 export async function upsertAssets(sql: Sql, assets: Asset[]) {
   for (const a of assets) {
@@ -39,22 +58,63 @@ export async function upsertAssets(sql: Sql, assets: Asset[]) {
   }
 }
 
-export async function liveSession(sql: Sql): Promise<SessionRow | null> {
-  const [row] = await sql<SessionRow[]>`
-    SELECT id, seed, status, config, opens_at, closes_at, finished_at, start_seq, opening_prices FROM sessions WHERE status <> 'finished'`;
+export async function liveSessions(sql: Sql): Promise<SessionRow[]> {
+  return sql<SessionRow[]>`SELECT ${sql.unsafe(COLS)} FROM sessions WHERE status <> 'finished' ORDER BY created_at`;
+}
+
+/** Any competition by room code, live or finished. */
+export async function sessionByCode(sql: Sql, code: string): Promise<SessionRow | null> {
+  const [row] = await sql<SessionRow[]>`SELECT ${sql.unsafe(COLS)} FROM sessions WHERE code = ${code}`;
   return row ?? null;
 }
 
-export async function createSession(sql: Sql, seed: number, opensAt: Date, closesAt: Date, config: SessionConfig): Promise<SessionRow> {
+export async function sessionById(sql: Sql, id: string): Promise<SessionRow | null> {
+  const [row] = await sql<SessionRow[]>`SELECT ${sql.unsafe(COLS)} FROM sessions WHERE id = ${id}`;
+  return row ?? null;
+}
+
+export interface RoomFields {
+  code: string;
+  name: string;
+  description: string | null;
+  hostUserId: string;
+  visibility: 'public' | 'private';
+}
+
+export async function createSession(sql: Sql, seed: number, opensAt: Date, closesAt: Date, config: SessionConfig, room?: RoomFields): Promise<SessionRow> {
   const [row] = await sql<SessionRow[]>`
-    INSERT INTO sessions (seed, status, config, opens_at, closes_at)
-    VALUES (${seed}, 'lobby', ${sql.json({ ...config })}, ${opensAt}, ${closesAt})
-    RETURNING id, seed, status, config, opens_at, closes_at, finished_at, start_seq, opening_prices`;
+    INSERT INTO sessions (seed, status, config, opens_at, closes_at, code, name, description, host_user_id, visibility)
+    VALUES (${seed}, 'lobby', ${sql.json({ ...config })}, ${opensAt}, ${closesAt}, ${room?.code ?? null}, ${room?.name ?? null},
+      ${room?.description ?? null}, ${room?.hostUserId ?? null}, ${room?.visibility ?? 'public'})
+    RETURNING ${sql.unsafe(COLS)}`;
   return row!;
+}
+
+/** A room whose host never rang the bell: closed with no results. */
+export async function abandonSession(sql: Sql, id: string) {
+  await sql`UPDATE sessions SET status = 'finished', finished_at = now() WHERE id = ${id} AND status = 'lobby'`;
+}
+
+export async function participantId(sql: Sql, sessionId: string, userId: string): Promise<string | null> {
+  const [row] = await sql<{ id: string }[]>`SELECT id FROM participants WHERE session_id = ${sessionId} AND user_id = ${userId}`;
+  return row?.id ?? null;
+}
+
+/** Every price at one market sequence number: a competition's close when the market has since moved on. */
+export async function pricesAt(sql: Sql, seq: number): Promise<Record<string, number>> {
+  const rows = await sql<{ ticker: string; price_cents: number }[]>`SELECT ticker, price_cents FROM market_prices WHERE seq = ${seq}`;
+  return Object.fromEntries(rows.map((r) => [r.ticker, r.price_cents]));
 }
 
 export async function setSessionTimes(sql: Sql, id: string, opensAt: Date, closesAt: Date) {
   await sql`UPDATE sessions SET opens_at = ${opensAt}, closes_at = ${closesAt} WHERE id = ${id} AND status = 'lobby'`;
+}
+
+/** The host rang the bell: the room opens now and no longer waits for a manual start. */
+export async function startNow(sql: Sql, id: string, opensAt: Date, closesAt: Date) {
+  await sql`
+    UPDATE sessions SET opens_at = ${opensAt}, closes_at = ${closesAt}, config = config || '{"manualStart": false}'::jsonb
+    WHERE id = ${id} AND status = 'lobby'`;
 }
 
 export async function setCloseTime(sql: Sql, id: string, closesAt: Date) {
@@ -146,7 +206,7 @@ export async function recordSnapshot(sql: Sql, sessionId: string, tick: number, 
   await sql`INSERT INTO leaderboard_snapshots (session_id, tick, ranking) VALUES (${sessionId}, ${tick}, ${sql.json(ranking as never)}) ON CONFLICT DO NOTHING`;
 }
 
-export async function finishSession(sql: Sql, sessionId: string, closing: Record<string, number>, results: PlayerResult[]) {
+export async function finishSession(sql: Sql, sessionId: string, closing: Record<string, number>, results: PlayerResult[], awards: Results['awards']) {
   await sql.begin(async (tx) => {
     for (const r of results) {
       await tx`
@@ -154,12 +214,18 @@ export async function finishSession(sql: Sql, sessionId: string, closing: Record
         VALUES (${sessionId}, ${r.participantId}, ${r.rank}, ${r.value}, ${r.bps}, ${tx.json(r as never)})
         ON CONFLICT DO NOTHING`;
     }
-    await tx`UPDATE sessions SET status = 'finished', finished_at = now(), closing_prices = ${tx.json(closing)} WHERE id = ${sessionId}`;
+    await tx`UPDATE sessions SET status = 'finished', finished_at = now(), closing_prices = ${tx.json(closing)}, awards = ${tx.json(awards as never)} WHERE id = ${sessionId}`;
   });
 }
 
 export async function resultFor(sql: Sql, participantId: string): Promise<PlayerResult | null> {
   const [row] = await sql<{ stats: PlayerResult }[]>`SELECT stats FROM results WHERE participant_id = ${participantId}`;
+  return row?.stats ?? null;
+}
+
+export async function resultForUser(sql: Sql, sessionId: string, userId: string): Promise<PlayerResult | null> {
+  const [row] = await sql<{ stats: PlayerResult }[]>`
+    SELECT r.stats FROM results r JOIN participants p ON p.id = r.participant_id WHERE r.session_id = ${sessionId} AND p.user_id = ${userId}`;
   return row?.stats ?? null;
 }
 
@@ -225,10 +291,11 @@ export interface StoredEvent extends ScheduledEvent {
  */
 export async function openSession(
   sql: Sql, sessionId: string, startSeq: number, openingPrices: Record<string, number>, events: ScheduledEvent[], assets: Asset[],
+  opensAt: Date, closesAt: Date,
 ): Promise<{ startSeq: number; events: StoredEvent[] }> {
   return sql.begin(async (tx) => {
     const [opened] = await tx<{ start_seq: number }[]>`
-      UPDATE sessions SET status = 'trading', start_seq = ${startSeq}, opening_prices = ${tx.json(openingPrices)}
+      UPDATE sessions SET status = 'trading', start_seq = ${startSeq}, opening_prices = ${tx.json(openingPrices)}, opens_at = ${opensAt}, closes_at = ${closesAt}
       WHERE id = ${sessionId} AND status = 'lobby' RETURNING start_seq`;
     if (opened) {
       for (const ev of events) {

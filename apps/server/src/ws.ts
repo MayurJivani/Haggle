@@ -9,6 +9,8 @@ import type { ClientMsg } from './protocol.js';
 import type { Client, Engine } from './session/engine.js';
 import { MAX_ORDER_QTY } from './trading/portfolio.js';
 
+export const ROOM_CODE = /^[A-Z2-9]{8}$/;
+
 const orderSchema = z.object({
   t: z.literal('order'),
   id: z.uuid(),
@@ -33,12 +35,17 @@ export function attachSockets(server: Server, sql: Sql, engine: Engine, allowedO
       socket.write(`HTTP/1.1 ${status}\r\nConnection: close\r\n\r\n`);
       socket.destroy();
     };
-    if (req.url?.split('?')[0] !== '/ws') return refuse('404 Not Found');
+    const url = new URL(req.url ?? '/', 'http://x');
+    if (url.pathname !== '/ws') return refuse('404 Not Found');
     if (!originAllowed(req.headers.origin, req.headers.host, allowedOrigins)) return refuse('403 Forbidden');
-    userForToken(sql, cookieFrom(req.headers.cookie, COOKIE))
-      .then((user) => {
+    // A room code is the key to a room: private rooms are reached by nothing else.
+    const code = url.searchParams.get('room');
+    if (code !== null && !ROOM_CODE.test(code)) return refuse('404 Not Found');
+    Promise.all([userForToken(sql, cookieFrom(req.headers.cookie, COOKIE)), engine.resolveRoom(code)])
+      .then(([user, room]) => {
         if (!user) return refuse('401 Unauthorized');
-        wss.handleUpgrade(req, socket, head, (ws) => onConnection(ws, user));
+        if (room === null) return refuse('404 Not Found');
+        wss.handleUpgrade(req, socket, head, (ws) => onConnection(ws, user, room));
       })
       .catch((err) => {
         logger.error({ err }, 'upgrade auth failed');
@@ -46,7 +53,7 @@ export function attachSockets(server: Server, sql: Sql, engine: Engine, allowedO
       });
   });
 
-  function onConnection(ws: WebSocket, user: { id: string; nickname: string }) {
+  function onConnection(ws: WebSocket, user: { id: string; nickname: string }, room: string) {
     let tokens = BURST;
     let last = Date.now();
     let strikes = 0;
@@ -55,6 +62,7 @@ export function attachSockets(server: Server, sql: Sql, engine: Engine, allowedO
     const client: Client = {
       userId: user.id,
       nickname: user.nickname,
+      room,
       send(data) {
         if (ws.readyState !== ws.OPEN) return;
         if (ws.bufferedAmount > SLOW_CLIENT_BYTES && data.startsWith('{"t":"tick"')) return;
