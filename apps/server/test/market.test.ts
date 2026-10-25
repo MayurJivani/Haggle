@@ -101,3 +101,22 @@ describe('market simulation', () => {
     expect(ASSETS.every((_, i) => b[i]! < a[i]!)).toBe(true);
   });
 });
+
+describe('the headline exploit', () => {
+  it('lands the whole move on the announced tick, then leaves nothing predictable to chase or fade', () => {
+    for (const id of ['earnings-beat', 'takeover-rumour', 'sector-boom', 'market-panic', 'energy-disruption']) {
+      for (const seed of [3, 5, 8]) {
+        const t = TEMPLATES.find((x) => x.id === id)!;
+        const ev = instantiate(t, ASSETS, rng(seed), 1, 20, 1, 400);
+        const without = run(seed, [], 200);
+        const withEv = run(seed, [ev], 200);
+        for (const { asset } of ev.effects) {
+          const gap = (tick: number) => Math.log(withEv[tick - 1]![asset]! / without[tick - 1]![asset]!);
+          const atHeadline = gap(ev.tick);
+          // Buying on the headline: whatever follows is the same noise as without the news.
+          for (const later of [ev.tick + 10, ev.tick + 60, ev.tick + 150]) expect(Math.abs(gap(later) - atHeadline)).toBeLessThan(0.003);
+        }
+      }
+    }
+  });
+});

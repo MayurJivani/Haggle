@@ -31,8 +31,9 @@ log return = beta * market noise + sector noise + own noise + reversion + event 
 ```
 
 - **Noise** is seeded (`mulberry32`), Gaussian, clamped to 3 sigma. Draw order is fixed per tick (market, then each sector, then each asset), so adding or removing an event never shifts which random numbers the prices draw. That is also what lets the tests compare a run with and without one event and see exactly which companies it moved.
-- **Reversion** pulls each price gently toward an anchor, so nothing random-walks off a cliff. Events move the anchor by their *persistence*: a panic keeps half its damage, an earnings beat keeps most of it.
-- **Bounds**: a quiet tick moves at most 5% (30% on the tick an event lands), and every price stays between €0.50 and 8x its opening price.
+- **Reversion** pulls each price gently toward an anchor, so nothing random-walks off a cliff.
+- **News lands in one move.** An event's whole impact hits on the tick the crier announces it, and the anchor moves with it. An earlier version drifted most of the move in over the following minute and pulled part of it back out later, so buying a good headline (or a panic dip) was a guaranteed trade. Now nothing about the price after the headline is predictable from the headline; `market.test.ts` holds that line.
+- **Bounds**: a quiet tick moves at most 5% (50% on the tick an event lands), and every price stays between €0.50 and 8x its opening price.
 - **Trading never moves prices.** Every player trades the same tape.
 
 Because prices are a pure function of (seed, assets, schedule, tick), the whole market is reproducible. Set `MARKET_SEED` for an identical demo every time.

@@ -9,7 +9,7 @@ export const SIM = {
   reversion: 0.004,
   /** Largest log move allowed on a quiet tick, and on a tick where an event lands. */
   maxTick: 0.05,
-  maxShockTick: 0.3,
+  maxShockTick: 0.5,
   /** Prices stay within [floor, base * ceiling]. */
   floorCents: 50,
   ceiling: 8,
@@ -59,7 +59,9 @@ export class MarketSim {
       const ev = this.pending.shift()!;
       fired.push(ev);
       const logs = ev.effects.map((e) => Math.log(1 + e.pct));
-      ev.effects.forEach((e, k) => (this.anchor[e.asset]! += logs[k]! * ev.persistence));
+      // The anchor takes the whole move: a price pulled back toward a half-moved anchor fades (or
+      // rebounds) predictably after the headline, and a predictable move is a free trade.
+      ev.effects.forEach((e, k) => (this.anchor[e.asset]! += logs[k]!));
       this.active.push({ ev, logs });
     }
 
@@ -72,11 +74,12 @@ export class MarketSim {
     for (const { ev, logs } of this.active) {
       const since = t - ev.tick;
       ev.effects.forEach((e, k) => {
+        // The whole move lands on the tick the crier announces it. Drifting part of it in afterwards
+        // handed everyone who bought on the headline a guaranteed, pre-announced gain.
         if (since === 0) {
-          drift[e.asset]! += logs[k]! * ev.jump;
+          drift[e.asset]! += logs[k]!;
           shocked[e.asset] = 1;
         }
-        if (since >= 0 && since < ev.duration) drift[e.asset]! += (logs[k]! * (1 - ev.jump)) / ev.duration;
       });
     }
     this.active = this.active.filter(({ ev }) => t - ev.tick < ev.duration - 1);
