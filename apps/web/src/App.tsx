@@ -60,7 +60,7 @@ function Browse({ view, setView, selected, onSelect, onSector, onHoldings, onRos
       {view === 'overview' ? (
         <div className="min-h-0 flex-1 overflow-y-auto"><Overview onSelect={onSelect} onSector={onSector} onHoldings={onHoldings} onRoster={onRoster} /></div>
       ) : view === 'stocks' ? (
-        phone ? <div className="min-h-0 flex-1 overflow-y-auto"><Screener onSelect={onSelect} /></div> : <StockList selected={selected} onSelect={onSelect} />
+        <StockList selected={selected} onSelect={onSelect} />
       ) : (
         <SectorList onSector={onSector} />
       )}
