@@ -12,6 +12,11 @@ export const metrics = {
   orderLatencyMs: { sum: 0, count: 0 },
   bytesOut: 0,
   dbErrors: 0,
+  /** Market ticks played but not yet durable, and when the last checkpoint landed. */
+  checkpointLagTicks: 0,
+  lastCheckpointAt: 0,
+  checkpointFailures: 0,
+  eventsPublished: 0,
 };
 
 /** Prometheus text exposition, written by hand: a dozen gauges do not need a client library. */
@@ -27,6 +32,10 @@ export function renderMetrics(): string {
     `hg_order_latency_ms_count ${m.orderLatencyMs.count}`,
     `hg_bytes_out_total ${m.bytesOut}`,
     `hg_db_errors_total ${m.dbErrors}`,
+    `hg_checkpoint_lag_ticks ${m.checkpointLagTicks}`,
+    `hg_checkpoint_age_seconds ${m.lastCheckpointAt ? ((Date.now() - m.lastCheckpointAt) / 1000).toFixed(1) : -1}`,
+    `hg_checkpoint_failures_total ${m.checkpointFailures}`,
+    `hg_events_published_total ${m.eventsPublished}`,
     `hg_event_loop_delay_p99_ms ${(loop.percentile(99) / 1e6).toFixed(2)}`,
     `hg_heap_used_bytes ${process.memoryUsage().heapUsed}`,
     '',

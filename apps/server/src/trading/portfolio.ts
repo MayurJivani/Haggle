@@ -1,7 +1,11 @@
 // Pure accounting in integer cents. The engine runs these against its in-memory mirror to decide
 // an order, and the database constraints enforce the same rules a second time.
 
-/** Every player's purse at the bell, in cents (EUR 10,000). The web client imports this too. */
+/**
+ * The purse a new competition deals every player, in cents (EUR 10,000). This is the one place it is
+ * set: each competition records the amount it was created with (SessionConfig.startingCash), and every
+ * return is computed against that recorded amount, so changing this never rewrites an old result.
+ */
 export const STARTING_CASH = 1_000_000;
 export const MAX_ORDER_QTY = 100_000;
 
@@ -72,8 +76,8 @@ export function valueOf(book: Book, priceOf: (ticker: string) => number): number
   return v;
 }
 
-/** Basis points of return against the starting cash: 1234 = +12.34%. */
-export const returnBps = (value: number) => Math.round(((value - STARTING_CASH) * 10_000) / STARTING_CASH);
+/** Basis points of return against the competition's starting cash: 1234 = +12.34%. */
+export const returnBps = (value: number, start: number) => Math.round(((value - start) * 10_000) / start);
 
 /** Realised plus unrealised profit per ticker, for best/worst holding stats. */
 export function pnlByTicker(book: Book, priceOf: (ticker: string) => number): { ticker: string; pnl: number }[] {

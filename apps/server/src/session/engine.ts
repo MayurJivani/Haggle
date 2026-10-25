@@ -2,10 +2,11 @@ import { randomInt } from 'node:crypto';
 import type { Logger } from 'pino';
 import type { Sql } from '../db/db.js';
 import { ASSETS } from '../market/assets.js';
-import { schedule, type ScheduledEvent } from '../market/events.js';
-import { MarketSim } from '../market/sim.js';
+import { schedule } from '../market/events.js';
+import { seedReports, summarize, type Report, type Summary } from '../market/fundamentals.js';
+import { initialState, MarketSim, type SimEvent } from '../market/sim.js';
 import { metrics } from '../metrics.js';
-import type { AssetInfo, Board, BookInfo, ClientMsg, EventInfo, PlayerResult, Results, ServerMsg, SessionInfo } from '../protocol.js';
+import type { AssetInfo, Board, BookInfo, ClientMsg, EventInfo, PlayerResult, Regime, Results, ServerMsg, SessionInfo } from '../protocol.js';
 import { apply, pnlByTicker, quote, returnBps, STARTING_CASH, valueOf, type Book } from '../trading/portfolio.js';
 import { compareRank, phaseAt, sharpe, type Phase } from './ranking.js';
 import * as store from './store.js';
@@ -17,7 +18,10 @@ export interface EngineConfig {
   resultsSeconds: number;
   tickMs: number;
   maxPlayers: number;
+  /** Fixed seed for each competition's news (reproducible demos); unset = random per competition. */
   seed?: number;
+  /** Seed for the market's first-ever state. Only used once, when no checkpoint exists. */
+  marketSeed?: number;
 }
 
 export interface Client {
@@ -42,7 +46,7 @@ interface Player {
 }
 
 interface Window {
-  endTick: number;
+  endSeq: number;
   start: Map<string, number>;
 }
 
@@ -51,13 +55,13 @@ interface Live {
   cfg: store.SessionConfig;
   opensAt: number;
   closesAt: number;
-  sim: MarketSim;
-  history: Int32Array[];
-  fired: EventInfo[];
+  /** Market seq at the opening bell; null while the competition is still a lobby. */
+  startSeq: number | null;
+  /** Prices at the opening bell (the market's current prices while in the lobby). */
+  open: number[];
   players: Map<string, Player>;
   phase: Phase;
   windows: Window[];
-  flushedTick: number;
   finishing: boolean;
   finishedAt: number | null;
   results: { top: PlayerResult[]; awards: Results['awards']; all: Map<string, PlayerResult> } | null;
@@ -65,21 +69,27 @@ interface Live {
 
 const eur = (cents: number) => new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }).format(cents / 100);
 const SAMPLE_EVERY = 10;
-const FLUSH_EVERY = 10;
+/** Ticks between checkpoints. A crash loses nothing: the ticks since are replayed identically. */
+const CHECKPOINT_EVERY = 10;
 const SNAPSHOT_EVERY = 30;
 const BOARD_MS = 2000;
 const BOARD_SIZE = 10;
-const HISTORY_POINTS = 150;
+const NEWS_KEPT = 40;
+/** Initial market seed when none is configured: the first market is the same on every install. */
+const GENESIS_SEED = 0x4a6716;
+const LOCK_KEY = 4373;
 
-const ASSET_INFO: AssetInfo[] = ASSETS.map(({ ticker, name, sector, description, base, vol, beta, sens }) => ({
-  ticker, name, sector, description, base, vol, beta, sens: sens as Record<string, number>,
-}));
+const TICKERS = ASSETS.map((a) => a.ticker);
 const TICKER_INDEX = new Map(ASSETS.map((a, i) => [a.ticker, i]));
+const risk = (vol: number): AssetInfo['risk'] => (vol < 0.0026 ? 'low' : vol < 0.004 ? 'medium' : 'high');
 
-const eventInfo = (ev: ScheduledEvent): EventInfo => ({
-  seq: ev.seq, tick: ev.tick, template: ev.template, scope: ev.scope, target: ev.target, headline: ev.headline,
-  description: ev.description, severity: ev.severity, duration: ev.duration,
-  effects: ev.effects.map((e) => ({ ticker: ASSETS[e.asset]!.ticker, bps: Math.round(e.pct * 10_000) })),
+const toSim = (ev: store.StoredEvent): SimEvent => ({
+  id: ev.id, seq: ev.seq, duration: ev.duration, jump: ev.jump, persistence: ev.persistence, severity: ev.severity, effects: ev.effects,
+});
+
+const eventInfo = (ev: store.StoredEvent): EventInfo => ({
+  id: ev.id, sessionId: ev.sessionId, seq: ev.seq, at: ev.publishedAt ?? 0, category: ev.category, scope: ev.scope, target: ev.target,
+  related: ev.related, headline: ev.headline, body: ev.body, figures: ev.figures, severity: ev.severity,
 });
 
 const bookInfo = (p: Player): BookInfo => ({
@@ -89,10 +99,28 @@ const bookInfo = (p: Player): BookInfo => ({
   trades: p.trades,
 });
 
+type Buffer = Omit<store.Checkpoint, 'prevSeq' | 'state'>;
+const emptyBuffer = (): Buffer => ({ prices: [], published: [], cancelled: [], reports: [] });
+
 export class Engine {
   live: Live | null = null;
+  market!: MarketSim;
+  /** Set when another process turned out to own the market: this one stops advancing it. */
+  fenced = false;
   private readonly clients = new Map<string, Set<Client>>();
   private readonly joining = new Map<string, Promise<Player | null>>();
+  private readonly reports = new Map<string, Report[]>();
+  private summaries: Summary[] = [];
+  private readonly events = new Map<number, store.StoredEvent>();
+  private news: EventInfo[] = [];
+  private regime: Regime = 'calm';
+  private lastAt = Date.now();
+  private savedSeq = 0;
+  private buffer = emptyBuffer();
+  private failed: store.Checkpoint | null = null;
+  private saving: Promise<boolean> = Promise.resolve(true);
+  private marketJson: string | null = null;
+  private lock: Awaited<ReturnType<Sql['reserve']>> | null = null;
   private timer: NodeJS.Timeout | null = null;
   private busy = false;
   private lastBoard = 0;
@@ -105,28 +133,92 @@ export class Engine {
   ) {}
 
   async start() {
-    await store.upsertAssets(this.sql, ASSETS);
-    const row = await store.liveSession(this.sql);
-    if (row) await this.resume(row);
-    else await this.newSession();
+    // One writer per market. A second process on the same database refuses to start rather than
+    // advancing its own copy of the prices.
+    this.lock = await this.sql.reserve();
+    const [locked] = await this.lock<{ ok: boolean }[]>`SELECT pg_try_advisory_lock(${LOCK_KEY}) AS ok`;
+    if (!locked?.ok) {
+      this.lock.release();
+      this.lock = null;
+      throw new Error('another Haggle process owns this market');
+    }
+    try {
+      await this.boot();
+    } catch (err) {
+      await this.stop();
+      throw err;
+    }
     this.timer = setInterval(() => void this.pump(), 100);
   }
 
-  stop() {
+  private async boot() {
+    await store.upsertAssets(this.sql, ASSETS);
+    let stored = await store.loadReports(this.sql);
+    const have = new Set(stored.map((r) => r.ticker));
+    const missing = ASSETS.filter((a) => !have.has(a.ticker));
+    if (missing.length) {
+      await store.insertReports(this.sql, missing.flatMap(seedReports));
+      stored = await store.loadReports(this.sql);
+    }
+    for (const r of stored) {
+      if (!this.reports.has(r.ticker)) this.reports.set(r.ticker, []);
+      this.reports.get(r.ticker)!.push(r);
+    }
+    this.summaries = ASSETS.map((a) => summarize(a, this.reports.get(a.ticker) ?? []));
+    const fairs = this.summaries.map((s, i) => s.fair?.cents ?? ASSETS[i]!.base);
+
+    let state = await store.latestCheckpoint(this.sql);
+    if (!state) {
+      // The first market ever: seeded once, from the last pre-persistence closing prices when there are any.
+      await store.initMarket(this.sql, initialState(ASSETS, this.cfg.marketSeed ?? GENESIS_SEED, fairs, await store.legacyClosingPrices(this.sql)));
+      state = (await store.latestCheckpoint(this.sql))!;
+      this.log.info({ seq: state.seq }, 'market initialised');
+    }
+    this.market = new MarketSim(ASSETS, state, fairs);
+    this.savedSeq = state.seq;
+    // A changed valuation model or a new report moves the fair value without jumping any price.
+    this.summaries.forEach((s, i) => s.fair && this.market.setFair(i, s.fair.cents));
+    this.regime = this.market.regime();
+    for (const ev of await store.liveEvents(this.sql, state.seq, ASSETS)) this.track(ev);
+    this.news = await store.recentNews(this.sql, NEWS_KEPT);
+
+    const row = await store.liveSession(this.sql);
+    if (row) await this.resume(row);
+    else await this.newSession();
+  }
+
+  /** Stops the clock, waits for the last checkpoint and releases the market. */
+  async stop() {
     if (this.timer) clearInterval(this.timer);
+    this.timer = null;
+    await this.saving;
+    if (this.lock) {
+      await this.lock`SELECT pg_advisory_unlock(${LOCK_KEY})`.catch(() => {});
+      this.lock.release();
+      this.lock = null;
+    }
+  }
+
+  private track(ev: store.StoredEvent) {
+    this.events.set(ev.id, ev);
+    this.market.load([toSim(ev)]);
   }
 
   // ---------------------------------------------------------------- clock
 
+  private localTick(live: Live) {
+    return live.startSeq === null ? 0 : this.market.seq - live.startSeq;
+  }
+
   private async pump() {
-    if (this.busy || !this.live) return;
+    if (this.busy || !this.live || this.fenced) return;
     this.busy = true;
     try {
       const live = this.live;
       const now = Date.now();
       // An empty room keeps waiting rather than running a market nobody trades: an always-on box
-      // would otherwise write a full session of price history every cycle for no one.
-      if (live.row.status === 'lobby' && live.sim.tick === 0 && now >= live.opensAt && live.players.size === 0) {
+      // would otherwise move the shared market for no one.
+      if (live.startSeq === null && now >= live.opensAt && live.players.size === 0) {
         live.opensAt = now + this.cfg.lobbySeconds * 1000;
         live.closesAt = live.opensAt + live.cfg.totalTicks * live.cfg.tickMs;
         await store.setSessionTimes(this.sql, live.row.id, new Date(live.opensAt), new Date(live.closesAt));
@@ -134,14 +226,11 @@ export class Engine {
       }
       const phase = phaseAt(now, live.opensAt, live.closesAt, live.cfg.closingSeconds, live.finishedAt !== null);
 
-      if (phase === 'trading' || phase === 'closing') {
-        if (live.row.status === 'lobby') {
-          live.row.status = 'trading';
-          await store.markTrading(this.sql, live.row.id);
-        }
-        const target = Math.min(live.cfg.totalTicks, Math.floor((now - live.opensAt) / live.cfg.tickMs));
-        metrics.tickLagMs = Math.max(0, now - live.opensAt - live.sim.tick * live.cfg.tickMs - live.cfg.tickMs);
-        while (live.sim.tick < target) this.stepOnce(live, true);
+      if ((phase === 'trading' || phase === 'closing') && now >= this.retryAt) {
+        if (live.startSeq === null) await this.open(live);
+        const target = live.startSeq! + Math.min(live.cfg.totalTicks, Math.floor((now - live.opensAt) / live.cfg.tickMs));
+        metrics.tickLagMs = Math.max(0, now - live.opensAt - this.localTick(live) * live.cfg.tickMs - live.cfg.tickMs);
+        while (this.market.seq < target) this.stepOnce(live, true);
       }
       if (phase !== live.phase) {
         live.phase = phase;
@@ -162,26 +251,59 @@ export class Engine {
     }
   }
 
+  /**
+   * The opening bell. The competition's news is decided from its seed and stored, unpublished, in the
+   * same transaction that opens it; the market starts from wherever the last competition left it.
+   */
+  private async open(live: Live) {
+    const tickMs = live.cfg.tickMs;
+    const events = schedule(Number(live.row.seed), {
+      assets: ASSETS,
+      reports: (i) => this.reports.get(ASSETS[i]!.ticker) ?? [],
+      ticksPerSecond: 1000 / tickMs,
+      maxTick: live.cfg.totalTicks,
+      at: (tick) => live.opensAt + tick * tickMs,
+    }, live.cfg.totalTicks);
+    const opening = Object.fromEntries(ASSETS.map((a, i) => [a.ticker, this.market.prices[i]!]));
+    const opened = await store.openSession(this.sql, live.row.id, this.market.seq, opening, events, ASSETS);
+    live.startSeq = opened.startSeq;
+    live.row.status = 'trading';
+    live.open = Array.from(this.market.prices);
+    for (const ev of opened.events) if (ev.status === 'scheduled') this.track(ev);
+    this.log.info({ session: live.row.id, startSeq: live.startSeq, events: opened.events.length }, 'bell rung');
+  }
+
+  private atOf(live: Live, seq: number) {
+    return live.opensAt + (seq - live.startSeq!) * live.cfg.tickMs;
+  }
+
   private stepOnce(live: Live, broadcast: boolean) {
-    const next = live.sim.tick + 1;
-    for (const ev of live.sim.events) {
-      if (ev.tick === next && ev.severity >= 2) live.windows.push({ endTick: ev.tick + ev.duration, start: this.values(live) });
+    const next = this.market.seq + 1;
+    for (const ev of this.events.values()) {
+      if (ev.seq === next && ev.status === 'scheduled' && ev.severity >= 2) live.windows.push({ endSeq: ev.seq + ev.duration, start: this.values(live) });
     }
 
-    const fired = live.sim.step();
-    const tick = live.sim.tick;
-    live.sim.prices.forEach((p, i) => (live.history[i]![tick] = p));
+    const fired = this.market.step();
+    const seq = this.market.seq;
+    const at = this.atOf(live, seq);
+    this.lastAt = at;
+    const tick = this.localTick(live);
+    ASSETS.forEach((a, i) => this.buffer.prices.push({ ticker: a.ticker, seq, at, sessionId: live.row.id, price: this.market.prices[i]! }));
     metrics.ticks++;
-    if (broadcast) this.broadcast({ t: 'tick', k: tick, p: Array.from(live.sim.prices) });
+    if (broadcast) this.broadcast({ t: 'tick', k: seq, at, p: Array.from(this.market.prices) });
 
-    for (const ev of fired) {
-      const info = eventInfo(ev);
-      live.fired.push(info);
-      if (broadcast) this.broadcast({ t: 'event', ev: info });
-      this.background(store.recordEvent(this.sql, live.row.id, ev, ASSETS), 'record event');
+    for (const sim of fired) {
+      const ev = this.events.get(sim.id);
+      if (ev) this.publish(ev, at, broadcast);
+    }
+    const regime = this.market.regime();
+    if (regime !== this.regime) {
+      this.regime = regime;
+      if (broadcast) this.broadcast({ t: 'regime', regime });
     }
 
-    const closing = live.windows.filter((w) => w.endTick <= tick || tick === live.cfg.totalTicks);
+    const end = tick === live.cfg.totalTicks;
+    const closing = live.windows.filter((w) => w.endSeq <= seq || end);
     if (closing.length) {
       const now = this.values(live);
       for (const w of closing) for (const [id, v0] of w.start) {
@@ -191,24 +313,77 @@ export class Engine {
       live.windows = live.windows.filter((w) => !closing.includes(w));
     }
 
-    if (tick % SAMPLE_EVERY === 0 || tick === live.cfg.totalTicks) {
-      for (const p of live.players.values()) p.samples.push(this.valueOf(live, p));
+    if (tick % SAMPLE_EVERY === 0 || end) {
+      for (const p of live.players.values()) p.samples.push(this.valueOf(p));
     }
-    if (tick % FLUSH_EVERY === 0 || tick === live.cfg.totalTicks) this.flushPrices(live);
+    if (tick % CHECKPOINT_EVERY === 0 || end) void this.checkpoint();
     if (tick % SNAPSHOT_EVERY === 0) {
       this.background(store.recordSnapshot(this.sql, live.row.id, tick, this.ranking(live).slice(0, 50).map(this.row)), 'snapshot');
     }
   }
 
-  private flushPrices(live: Live) {
-    const from = live.flushedTick + 1;
-    const to = live.sim.tick;
-    if (to < from) return;
-    live.flushedTick = to;
-    this.background(
-      store.recordPrices(this.sql, live.row.id, ASSETS.map((a) => a.ticker), from, live.history, to),
-      'record prices',
-    );
+  /** A story lands: it goes out to everyone at once, and an earnings story files its report. */
+  private publish(ev: store.StoredEvent, at: number, broadcast: boolean) {
+    ev.status = 'published';
+    ev.publishedAt = at;
+    this.buffer.published.push({ id: ev.id, at });
+    metrics.eventsPublished++;
+    const info = eventInfo(ev);
+    this.news = [info, ...this.news.filter((n) => n.id !== ev.id)].slice(0, NEWS_KEPT);
+    if (ev.report) {
+      const i = TICKER_INDEX.get(ev.report.ticker);
+      const list = this.reports.get(ev.report.ticker) ?? [];
+      const dup = list.some((r) => r.fiscalYear === ev.report!.fiscalYear && r.fiscalQuarter === ev.report!.fiscalQuarter);
+      if (i !== undefined && !dup) {
+        list.push(ev.report);
+        this.reports.set(ev.report.ticker, list);
+        this.summaries[i] = summarize(ASSETS[i]!, list);
+        const fair = this.summaries[i]!.fair;
+        if (fair) this.market.setFair(i, fair.cents);
+        this.buffer.reports.push({ report: ev.report, eventId: ev.id });
+        this.marketJson = null;
+        if (broadcast) this.broadcast({ t: 'fund', ticker: ev.report.ticker, fund: this.summaries[i]! });
+      }
+    }
+    if (broadcast) this.broadcast({ t: 'event', ev: info });
+  }
+
+  /**
+   * Makes everything since the last checkpoint durable in one transaction. Checkpoints run strictly
+   * one after another; a failed one is folded into the next, so nothing is dropped while the
+   * database is away. Resolves true once the market is durable up to now.
+   */
+  private checkpoint(): Promise<boolean> {
+    const c: store.Checkpoint = { prevSeq: 0, state: this.market.state(), ...this.buffer };
+    this.buffer = emptyBuffer();
+    this.saving = this.saving.then(async () => {
+      const f = this.failed;
+      const job: store.Checkpoint = f
+        ? { ...c, prices: [...f.prices, ...c.prices], published: [...f.published, ...c.published], cancelled: [...f.cancelled, ...c.cancelled], reports: [...f.reports, ...c.reports] }
+        : c;
+      job.prevSeq = this.savedSeq;
+      if (job.state.seq === this.savedSeq && !f && !c.prices.length && !c.cancelled.length) return true;
+      try {
+        await store.writeCheckpoint(this.sql, job);
+        this.failed = null;
+        this.savedSeq = job.state.seq;
+        metrics.lastCheckpointAt = Date.now();
+        metrics.checkpointLagTicks = this.market.seq - this.savedSeq;
+        return true;
+      } catch (err) {
+        this.failed = job;
+        metrics.checkpointFailures++;
+        metrics.checkpointLagTicks = this.market.seq - this.savedSeq;
+        if (err instanceof store.CheckpointConflict) {
+          // Another writer moved the market on: stop rather than fork it.
+          this.fenced = true;
+          if (this.timer) clearInterval(this.timer);
+          this.log.fatal({ err }, 'market checkpoint conflict, engine fenced');
+        } else this.log.error({ err }, 'market checkpoint failed, will retry with the next one');
+        return false;
+      }
+    });
+    return this.saving;
   }
 
   private background(p: Promise<unknown>, what: string) {
@@ -222,22 +397,20 @@ export class Engine {
 
   private build(row: store.SessionRow): Live {
     // An early close shortens the session; the stored close time is the authority on its length.
-    const cfg = { ...row.config, totalTicks: Math.min(row.config.totalTicks, Math.floor((row.closes_at.getTime() - row.opens_at.getTime()) / row.config.tickMs)) };
-    const sim = new MarketSim(Number(row.seed), ASSETS, schedule(Number(row.seed), ASSETS, cfg.totalTicks, cfg.tickMs));
-    const history = ASSETS.map((a) => {
-      const h = new Int32Array(cfg.totalTicks + 1);
-      h[0] = a.base;
-      return h;
-    });
+    const cfg = {
+      ...row.config,
+      startingCash: row.config.startingCash ?? STARTING_CASH,
+      totalTicks: Math.min(row.config.totalTicks, Math.floor((row.closes_at.getTime() - row.opens_at.getTime()) / row.config.tickMs)),
+    };
     return {
-      row, cfg, sim, history,
+      row, cfg,
       opensAt: row.opens_at.getTime(),
       closesAt: row.closes_at.getTime(),
-      fired: [],
+      startSeq: row.start_seq === null ? null : Number(row.start_seq),
+      open: row.opening_prices ? ASSETS.map((a, i) => row.opening_prices![a.ticker] ?? this.market.prices[i]!) : Array.from(this.market.prices),
       players: new Map(),
       phase: 'lobby',
       windows: [],
-      flushedTick: -1,
       finishing: false,
       finishedAt: null,
       results: null,
@@ -254,10 +427,10 @@ export class Engine {
       closingSeconds: this.cfg.closingSeconds,
       resultsSeconds: this.cfg.resultsSeconds,
       maxPlayers: this.cfg.maxPlayers,
+      startingCash: STARTING_CASH,
     };
     const row = await store.createSession(this.sql, this.cfg.seed ?? randomInt(2 ** 31), opensAt, closesAt, cfg);
     this.live = this.build(row);
-    this.flushPrices(this.live);
     metrics.players = 0;
     this.log.info({ session: row.id, opensAt }, 'session created');
     // Everyone still connected from the last session is dealt into the new one.
@@ -270,7 +443,7 @@ export class Engine {
     for (const set of this.clients.values()) for (const c of set) this.sendHello(c);
   }
 
-  /** Restart recovery: rebuild the tape by replaying the seed, and the books from the database. */
+  /** Restart recovery: books from the database, the market from its checkpoint, replayed to now. */
   private async resume(row: store.SessionRow) {
     const live = this.build(row);
     for (const p of await store.loadParticipants(this.sql, row.id)) {
@@ -282,28 +455,39 @@ export class Engine {
     // shortcut: value samples and event windows before the restart are lost, so the two secondary
     // awards only cover the time since; persist samples if restarts mid-session become routine.
     const now = Date.now();
-    // Only a session that actually opened has a tape to rebuild. A lobby whose bell time passed
-    // while the server was down never traded: it stays at tick 0 and the pump restarts its countdown.
-    if (row.status === 'trading' && now > live.opensAt) {
-      const target = Math.min(live.cfg.totalTicks, Math.floor((now - live.opensAt) / live.cfg.tickMs));
-      while (live.sim.tick < target) this.stepOnce(live, false);
+    // Only a competition that actually opened has ticks to catch up. A lobby whose bell time passed
+    // while the server was down never traded: the pump restarts its countdown.
+    if (live.startSeq !== null && now > live.opensAt) {
+      const target = live.startSeq + Math.min(live.cfg.totalTicks, Math.floor((now - live.opensAt) / live.cfg.tickMs));
+      while (this.market.seq < target) this.stepOnce(live, false);
     }
     live.phase = phaseAt(now, live.opensAt, live.closesAt, live.cfg.closingSeconds, false);
     this.live = live;
     metrics.players = live.players.size;
-    this.log.info({ session: row.id, tick: live.sim.tick, players: live.players.size }, 'session resumed');
+    this.log.info({ session: row.id, seq: this.market.seq, players: live.players.size }, 'session resumed');
   }
 
   private async finish(live: Live) {
     if (!live.finishing) {
       live.finishing = true;
-      while (live.sim.tick < live.cfg.totalTicks) this.stepOnce(live, true);
+      while (this.localTick(live) < live.cfg.totalTicks) this.stepOnce(live, true);
       // Orders that passed the phase check before the bell still settle; nothing new gets in.
       await Promise.allSettled([...live.players.values()].map((p) => p.chain));
+      // Stories that never landed (an early close) are cancelled, never carried into the next competition.
+      for (const ev of this.market.cancelPending()) {
+        const stored = this.events.get(ev.id);
+        if (stored) stored.status = 'cancelled';
+        this.buffer.cancelled.push(ev.id);
+      }
+      for (const [id, ev] of this.events) if (ev.status !== 'scheduled') this.events.delete(id);
     }
+    // The closing prices are durable before anyone is ranked on them.
+    if (!(await this.checkpoint())) throw new Error('closing checkpoint not durable yet');
+
     const ranking = this.ranking(live);
     const finishedAt = Date.now();
-    const closing = Object.fromEntries(ASSETS.map((a, i) => [a.ticker, live.sim.prices[i]!]));
+    const start = live.cfg.startingCash;
+    const closing = Object.fromEntries(ASSETS.map((a, i) => [a.ticker, this.market.prices[i]!]));
 
     const scored = ranking.map((r) => ({ ...r, sharpe: r.p.trades > 0 ? sharpe(r.p.samples) : null }));
     const awards: Results['awards'] = [];
@@ -312,32 +496,31 @@ export class Engine {
     };
     const winner = scored[0];
     if (winner) award('winner', 'Top of the market', winner, `finished with ${eur(winner.value)}`);
-    const steady = scored.filter((s) => s.sharpe !== null && s.value > STARTING_CASH).sort((a, b) => b.sharpe! - a.sharpe!)[0];
+    const steady = scored.filter((s) => s.sharpe !== null && s.value > start).sort((a, b) => b.sharpe! - a.sharpe!)[0];
     award('steady', 'Steadiest hand', steady, 'best risk-adjusted return');
     const eventer = scored.filter((s) => s.p.eventGain > 0).sort((a, b) => b.p.eventGain - a.p.eventGain || compareRank(a, b))[0];
     if (eventer) award('crier', 'Read the crier', eventer, `+${eur(eventer.p.eventGain)} during major events`);
 
     const all = new Map<string, PlayerResult>();
-    const priceOf = (t: string) => live.sim.prices[TICKER_INDEX.get(t)!]!;
+    const priceOf = (t: string) => this.market.prices[TICKER_INDEX.get(t)!]!;
     for (const s of scored) {
       const pnl = pnlByTicker(s.p.book, priceOf).sort((a, b) => b.pnl - a.pnl);
       const best = pnl[0] && pnl[0].pnl > 0 ? pnl[0] : null;
       const worst = pnl.at(-1) && pnl.at(-1)!.pnl < 0 ? pnl.at(-1)! : null;
       all.set(s.p.userId, {
-        participantId: s.p.id, nickname: s.p.nickname, rank: s.rank, of: scored.length, value: s.value, bps: returnBps(s.value),
+        participantId: s.p.id, nickname: s.p.nickname, rank: s.rank, of: scored.length, value: s.value, bps: returnBps(s.value, start), start,
         cash: s.p.book.cash, trades: s.p.trades, best, worst,
         awards: awards.filter((a) => a.nickname === s.p.nickname).map((a) => a.id),
         sessionId: live.row.id, finishedAt,
       });
     }
 
-    this.flushPrices(live);
-    await store.recordSnapshot(this.sql, live.row.id, live.sim.tick, ranking.map(this.row));
+    await store.recordSnapshot(this.sql, live.row.id, this.localTick(live), ranking.map(this.row));
     await store.finishSession(this.sql, live.row.id, closing, [...all.values()]);
     live.results = { top: [...all.values()].slice(0, BOARD_SIZE), awards, all };
     live.finishedAt = finishedAt;
     live.phase = 'results';
-    this.log.info({ session: live.row.id, players: all.size, winner: winner?.p.nickname }, 'session finished');
+    this.log.info({ session: live.row.id, players: all.size, winner: winner?.p.nickname, seq: this.market.seq }, 'session finished');
     this.broadcastPhase();
     for (const set of this.clients.values()) for (const c of set) this.send(c, { t: 'results', results: this.resultsFor(c.userId)! });
   }
@@ -359,12 +542,13 @@ export class Engine {
   async closeNow(): Promise<boolean> {
     const live = this.live;
     const now = Date.now();
-    if (!live || live.row.status !== 'trading' || live.finishing || now >= live.closesAt) return false;
-    // The tape never runs past the bell: the session ends at the last tick already played.
-    live.cfg.totalTicks = live.sim.tick;
-    live.closesAt = Math.min(now, live.opensAt + live.sim.tick * live.cfg.tickMs);
+    if (!live || live.startSeq === null || live.finishing || now >= live.closesAt) return false;
+    // The tape never runs past the bell: the competition ends at the last tick already played.
+    const tick = this.localTick(live);
+    live.cfg.totalTicks = tick;
+    live.closesAt = Math.min(now, live.opensAt + tick * live.cfg.tickMs);
     await store.setCloseTime(this.sql, live.row.id, new Date(live.closesAt));
-    this.log.info({ session: live.row.id, tick: live.sim.tick }, 'market closed early by admin');
+    this.log.info({ session: live.row.id, tick }, 'market closed early by admin');
     return true;
   }
 
@@ -384,9 +568,30 @@ export class Engine {
       serverNow: Date.now(),
       session: this.sessionInfo(),
       board: { top: b?.top ?? [], count: b?.count ?? 0 },
-      events: (live?.fired ?? []).slice(-6).reverse(),
+      events: this.news.filter((e) => e.sessionId === live?.row.id).slice(0, 6),
       results: live?.results ? { top: live.results.top, awards: live.results.awards } : null,
     };
+  }
+
+  // ---------------------------------------------------------------- research data
+
+  /** The listing with every company's fundamentals summary, serialised once per change. */
+  marketJsonBody(): string {
+    this.marketJson ??= JSON.stringify({
+      assets: ASSETS.map((a, i) => ({
+        ticker: a.ticker, name: a.name, exchange: a.exchange, sector: a.sector, industry: a.industry, description: a.description,
+        beta: a.beta, risk: risk(a.vol), fund: this.summaries[i]!,
+      })),
+    });
+    return this.marketJson;
+  }
+
+  companyReports(ticker: string): Report[] | null {
+    return TICKER_INDEX.has(ticker) ? (this.reports.get(ticker) ?? []) : null;
+  }
+
+  participantOf(userId: string): string | null {
+    return this.live?.players.get(userId)?.id ?? null;
   }
 
   // ---------------------------------------------------------------- players and orders
@@ -401,12 +606,13 @@ export class Engine {
     const pending = this.joining.get(userId);
     if (pending) return pending;
     const job = (async () => {
-      const { id, joinedAt } = await store.joinSession(this.sql, live.row.id, userId);
+      const start = live.cfg.startingCash;
+      const { id, joinedAt } = await store.joinSession(this.sql, live.row.id, userId, start);
       const p: Player = {
-        id, userId, nickname, joinedAt: joinedAt.getTime(), book: { cash: STARTING_CASH, positions: new Map() },
+        id, userId, nickname, joinedAt: joinedAt.getTime(), book: { cash: start, positions: new Map() },
         trades: 0, chain: Promise.resolve(), samples: [], eventGain: 0,
       };
-      if (live.sim.tick > 0) p.samples.push(STARTING_CASH);
+      if (this.localTick(live) > 0) p.samples.push(start);
       live.players.set(userId, p);
       metrics.players = live.players.size;
       return p;
@@ -441,6 +647,7 @@ export class Engine {
     return job;
   }
 
+  /** Fills against the market's current price. Nothing here feeds back into the market: orders never move prices. */
   private async execute(p: Player, msg: ClientMsg) {
     const started = performance.now();
     const live = this.live!;
@@ -451,15 +658,16 @@ export class Engine {
     };
 
     const phase = phaseAt(Date.now(), live.opensAt, live.closesAt, live.cfg.closingSeconds, live.finishedAt !== null);
-    if (live.finishing || (phase !== 'trading' && phase !== 'closing') || !live.players.has(p.userId)) return reject('market_closed');
+    if (live.finishing || live.startSeq === null || (phase !== 'trading' && phase !== 'closing') || !live.players.has(p.userId)) return reject('market_closed');
     const idx = TICKER_INDEX.get(msg.ticker);
     if (idx === undefined) return reject('unknown_asset');
 
-    const fill = quote(p.book, msg.side, msg.ticker, msg.qty, live.sim.prices[idx]!);
+    const fill = quote(p.book, msg.side, msg.ticker, msg.qty, this.market.prices[idx]!);
     if (!fill.ok) return reject(fill.reason);
 
+    let tradeId: number;
     try {
-      await store.recordFill(this.sql, p.id, msg.id, fill, live.sim.tick);
+      tradeId = await store.recordFill(this.sql, p.id, msg.id, fill, this.localTick(live));
     } catch (err) {
       if (err instanceof store.DuplicateOrder) {
         metrics.orders.duplicate++;
@@ -474,22 +682,25 @@ export class Engine {
     metrics.orders.filled++;
     metrics.orderLatencyMs.sum += performance.now() - started;
     metrics.orderLatencyMs.count++;
-    reply({ t: 'fill', id: msg.id, side: fill.side, ticker: fill.ticker, qty: fill.qty, price: fill.price, total: fill.total, realized: fill.realized, book: bookInfo(p) });
+    reply({
+      t: 'fill', id: msg.id, side: fill.side, ticker: fill.ticker, qty: fill.qty, price: fill.price, total: fill.total, realized: fill.realized, book: bookInfo(p),
+      trade: { id: tradeId, at: Date.now(), ticker: fill.ticker, side: fill.side, qty: fill.qty, price: fill.price, total: fill.total, realized: fill.realized },
+    });
   }
 
   // ---------------------------------------------------------------- views
 
-  private valueOf(live: Live, p: Player) {
-    return valueOf(p.book, (t) => live.sim.prices[TICKER_INDEX.get(t)!]!);
+  private valueOf(p: Player) {
+    return valueOf(p.book, (t) => this.market.prices[TICKER_INDEX.get(t)!]!);
   }
 
   private values(live: Live): Map<string, number> {
-    return new Map([...live.players.values()].map((p) => [p.userId, this.valueOf(live, p)]));
+    return new Map([...live.players.values()].map((p) => [p.userId, this.valueOf(p)]));
   }
 
   private ranking(live: Live) {
     return [...live.players.values()]
-      .map((p) => ({ p, nickname: p.nickname, joinedAt: p.joinedAt, value: this.valueOf(live, p) }))
+      .map((p) => ({ p, nickname: p.nickname, joinedAt: p.joinedAt, value: this.valueOf(p) }))
       .sort(compareRank)
       .map((r, i) => ({ ...r, rank: i + 1 }));
   }
@@ -498,10 +709,10 @@ export class Engine {
     let top: string | null = null;
     let most = 0;
     for (const [ticker, pos] of r.p.book.positions) {
-      const v = pos.qty * this.live!.sim.prices[TICKER_INDEX.get(ticker)!]!;
+      const v = pos.qty * this.market.prices[TICKER_INDEX.get(ticker)!]!;
       if (v > most) [top, most] = [ticker, v];
     }
-    return { rank: r.rank, nickname: r.nickname, value: r.value, bps: returnBps(r.value), trades: r.p.trades, top };
+    return { rank: r.rank, nickname: r.nickname, value: r.value, bps: returnBps(r.value, this.live!.cfg.startingCash), trades: r.p.trades, top };
   };
 
   sessionInfo(): SessionInfo | null {
@@ -514,11 +725,12 @@ export class Engine {
       closingAt: live.closesAt - live.cfg.closingSeconds * 1000,
       closesAt: live.closesAt,
       nextAt: live.finishedAt === null ? null : live.finishedAt + live.cfg.resultsSeconds * 1000,
-      tick: live.sim.tick,
+      tick: this.localTick(live),
       totalTicks: live.cfg.totalTicks,
       tickMs: live.cfg.tickMs,
       players: live.players.size,
       maxPlayers: live.cfg.maxPlayers,
+      startingCash: live.cfg.startingCash,
     };
   }
 
@@ -540,23 +752,19 @@ export class Engine {
   private sendHello(c: Client) {
     const live = this.live;
     const p = live?.players.get(c.userId);
-    const tick = live?.sim.tick ?? 0;
-    const step = Math.max(1, Math.ceil((tick + 1) / HISTORY_POINTS));
-    const prices = (live?.history ?? []).map((h) => {
-      const out: number[] = [];
-      for (let t = 0; t < tick; t += step) out.push(h[t]!);
-      out.push(h[tick]!);
-      return out;
-    });
     const b = live ? this.board(live) : null;
     this.send(c, {
       t: 'hello',
       serverNow: Date.now(),
       you: { userId: c.userId, nickname: c.nickname },
       session: this.sessionInfo(),
-      assets: ASSET_INFO,
-      history: { step, prices },
-      events: live?.fired ?? [],
+      tickers: TICKERS,
+      seq: this.market.seq,
+      at: this.lastAt,
+      prices: Array.from(this.market.prices),
+      open: live?.open ?? Array.from(this.market.prices),
+      regime: this.regime,
+      events: this.news,
       book: p ? bookInfo(p) : null,
       spectating: p ? null : live && (live.finishedAt !== null || live.finishing) ? 'closed' : 'full',
       board: { top: b?.top ?? [], count: b?.count ?? 0, me: b?.me.get(c.userId) ?? null },
@@ -586,7 +794,7 @@ export class Engine {
 
   private broadcastPhase() {
     const session = this.sessionInfo();
-    if (session) this.broadcast({ t: 'phase', serverNow: Date.now(), session });
+    if (session) this.broadcast({ t: 'phase', serverNow: Date.now(), session, open: this.live!.open });
   }
 
   private broadcastBoard() {

@@ -65,8 +65,13 @@ describe('portfolio accounting', () => {
     const prices: Record<string, number> = { A: 5_500, B: 3_000 };
     const v = valueOf(b, (t) => prices[t]!);
     expect(v).toBe(STARTING_CASH - 70_000 + 55_000 + 15_000);
-    expect(returnBps(v)).toBe(0);
-    expect(returnBps(STARTING_CASH + STARTING_CASH * 0.1234)).toBe(1_234);
+    expect(returnBps(v, STARTING_CASH)).toBe(0);
+    expect(returnBps(STARTING_CASH + STARTING_CASH * 0.1234, STARTING_CASH)).toBe(1_234);
+    // The brief's worked example: EUR 12,500 from EUR 10,000 is +EUR 2,500, a 25% return.
+    expect(STARTING_CASH).toBe(1_000_000);
+    expect(returnBps(1_250_000, STARTING_CASH)).toBe(2_500);
+    // An older competition keeps the purse it was played with.
+    expect(returnBps(125_000, 100_000)).toBe(2_500);
     expect(pnlByTicker(b, (t) => prices[t]!)).toEqual([{ ticker: 'A', pnl: 5_000 }, { ticker: 'B', pnl: -5_000 }]);
   });
 });

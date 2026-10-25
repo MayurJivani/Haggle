@@ -91,13 +91,51 @@ function Countdown({ session, offset }: { session: SessionInfo; offset: number }
   );
 }
 
-function Stat({ label, children, className = '' }: { label: string; children: React.ReactNode; className?: string }) {
+function Stat({ label, children, className = '', title }: { label: string; children: React.ReactNode; className?: string; title?: string }) {
   return (
-    <div className={`flex flex-col items-end whitespace-nowrap leading-tight ${className}`}>
+    <div title={title} className={`flex flex-col items-end whitespace-nowrap leading-tight ${className}`}>
       <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">{label}</span>
       <span className="text-[15px] font-semibold">{children}</span>
     </div>
   );
+}
+
+/** The whole market at a glance: the equal-weighted change of every company since the bell. */
+function MarketIndex() {
+  const prices = useGame((s) => s.prices);
+  const open = useGame((s) => s.open);
+  const regime = useGame((s) => s.regime);
+  const bps = useMemo(() => {
+    let sum = 0;
+    let n = 0;
+    prices.forEach((p, i) => {
+      if (open[i]) {
+        sum += changeBps(p, open[i]!);
+        n++;
+      }
+    });
+    return n ? Math.round(sum / n) : 0;
+  }, [prices, open]);
+  return (
+    <Stat label="Market" className="hidden md:flex" title={`Equal-weighted change of every company since the bell. Volatility: ${regime}.`}>
+      <Change bps={bps} />
+      <span className={`ml-1.5 text-[12px] font-medium ${regime === 'calm' ? 'text-ink-3' : regime === 'nervous' ? 'text-saffron' : 'text-down'}`}>{regime}</span>
+    </Stat>
+  );
+}
+
+/**
+ * Whether the prices on screen are current. While the market is open a tick lands every second; a
+ * gap of a few seconds means the numbers are stale, and the player is told so instead of trading on them.
+ */
+export function useStale() {
+  const phase = useGame((s) => s.session?.phase);
+  const tickMs = useGame((s) => s.session?.tickMs ?? 1000);
+  const receivedAt = useGame((s) => s.receivedAt);
+  const conn = useGame((s) => s.conn);
+  const t = useNow(0, 1000);
+  const open = phase === 'trading' || phase === 'closing';
+  return conn !== 'open' || (open && receivedAt > 0 && t - receivedAt > tickMs * 4);
 }
 
 export function TopBar() {
@@ -105,15 +143,23 @@ export function TopBar() {
   const offset = useGame((s) => s.offset);
   const board = useGame((s) => s.board);
   const book = useGame((s) => s.book);
+  const at = useGame((s) => s.at);
+  const stale = useStale();
   const p = usePortfolio();
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-rule bg-night-2 px-3 sm:px-4">
       <div className="flex min-w-0 items-center gap-3">
-        <Wordmark className="hidden whitespace-nowrap text-[26px] sm:inline" />
-        <SimulatedChip />
+        <Wordmark className="hidden whitespace-nowrap text-[26px] lg:inline" />
+        <span className="flex flex-col items-start gap-0.5">
+          <SimulatedChip />
+          <span className={`hidden text-[11px] sm:block ${stale ? 'font-semibold text-saffron' : 'text-ink-3'}`} role="status">
+            {stale ? 'Prices delayed' : at ? `Updated ${new Date(at).toLocaleTimeString()}` : ''}
+          </span>
+        </span>
       </div>
       {session && <Countdown session={session} offset={offset} />}
       <div className="flex items-center gap-4 sm:gap-6">
+        <MarketIndex />
         {book ? (
           <>
             <Stat label="Value">
@@ -142,38 +188,6 @@ export function TopBar() {
   );
 }
 
-export function Tape({ onPick }: { onPick: (ticker: string) => void }) {
-  const assets = useGame((s) => s.assets);
-  const prices = useGame((s) => s.prices);
-  const items = useMemo(() => assets.map((a, i) => ({ a, i })), [assets]);
-  const row = (copy: number) =>
-    items.map(({ a, i }) => {
-      const bps = changeBps(prices[i] ?? a.base, a.base);
-      return (
-        <button
-          key={`${copy}-${a.ticker}`}
-          type="button"
-          tabIndex={copy ? -1 : 0}
-          aria-hidden={copy ? true : undefined}
-          onClick={() => onPick(a.ticker)}
-          className="flex shrink-0 items-center gap-1.5 px-3 text-[13px] hover:bg-night-3"
-        >
-          <span className="font-semibold">{a.ticker}</span>
-          <span className="text-ink-2">{money(prices[i] ?? a.base)}</span>
-          <Change bps={bps} />
-        </button>
-      );
-    });
-  return (
-    <nav aria-label="Ticker tape" className="h-8 shrink-0 overflow-hidden border-b border-rule bg-night">
-      <div className="tape flex h-full w-max items-stretch motion-reduce:w-full motion-reduce:overflow-x-auto" style={{ ['--tape-duration' as string]: `${assets.length * 2.4}s` }}>
-        {row(0)}
-        <span className="contents motion-reduce:hidden">{row(1)}</span>
-      </div>
-    </nav>
-  );
-}
-
 export function ConnectionPill() {
   const conn = useGame((s) => s.conn);
   const has = useGame((s) => s.session !== null);
@@ -198,7 +212,7 @@ export function ConnectionPill() {
 export function Toasts() {
   const toasts = useGame((s) => s.toasts);
   return (
-    <div className="pointer-events-none fixed bottom-20 right-3 z-40 flex flex-col items-end gap-2 lg:bottom-4" aria-live="polite">
+    <div className="pointer-events-none fixed bottom-4 right-3 z-40 hidden flex-col items-end gap-2 md:flex" aria-live="polite">
       <AnimatePresence>
         {toasts.map((t) => (
           <motion.div

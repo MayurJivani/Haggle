@@ -24,6 +24,13 @@ colors:
   automotive: "#f0679a"
   consumer: "#5ec3f0"
   industrials: "#d9b98a"
+  ecommerce: "#e48cf0"
+  telecom: "#4f9df0"
+  aerospace: "#9fb3c8"
+  materials: "#a3a35c"
+  food: "#f2a6a0"
+  media: "#6fe0e8"
+  logistics: "#c79a6e"
 typography:
   display:
     fontFamily: "Big Shoulders Display Variable, Archivo Variable, sans-serif"
@@ -57,6 +64,17 @@ typography:
     fontSize: "14px"
     fontWeight: 400
     lineHeight: 1.375
+    fontFeature: "'tnum' 1, 'lnum' 1"
+  body-small:
+    fontFamily: "Archivo Variable, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 400
+    lineHeight: 1.375
+    fontFeature: "'tnum' 1, 'lnum' 1"
+  caption:
+    fontFamily: "Archivo Variable, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "12px"
+    fontWeight: 400
     fontFeature: "'tnum' 1, 'lnum' 1"
   label:
     fontFamily: "Archivo Variable, ui-sans-serif, system-ui, sans-serif"
@@ -152,15 +170,15 @@ Two cut shapes carry the world: the awning (diagonal stripes in a sector colour 
 
 **Key Characteristics:**
 - Violet-leaning night ground stepped in four tones, warm ink in three.
-- Saffron as the single action and market-wide colour; eight awning colours reserved for sectors.
+- Saffron as the single action and market-wide colour; fifteen awning colours reserved for sectors.
 - Direction always carried by sign and arrow as well as green or red.
 - Archivo with tabular figures for every number; Big Shoulders Display for what is called out.
 - Hairline-ruled, gapless panels; shadows only on things that float over the floor.
-- The crier banner: an awning-striped band that sweeps in, then docks into the feed.
+- The news strip: one reserved line under the top bar where the crier calls breaking news. It is part of the layout, never laid over it.
 
 ## Colors
 
-A dark, warm-on-violet palette: three inks on four nights, one lamp colour, two market colours, and eight awnings.
+A dark, warm-on-violet palette: three inks on four nights, one lamp colour, two market colours, and fifteen awnings.
 
 ### Primary
 - **Lamp Saffron** (saffron): the Buy button, the primary call to action on every screen, focus rings, text selection, the caret, the countdown progress bar, the rank 1 numeral, award chips, the wordmark's second word, and any crier call that covers the whole market. Its rarity on the trading floor is what makes it read as "press here".
@@ -171,7 +189,7 @@ A dark, warm-on-violet palette: three inks on four nights, one lamp colour, two 
 - **Falling Red** (down) and **Falling Red Ground** (down-deep): price down, loss, negative effect chips, the last-calls band, the closing countdown, severity 3, and the Sell button fill.
 
 ### Tertiary: the awnings
-Eight sector colours, one per row of stalls: **Indigo** (technology), **Violet** (semiconductors), **Teal** (healthcare), **Lime** (finance), **Copper** (energy), **Rose** (automotive), **Sky** (consumer), **Sand** (industrials). They appear as awning stripe bands on sector headers, as the sector name colour, as small swatches beside tickers, and as the stripe of a crier banner for a sector or company event. They are mapped in one place (`SECTOR_COLOR` in `lib/format.ts`) and passed down as the `--stripe` custom property.
+Fifteen sector colours, one per row of stalls: **Indigo** (technology), **Violet** (semiconductors), **Teal** (healthcare), **Lime** (finance), **Copper** (energy), **Rose** (automotive), **Sky** (consumer), **Sand** (industrials), **Orchid** (e-commerce), **Cobalt** (telecom), **Steel** (aerospace and defence), **Olive** (materials), **Blush** (food and beverage), **Aqua** (media), **Umber** (logistics). Fifteen hues on one night ground cannot all be far apart, so an awning never appears without its sector's name or a ticker beside it; the colour is a second cue, not the only one. They appear as awning stripe bands on sector headers, as the sector name colour, as small swatches beside tickers, and as the stripe of a crier banner for a sector or company event. They are mapped in one place (`SECTOR_COLOR` in `lib/format.ts`) and passed down as the `--stripe` custom property.
 
 ### Neutral
 - **Night** (night): the page ground, inputs, the ticker tape, insets inside a panel.
@@ -184,7 +202,7 @@ Eight sector colours, one per row of stalls: **Indigo** (technology), **Violet**
 - **Ink Faint** (ink-3): labels, company names next to tickers, metadata, placeholders.
 
 ### Named Rules
-**The Awnings Mark Sectors Rule.** The eight awning colours identify a sector and nothing else. They never fill a button, signal direction, or decorate an unrelated surface.
+**The Awnings Mark Sectors Rule.** The fifteen awning colours identify a sector and nothing else. They never fill a button, signal direction, or decorate an unrelated surface.
 
 **The One Lamp Rule.** Saffron means "act here" or "the whole market is called". On the trading floor it appears on the primary action, the player's own position, and focus, and nowhere decorative.
 
@@ -213,11 +231,11 @@ Eight sector colours, one per row of stalls: **Indigo** (technology), **Violet**
 
 ## Layout
 
-A full-height terminal (`100dvh`, no page scroll) stacked as top bar (56px), ticker tape (32px), an optional status band (32px last-calls, or the spectating line), then the floor. Panels scroll internally.
+A full-height terminal (`100dvh`, no page scroll) stacked as top bar (56px), news strip (36px, always reserved), an optional status band (32px last-calls, or the spectating line), then the floor. Panels scroll internally. Nothing sticky or floating may sit over the order ticket, a chart's labels, news or holdings: the strip and the order dock are rows of the layout, and toasts are desktop-only and pointer-transparent.
 
-- **Desktop, 1280px and up:** three columns, stalls 300px, centre flexible, roster and feed 340px. The centre splits company chart and a 300px order ticket side by side from 1024px, with holdings underneath.
-- **Tablet, 768 to 1279px:** two columns, stalls 280px and centre; roster and feed render once beneath the trade area in a two-column split.
-- **Phone, below 768px:** one column with a four-tab bar pinned at the bottom (Stalls, Trade, Purse, Roster, 56px tall, safe-area padded). Below 640px the top bar drops the wordmark and cash, keeping the Simulated chip, countdown, value and rank; below 420px the phase label drops too. Trade fits one screen: the company description hides, the chart is 220px, and the ticket follows with Buy in view. Purse opens with a summary (purse value, profit, cash, in shares) because the bar has no room for cash, then a two-line holding list (ticker over shares at average cost, value over P/L). Stall rows are at least 44px tall.
+- **Desktop, 1280px and up:** three columns: browse 320px (Stocks or Sectors), centre flexible, roster and news 340px. The centre puts company research (header, then Chart, Financials and News tabs) beside a 300px order ticket from 1024px, with the portfolio underneath. A sector opens in the centre with a way back to the company.
+- **Tablet, 768 to 1279px:** two columns, browse 300px and centre; roster and news render once beneath the portfolio in a two-column split.
+- **Phone, below 768px:** one column with a five-tab bar pinned at the bottom (Market, Stock, Purse, News, Roster, 56px tall, safe-area padded; News carries an unread count). The top bar keeps the Simulated chip, countdown, value and rank. Stock is research that scrolls above an order dock that is part of the column, not laid over it; on screens shorter than 720px the dock starts as one row (price, position, Trade) and opens to the full ticket. The viewport resizes with the software keyboard (`interactive-widget=resizes-content`), so the dock rises with it instead of hiding under it. Rows are at least 44px tall; inputs are 16px on phones so browsers do not zoom.
 
 Rhythm is tight and consistent: 16px panel gutters, 8px vertical row padding, 12px stacks inside forms, 4px hairs between related controls. Ceremony screens loosen to 32 to 40px stacks and a max width of 36rem (join) or 64rem (results).
 
@@ -267,21 +285,26 @@ Solid, bold, and few.
 - **Error:** helper text below turns red with `role="alert"`.
 
 ### Order ticket
-Four blocks, nothing repeated from the company panel: the Buy/Sell toggle; a Shares label with a saffron Max link on the same line over a 44px stepper; one line with cost (or proceeds) and cash after; the Buy or Sell button. Beneath it a single status line shows the problem when the order cannot go (no cash, market closed, offline) and otherwise the player's position and its P/L. No preset quantity chips, no market-price row (the tag shows it).
+The Buy/Sell toggle; price, available cash and how many shares that buys (or how many are held); a Shares label with +10, +100 and a saffron Max (whole shares the cash covers) over a 44px stepper; one line with the estimated cost (or proceeds) and cash after; the Buy or Sell button, which reads Sending order and stays disabled until the server answers. Beneath it one status line: the confirmed fill with its execution price, the server's refusal (the quantity is kept so the player can adjust), the problem that stops the order, or the position and its P/L. The phone dock is the same ticket with the price folded into the toggle row.
 
 ### Navigation
 - **Top bar:** night-2, wordmark (Big Shoulders 900, "Haggle" with the doubled "gg" in saffron), Simulated chip, centred countdown with a 3px progress bar, right-aligned stats (label over 15px semibold value).
-- **Ticker tape:** a 32px night strip scrolling linearly, pausing on hover, static and horizontally scrollable under reduced motion.
-- **Phone tab bar:** four equal 56px cells, icon over uppercase 11px label, saffron when current, ink-3 otherwise.
+- **Top bar stats:** the market index (equal-weighted change since the bell, with the volatility regime: calm, nervous or stressed), value, cash and rank. Under the Simulated chip, the time of the last price, or Prices delayed in saffron when ticks stop arriving.
+- **Phone tab bar:** five equal 56px cells, icon over uppercase 11px label, saffron when current, ink-3 otherwise.
 
 ### Stall list (signature)
-Sector sections each open with a sticky awning band and a sector-coloured display title with its average change. Rows are a two-column grid: bold ticker and faint name left, price and fixed-width change right. Hover night-3, selected night-4. A price change flashes the figure green or red for 0.9s; a crier-called stall pulses its sector colour three times.
+Search, a show filter (All, Favourites, My holdings, Recent), a sector select and a sort (sector, change, price, P/E, earnings growth, price against fair value, either direction). Sorted by sector, sections open with a sticky awning band and a sector-coloured display title with its average change; any other sort is one flat list with a sector swatch on each row. Rows: a favourite star, then ticker (with the holding badge) over the faint name, price over its simulated-price P/E, and a fixed-width change since the bell. Hover night-3, selected night-4. A price change flashes the figure green or red for 0.9s. The Sectors view lists every sector with its average change, median P/E and story count; a sector page shows what the sector is exposed to in plain words, its companies' relative performance as a centred bar, and its news.
 
 ### Price tag (signature)
 The selected company's price in the tag shape, nudging 5px up or down on change with the expo ease.
 
-### Crier banner (signature)
-When an event fires, a night-3 band topped with an awning stripe in the event's colour (sector or company awning, saffron for market-wide) wipes in left to right over 0.6s, carries severity pips, a display headline, a description and effect chips, runs a 2px stripe-coloured timer down over 7s, then flies into the first slot of the feed (0.55s, ease 0.65 0 0.35 1) on screens 768px and wider. A close button dismisses it at any size. On phones the band is two lines (headline and three chips; no pips or description) and clears after 4.5s, since it covers the top of whatever tab is open. Feed items show only time, severity, headline and three chips; the description lives in the banner and the item's tooltip.
+### News strip (signature)
+The crier's place in the layout, replacing both the floating banner (which sat over the order ticket) and the ticker tape. A 36px night row under the top bar, its left edge an awning in the story's colour (sector or company awning, saffron for the economy). Breaking news wipes in left to right over 0.55s (clip-path, expo ease), labelled Breaking in saffron with the headline in display caps, a dismiss button and a 2px stripe timer running down over 9s; it then settles to Latest with the headline in body type. Long headlines truncate on one line and the strip opens the news view, where the whole story is. Reduced motion drops the wipe.
+
+Stories never carry a price impact: the strip and feed report what happened (category, time, severity, headline, briefing, figures, companies named) and leave the trade to the player. Feed items expand in place for the briefing and figures; the feed filters by Economy, Sectors, Companies and My holdings.
+
+### Research
+The company header is ticker, name, sector awning, industry, exchange and risk over the price tag, with the player's position in the description line. Under it, three tabs: Chart (ranges the stored history can fill, pan and pinch, crosshair tooltip with time, price, change in range and any story at that moment, saffron dots for stories, ink-3 squares for opening bells, breaks across closed-market gaps, a Back to live pill when the player has panned into the past), Financials (valuation figures, the model fair value with its reasoning spelled out and a not-advice line, quarterly and annual tables with right-aligned tabular figures) and News. Every model-derived number says it is simulated.
 
 ### Roster
 Ranked rows with a display numeral (saffron for first, ink for second and third, ink-3 after), nickname, biggest holding, value and change. The player's row sits on saffron-deep; if they are outside the top list, a pinned saffron-deep row with a 30% saffron outline follows.

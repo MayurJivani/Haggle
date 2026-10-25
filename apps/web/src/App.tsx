@@ -1,19 +1,20 @@
 import { MotionConfig } from 'motion/react';
-import { BarChart3, LineChart, Store, Wallet } from 'lucide-react';
+import { ArrowLeft, BarChart3, LineChart, Newspaper, Store, Wallet } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Bell, Join, Lobby, Results, ShareCard, Splash } from './components/ceremony';
 import { Host } from './components/host';
-import { ConnectionPill, Toasts, TopBar, Tape, useMedia, useNow } from './components/chrome';
-import { CompanyPanel, Holdings, OrderPanel, StallList } from './components/floor';
-import { Crier, Feed, Roster } from './components/side';
+import { ConnectionPill, Toasts, TopBar, useMedia, useNow } from './components/chrome';
+import { CompanyPanel, Holdings, OrderPanel, SectorList, SectorPanel, StockList } from './components/floor';
+import { Feed, NewsStrip, Roster } from './components/side';
 import { clock } from './lib/format';
 import { game, useGame, type SessionInfo } from './lib/game';
 
-type Tab = 'market' | 'trade' | 'portfolio' | 'board';
+type Tab = 'market' | 'stock' | 'portfolio' | 'news' | 'board';
 const TABS: { id: Tab; label: string; Icon: typeof Store }[] = [
-  { id: 'market', label: 'Stalls', Icon: Store },
-  { id: 'trade', label: 'Trade', Icon: LineChart },
+  { id: 'market', label: 'Market', Icon: Store },
+  { id: 'stock', label: 'Stock', Icon: LineChart },
   { id: 'portfolio', label: 'Purse', Icon: Wallet },
+  { id: 'news', label: 'News', Icon: Newspaper },
   { id: 'board', label: 'Roster', Icon: BarChart3 },
 ];
 
@@ -30,79 +31,154 @@ function LastCalls() {
   );
 }
 
+/** Stocks or sectors: the two ways into the listing. */
+function Browse({ view, setView, selected, onSelect, onSector }: {
+  view: 'stocks' | 'sectors'; setView: (v: 'stocks' | 'sectors') => void; selected: string; onSelect: (t: string) => void; onSector: (s: string) => void;
+}) {
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <div role="tablist" aria-label="Browse" className="grid shrink-0 grid-cols-2 border-b border-rule">
+        {(['stocks', 'sectors'] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            role="tab"
+            aria-selected={view === v}
+            onClick={() => setView(v)}
+            className={`h-10 font-display text-[15px] font-bold uppercase tracking-[0.06em] ${view === v ? 'bg-night-3 text-ink' : 'text-ink-3 hover:text-ink'}`}
+          >
+            {v}
+          </button>
+        ))}
+      </div>
+      {view === 'stocks' ? <StockList selected={selected} onSelect={onSelect} /> : <SectorList onSector={onSector} />}
+    </div>
+  );
+}
+
 function Terminal() {
   const assets = useGame((s) => s.assets);
   const spectating = useGame((s) => s.spectating);
+  const unread = useGame((s) => s.unread);
   const [ticker, setTicker] = useState<string | null>(null);
+  const [sector, setSector] = useState<string | null>(null);
+  const [browse, setBrowse] = useState<'stocks' | 'sectors'>('stocks');
   const [tab, setTab] = useState<Tab>('market');
+  const phone = useMedia('(max-width: 767px)');
+  const wide = useMedia('(min-width: 1280px)');
   const selected = ticker ?? assets[0]?.ticker ?? '';
   const pick = useCallback((t: string) => {
     setTicker(t);
-    setTab('trade');
+    setSector(null);
+    setTab('stock');
   }, []);
+  const openNews = () => {
+    setTab('news');
+    document.getElementById('news')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
 
-  // Roster and news render once: under the trade area on tablets, in their own column otherwise.
-  const tablet = useMedia('(min-width: 768px) and (max-width: 1279px)');
-  const show = (t: Tab) => (tab === t ? 'flex' : 'hidden');
+  const browseProps = { view: browse, setView: setBrowse, selected, onSelect: pick, onSector: setSector };
+
+  if (phone) {
+    return (
+      <div className="flex h-dvh flex-col overflow-hidden">
+        <TopBar />
+        <NewsStrip onOpen={openNews} />
+        <LastCalls />
+        {spectating === 'full' && (
+          <p className="shrink-0 bg-saffron-deep px-4 py-1.5 text-center text-[13px] text-saffron" role="status">
+            This competition is full, so you are watching. You will be dealt into the next one.
+          </p>
+        )}
+        <main className="flex min-h-0 flex-1 flex-col">
+          {tab === 'market' && (sector ? (
+            <div className="flex min-h-0 flex-1 flex-col">
+              <button type="button" onClick={() => setSector(null)} className="flex h-10 shrink-0 items-center gap-1.5 border-b border-rule px-3 text-[13px] font-semibold text-ink-2">
+                <ArrowLeft size={16} aria-hidden /> All sectors
+              </button>
+              <SectorPanel sector={sector} onSelect={pick} />
+            </div>
+          ) : <Browse {...browseProps} />)}
+          {tab === 'stock' && selected && (
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 overflow-y-auto"><CompanyPanel ticker={selected} onSelect={pick} /></div>
+              {/* The order dock is part of the page, not laid over it: nothing it does can cover the research above. */}
+              <div className="shrink-0 border-t border-rule bg-night-2"><OrderPanel ticker={selected} dock /></div>
+            </div>
+          )}
+          {tab === 'portfolio' && <div className="min-h-0 flex-1 overflow-y-auto"><Holdings onSelect={pick} /></div>}
+          {tab === 'news' && <Feed onSelect={pick} track />}
+          {tab === 'board' && <div className="min-h-0 flex-1 overflow-y-auto"><Roster limit={10} /></div>}
+        </main>
+        <nav aria-label="Sections" className="grid shrink-0 grid-cols-5 border-t border-rule bg-night-2 pb-[env(safe-area-inset-bottom)]">
+          {TABS.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              aria-current={tab === id ? 'page' : undefined}
+              className={`relative flex h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] ${tab === id ? 'text-saffron' : 'text-ink-3'}`}
+            >
+              <Icon size={19} strokeWidth={1.9} aria-hidden />
+              {label}
+              {id === 'news' && unread > 0 && tab !== 'news' && (
+                <span className="absolute right-[calc(50%-1.4rem)] top-1.5 min-w-4 rounded-full bg-saffron px-1 text-[10px] leading-4 text-night" aria-label={`${unread} new`}>
+                  {unread > 9 ? '9+' : unread}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+        <Bell />
+      </div>
+    );
+  }
+
+  const side = (
+    <>
+      <Roster />
+      <div id="news" className="flex min-h-[24rem] flex-col border-t border-rule"><Feed onSelect={pick} /></div>
+    </>
+  );
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
       <TopBar />
-      <Tape onPick={pick} />
+      <NewsStrip onOpen={openNews} />
       <LastCalls />
       {spectating === 'full' && (
         <p className="shrink-0 bg-saffron-deep px-4 py-1.5 text-center text-[13px] text-saffron" role="status">
-          This session is full, so you are watching. You will be dealt into the next one.
+          This competition is full, so you are watching. You will be dealt into the next one.
         </p>
       )}
-      <div className="relative min-h-0 flex-1">
-        <Crier onSelect={pick} />
-        <div className="grid h-full min-h-0 grid-cols-1 md:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)_340px]">
-          <aside aria-label="Stalls" className={`${show('market')} min-h-0 flex-col border-rule bg-night-2 md:flex md:border-r`}>
-            <StallList selected={selected} onSelect={pick} />
-          </aside>
-
-          <main className={`${tab === 'trade' || tab === 'portfolio' ? 'flex' : 'hidden'} min-h-0 flex-col overflow-y-auto md:flex`}>
-            <div className={`${show('trade')} flex-col md:flex lg:min-h-[420px] lg:flex-1 lg:flex-row`}>
-              <div className="flex min-w-0 flex-1 flex-col md:min-h-[380px]">{selected && <CompanyPanel ticker={selected} />}</div>
+      <div className="grid min-h-0 flex-1 grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)_340px]">
+        <aside aria-label="Stocks and sectors" className="flex min-h-0 flex-col border-r border-rule bg-night-2">
+          <Browse {...browseProps} />
+        </aside>
+        <main className="flex min-h-0 flex-col overflow-y-auto">
+          {sector ? (
+            <>
+              <button type="button" onClick={() => setSector(null)} className="flex h-9 shrink-0 items-center gap-1.5 border-b border-rule px-4 text-[13px] font-semibold text-ink-2 hover:text-ink">
+                <ArrowLeft size={15} aria-hidden /> Back to {selected}
+              </button>
+              <SectorPanel sector={sector} onSelect={pick} />
+            </>
+          ) : (
+            <div className="flex shrink-0 flex-col lg:min-h-[560px] lg:flex-[1_0_auto] lg:flex-row">
+              <div className="flex min-h-[440px] min-w-0 flex-1 flex-col">{selected && <CompanyPanel ticker={selected} onSelect={pick} />}</div>
               <div className="border-rule lg:w-[300px] lg:shrink-0 lg:border-l">{selected && <OrderPanel ticker={selected} />}</div>
             </div>
-            <div className={`${show('portfolio')} flex-col border-rule md:flex md:border-t`}>
-              <Holdings onSelect={pick} />
-            </div>
-            {tablet && (
-              <div className="grid grid-cols-2 border-t border-rule">
-                <Roster />
-                <div className="border-l border-rule">
-                  <Feed onSelect={pick} />
-                </div>
-              </div>
-            )}
-          </main>
-
-          {!tablet && (
-            <aside aria-label="Roster and news" className={`${show('board')} min-h-0 flex-col overflow-y-auto border-rule bg-night-2 md:hidden xl:flex xl:border-l`}>
-              <Roster />
-              <div className="border-t border-rule">
-                <Feed onSelect={pick} />
-              </div>
-            </aside>
           )}
-        </div>
+          <div className="border-t border-rule">
+            <Holdings onSelect={pick} />
+          </div>
+          {!wide && <div className="grid grid-cols-2 border-t border-rule [&>*:last-child]:border-l [&>*:last-child]:border-t-0 [&>*:last-child]:border-rule">{side}</div>}
+        </main>
+        {wide && (
+          <aside aria-label="Roster and news" className="flex min-h-0 flex-col overflow-y-auto border-l border-rule bg-night-2">
+            {side}
+          </aside>
+        )}
       </div>
-      <nav aria-label="Sections" className="grid shrink-0 grid-cols-4 border-t border-rule bg-night-2 pb-[env(safe-area-inset-bottom)] md:hidden">
-        {TABS.map(({ id, label, Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setTab(id)}
-            aria-current={tab === id ? 'page' : undefined}
-            className={`flex h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] ${tab === id ? 'text-saffron' : 'text-ink-3'}`}
-          >
-            <Icon size={19} strokeWidth={1.9} aria-hidden />
-            {label}
-          </button>
-        ))}
-      </nav>
       <Bell />
     </div>
   );

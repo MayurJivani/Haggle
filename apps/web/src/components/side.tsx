@@ -1,29 +1,28 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useRef } from 'react';
-import { clock, money, ordinal, pct, SECTOR_COLOR, tone } from '../lib/format';
-import { X } from 'lucide-react';
+import { ChevronRight, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { money, ordinal, pct, SECTOR_COLOR, tone, when } from '../lib/format';
 import { game, useGame, type EventInfo } from '../lib/game';
-import { useMedia } from './chrome';
+import { usePortfolio } from '../lib/portfolio';
 
 const spring = { type: 'spring', stiffness: 380, damping: 34 } as const;
-/** Where the feed is on screen next to the floor; on phones it lives in another tab, so nothing docks. */
-const DOCK_QUERY = '(min-width: 768px)';
 
-export function Roster() {
+export function Roster({ limit = 10 }: { limit?: number }) {
   const board = useGame((s) => s.board);
   const you = useGame((s) => s.you?.nickname);
-  const meInTop = board.top.some((r) => r.nickname === you);
+  const rows = board.top.slice(0, limit);
+  const meInTop = rows.some((r) => r.nickname === you);
   return (
     <section aria-label="Leaderboard" className="flex flex-col">
       <div className="flex items-baseline justify-between px-4 pb-2 pt-3">
         <h2 className="panel-title">Roster</h2>
-        <span className="text-[12px] text-ink-3">{board.count} {board.count === 1 ? 'trader' : 'traders'}</span>
+        <span className="text-[12px] text-ink-3">ranked by return · {board.count} {board.count === 1 ? 'trader' : 'traders'}</span>
       </div>
-      {board.top.length === 0 ? (
+      {rows.length === 0 ? (
         <p className="px-4 pb-4 text-sm text-ink-2">Nobody at the stalls yet.</p>
       ) : (
         <ol className="px-2 pb-2">
-          {board.top.map((r) => (
+          {rows.map((r) => (
             <motion.li
               key={r.nickname}
               layout="position"
@@ -68,73 +67,116 @@ function Severity({ level }: { level: 1 | 2 | 3 }) {
   );
 }
 
-/** The colour an event is called out in: its sector's awning, or saffron for the whole market. */
-export function eventColor(ev: EventInfo, sectorOf: (t: string) => string | undefined) {
-  if (ev.scope === 'sector') return SECTOR_COLOR[ev.target ?? ''] ?? 'var(--color-saffron)';
-  if (ev.scope === 'asset') return SECTOR_COLOR[sectorOf(ev.target ?? '') ?? ''] ?? 'var(--color-saffron)';
-  return 'var(--color-saffron)';
+const CATEGORY_LABEL: Record<EventInfo['category'], string> = { macro: 'Economy', sector: 'Sector', company: 'Company' };
+
+/** The colour a story is filed under: its sector's awning, or saffron for the whole economy. */
+export function useEventColor() {
+  const assets = useGame((s) => s.assets);
+  const index = useGame((s) => s.index);
+  return (ev: EventInfo) => {
+    if (ev.target && SECTOR_COLOR[ev.target]) return SECTOR_COLOR[ev.target]!;
+    const t = ev.related[0] ?? ev.target ?? '';
+    const i = index.get(t);
+    return (i !== undefined && SECTOR_COLOR[assets[i]!.sector]) || 'var(--color-saffron)';
+  };
 }
 
-function Effects({ ev, onSelect, limit = 4 }: { ev: EventInfo; onSelect?: (t: string) => void; limit?: number }) {
-  const top = [...ev.effects].sort((a, b) => Math.abs(b.bps) - Math.abs(a.bps)).slice(0, limit);
+/** One story: headline, then the briefing, figures and the companies it names, on demand. */
+export function NewsItem({ ev, onSelect, open: startOpen = false }: { ev: EventInfo; onSelect?: (t: string) => void; open?: boolean }) {
+  const [open, setOpen] = useState(startOpen);
+  const color = useEventColor();
   return (
-    <span className="flex flex-wrap gap-1">
-      {top.map((e) => (
-        <button
-          key={e.ticker}
-          type="button"
-          onClick={() => onSelect?.(e.ticker)}
-          className={`rounded-sm px-1.5 py-0.5 text-[12px] font-semibold ${e.bps > 0 ? 'bg-up-deep text-up' : 'bg-down-deep text-down'} hover:brightness-125`}
-        >
-          {e.ticker} {pct(e.bps)}
-        </button>
-      ))}
-      {ev.effects.length > limit && <span className="self-center text-[12px] text-ink-3">+{ev.effects.length - limit} more</span>}
-    </span>
+    <li className="border-b border-rule/60 last:border-0" style={{ ['--stripe' as string]: color(ev) }}>
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="w-full px-3 py-2.5 text-left hover:bg-night-3">
+        <span className="mb-1 flex items-center gap-2 text-[12px] text-ink-3">
+          <span className="awning h-2.5 w-5 shrink-0 rounded-[2px]" aria-hidden />
+          <span className="font-semibold uppercase tracking-[0.06em] text-ink-2">{CATEGORY_LABEL[ev.category]}</span>
+          {ev.category === 'sector' && ev.target && SECTOR_COLOR[ev.target] && <span>{ev.target}</span>}
+          <time dateTime={new Date(ev.at).toISOString()}>{when(ev.at)}</time>
+          <Severity level={ev.severity} />
+          <ChevronRight size={14} className={`ml-auto shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} aria-hidden />
+        </span>
+        <span className="block text-[14px] font-semibold leading-snug">{ev.headline}</span>
+      </button>
+      {open && (
+        <div className="px-3 pb-3 text-[13px] text-ink-2">
+          <p className="leading-relaxed">{ev.body}</p>
+          {ev.figures.length > 0 && (
+            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+              {ev.figures.map((f) => (
+                <div key={f.label} className="contents">
+                  <dt className="text-ink-3">{f.label}</dt>
+                  <dd className="text-ink">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          <p className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px] text-ink-3">
+            Haggle Wire, simulated news
+            {ev.related.map((t) => (
+              <button key={t} type="button" onClick={() => onSelect?.(t)} className="rounded-sm border border-rule px-1.5 py-0.5 font-semibold text-ink hover:border-saffron/60">
+                {t}
+              </button>
+            ))}
+          </p>
+        </div>
+      )}
+    </li>
   );
 }
 
-export function Feed({ onSelect }: { onSelect: (t: string) => void }) {
+type Filter = 'all' | 'mine' | EventInfo['category'];
+const FILTERS: { id: Filter; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'macro', label: 'Economy' },
+  { id: 'sector', label: 'Sectors' },
+  { id: 'company', label: 'Companies' },
+  { id: 'mine', label: 'My holdings' },
+];
+
+export function Feed({ onSelect, track = false }: { onSelect: (t: string) => void; track?: boolean }) {
   const events = useGame((s) => s.events);
-  // The event the crier is still calling waits off the list; when the banner clears it docks here.
-  const calling = useGame((s) => s.crier?.seq);
-  const dock = useMedia(DOCK_QUERY);
-  const assets = useGame((s) => s.assets);
-  const tickMs = useGame((s) => s.session?.tickMs ?? 1000);
-  const sectorOf = (t: string) => assets.find((a) => a.ticker === t)?.sector;
+  const p = usePortfolio();
+  const [filter, setFilter] = useState<Filter>('all');
+  // While this list is the screen the player is looking at, nothing it shows counts as unread.
+  useEffect(() => {
+    if (!track) return;
+    game.setNewsOpen(true);
+    return () => game.setNewsOpen(false);
+  }, [track]);
+  const shown = useMemo(() => {
+    if (filter === 'all') return events;
+    if (filter !== 'mine') return events.filter((e) => e.category === filter);
+    const held = new Set(p.holdings.map((h) => h.asset.ticker));
+    const sectors = new Set(p.holdings.map((h) => h.asset.sector));
+    return events.filter((e) => e.related.some((t) => held.has(t)) || (e.target !== null && sectors.has(e.target)) || e.category === 'macro');
+  }, [events, filter, p.holdings]);
   return (
     <section aria-label="Market news" className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-baseline justify-between px-4 pb-2 pt-3">
+      <div className="flex items-baseline justify-between px-4 pb-1 pt-3">
         <h2 className="panel-title">The crier</h2>
-        <span className="text-[12px] text-ink-3">{events.length} calls</span>
+        <span className="text-[12px] text-ink-3">simulated news</span>
       </div>
-      {events.length === 0 ? (
-        <p className="px-4 pb-4 text-sm text-ink-2">Quiet so far. News lands here for every trader at the same moment.</p>
+      <div role="group" aria-label="Filter news" className="flex gap-1 overflow-x-auto px-3 pb-2">
+        {FILTERS.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            aria-pressed={filter === f.id}
+            onClick={() => setFilter(f.id)}
+            className={`h-7 shrink-0 rounded-full border px-2.5 text-[12px] font-semibold ${filter === f.id ? 'border-ink-3 bg-night-4 text-ink' : 'border-rule text-ink-3 hover:text-ink'}`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+      {shown.length === 0 ? (
+        <p className="px-4 pb-4 text-sm text-ink-2">
+          {events.length === 0 ? 'Quiet so far. News lands here for every trader at the same moment.' : 'No stories in this filter yet.'}
+        </p>
       ) : (
-        <ol data-dock className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
-          <AnimatePresence initial={false}>
-            {[...events].reverse().filter((ev) => !(dock && ev.seq === calling)).map((ev) => (
-              <motion.li
-                key={ev.seq}
-                layout="position"
-                initial={{ opacity: 0, y: -12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={spring}
-                className="border-b border-rule/60 px-2 py-2.5 last:border-0"
-                style={{ ['--stripe' as string]: eventColor(ev, sectorOf) }}
-              >
-                <div className="mb-1 flex items-center gap-2 text-[12px] text-ink-3">
-                  <span className="awning h-2.5 w-5 rounded-[2px]" aria-hidden />
-                  <span>T+{clock(ev.tick * tickMs)}</span>
-                  <Severity level={ev.severity} />
-                </div>
-                <p className="text-[14px] font-semibold leading-snug" title={ev.description}>{ev.headline}</p>
-                <div className="mt-1.5">
-                  <Effects ev={ev} onSelect={onSelect} limit={3} />
-                </div>
-              </motion.li>
-            ))}
-          </AnimatePresence>
+        <ol className="min-h-0 flex-1 overflow-y-auto px-1 pb-3">
+          {shown.map((ev) => <NewsItem key={ev.id} ev={ev} onSelect={onSelect} />)}
         </ol>
       )}
     </section>
@@ -142,79 +184,63 @@ export function Feed({ onSelect }: { onSelect: (t: string) => void }) {
 }
 
 /**
- * The signature move: when news breaks, an awning-striped band sweeps across every screen at once,
- * the affected stalls pulse in the list, and after a few seconds it folds away into the feed.
+ * The crier's place in the layout: one reserved strip under the top bar. Breaking news takes the strip
+ * (an awning sweeps across, and the headline holds for a few seconds) and the strip then settles on
+ * the latest headline. It is in the flow of the page, so it can never sit on top of the order ticket.
  */
-export function Crier({ onSelect }: { onSelect: (t: string) => void }) {
-  const crier = useGame((s) => s.crier);
-  const assets = useGame((s) => s.assets);
-  const dock = useMedia(DOCK_QUERY);
-  const wide = useMedia('(min-width: 640px)');
-  const sectorOf = (t: string) => assets.find((a) => a.ticker === t)?.sector;
-  const band = useRef<HTMLDivElement>(null);
-  // Measured on the render that clears the crier, while the band is still on screen: where the
-  // feed's first slot is, so the band lands there instead of at a guessed offset.
-  const target = (() => {
-    const b = band.current?.getBoundingClientRect();
-    const f = dock ? document.querySelector('[data-dock]')?.getBoundingClientRect() : undefined;
-    return b && f ? { x: f.left - b.left, y: f.top - b.top, scale: Math.min(1, f.width / b.width) } : null;
-  })();
+export function NewsStrip({ onOpen }: { onOpen: () => void }) {
+  const breaking = useGame((s) => s.breaking);
+  const latest = useGame((s) => s.events[0] ?? null);
+  const color = useEventColor();
+  const ev = breaking ?? latest;
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-30 px-2 pt-2 sm:px-3" aria-live="assertive">
-      <AnimatePresence custom={target}>
-        {crier && (
+    <div className="relative h-9 shrink-0 overflow-hidden border-b border-rule bg-night" role="region" aria-label="Latest news">
+      <p className="sr-only" aria-live="polite">{breaking ? `Breaking: ${breaking.headline}` : ''}</p>
+      {ev ? (
+        <AnimatePresence initial={false} mode="popLayout">
           <motion.div
-            key={crier.seq}
-            ref={band}
-            custom={target}
-            variants={{
-              // Docking: the band flies into the feed's first slot while the held-back item enters there.
-              gone: (t: typeof target) =>
-                t
-                  ? { ...t, opacity: 0.2, transition: { duration: 0.55, ease: [0.65, 0, 0.35, 1] } }
-                  : { opacity: 0, y: -16, transition: { duration: 0.35 } },
-            }}
+            key={ev.id}
+            className="absolute inset-0 flex items-center"
+            style={{ ['--stripe' as string]: color(ev) }}
             initial={{ clipPath: 'inset(0 100% 0 0)' }}
             animate={{ clipPath: 'inset(0 0% 0 0)' }}
-            exit="gone"
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            role="alert"
-            className="pointer-events-auto overflow-hidden rounded-md bg-night-3 shadow-[0_18px_40px_rgba(0,0,0,0.55)]"
-            style={{ ['--stripe' as string]: eventColor(crier, sectorOf), transformOrigin: 'left top' }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className={`awning ${crier.severity === 3 ? 'h-3' : 'h-2'}`} aria-hidden />
-            <div className="relative flex flex-col gap-2 py-2.5 pl-3 pr-11 sm:flex-row sm:items-center sm:gap-5 sm:px-4 sm:py-3">
-              <div className="hidden shrink-0 items-center gap-2 sm:flex">
-                <Severity level={crier.severity} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className={`font-display font-extrabold uppercase leading-[0.95] tracking-[0.01em] ${crier.severity === 3 ? 'text-[24px] sm:text-[34px]' : 'text-[20px] sm:text-[26px]'}`}>
-                  {crier.headline}
-                </p>
-                <p className="mt-1 hidden text-[13px] text-ink-2 sm:block">{crier.description}</p>
-              </div>
+            <span className={`awning h-full shrink-0 ${breaking ? 'w-3' : 'w-1.5'}`} aria-hidden />
+            <button type="button" onClick={onOpen} className="flex h-full min-w-0 flex-1 items-center gap-2.5 px-3 text-left hover:bg-night-3">
+              <span className={`shrink-0 text-[11px] font-bold uppercase tracking-[0.1em] ${breaking ? 'text-saffron' : 'text-ink-3'}`}>
+                {breaking ? 'Breaking' : 'Latest'}
+              </span>
+              <span className={`min-w-0 truncate ${breaking ? 'font-display text-[17px] font-extrabold uppercase tracking-[0.01em]' : 'text-[13px] font-semibold'}`}>
+                {ev.headline}
+              </span>
+              <span className="ml-auto hidden shrink-0 text-[12px] text-ink-3 sm:inline">{when(ev.at)} · all news</span>
+            </button>
+            {breaking && (
               <button
                 type="button"
-                onClick={() => game.dismissCrier()}
-                aria-label="Dismiss news"
-                className="absolute right-1.5 top-3.5 grid h-9 w-9 place-items-center rounded-md text-ink-3 hover:bg-night-4 hover:text-ink sm:static sm:order-last"
+                onClick={() => game.dismissBreaking()}
+                aria-label="Stop calling out this story"
+                className="grid h-full w-10 shrink-0 place-items-center text-ink-3 hover:bg-night-3 hover:text-ink"
               >
-                <X size={18} aria-hidden />
+                <X size={16} aria-hidden />
               </button>
-              <div className="shrink-0">
-                <Effects ev={crier} onSelect={onSelect} limit={crier.scope === 'asset' ? 1 : wide ? 5 : 3} />
-              </div>
-            </div>
-            <motion.div
-              className="h-[2px] origin-left bg-[var(--stripe)]"
-              initial={{ scaleX: 1 }}
-              animate={{ scaleX: 0 }}
-              transition={{ duration: 7, ease: 'linear' }}
-              aria-hidden
-            />
+            )}
+            {breaking && (
+              <motion.span
+                className="absolute bottom-0 left-0 h-[2px] w-full origin-left bg-[var(--stripe)]"
+                initial={{ scaleX: 1 }}
+                animate={{ scaleX: 0 }}
+                transition={{ duration: 9, ease: 'linear' }}
+                aria-hidden
+              />
+            )}
           </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>
+      ) : (
+        <p className="flex h-full items-center px-4 text-[13px] text-ink-3">The crier is quiet. News reaches every trader at the same moment.</p>
+      )}
     </div>
   );
 }

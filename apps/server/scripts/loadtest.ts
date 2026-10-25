@@ -1,6 +1,7 @@
 // Simulated-client load test: N real players join over HTTP, hold a WebSocket each, trade at random,
-// replay some orders on purpose, drop and reconnect a slice of themselves mid-run, and check what
-// came back. Run against a live server; see LOADTEST.md.
+// replay some orders on purpose, open price charts and company pages the way players research, drop
+// and reconnect a slice of themselves mid-run, and check what came back: no order executed twice, the
+// same book after a reconnect, and every story reaching every player. See HOW-IT-WORKS.md.
 //
 //   TARGET=http://localhost:4371 CLIENTS=500 DURATION=120 ADMIN_TOKEN=... npm run loadtest
 import WebSocket from 'ws';
@@ -13,6 +14,8 @@ const DURATION = Number(process.env.DURATION ?? 120) * 1000;
 const ORDER_EVERY_MS = Number(process.env.ORDER_EVERY_MS ?? 4000);
 const DUPLICATE_RATE = Number(process.env.DUPLICATE_RATE ?? 0.05);
 const RECONNECT_FRACTION = Number(process.env.RECONNECT_FRACTION ?? 0.1);
+const RESEARCH_EVERY_MS = Number(process.env.RESEARCH_EVERY_MS ?? 15000);
+const RANGES = ['1m', '5m', '15m', '1h', 'all'];
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const run = Date.now().toString(36).slice(-5);
 const origin = new URL(TARGET).origin;
@@ -34,6 +37,10 @@ const stats = {
   reconnectMismatch: 0,
   errors: 0,
   tickArrivals: new Map<number, number[]>(),
+  /** Which bots saw each published story. */
+  eventArrivals: new Map<number, Set<number>>(),
+  researchMs: [] as number[],
+  researchErrors: 0,
 };
 
 interface Bot {
@@ -69,8 +76,8 @@ function connect(bot: Bot): Promise<void> {
       const m = JSON.parse(raw.toString()) as ServerMsg;
       if (m.t === 'hello') {
         stats.helloMs.push(Date.now() - started);
-        bot.tickers = m.assets.map((a) => a.ticker);
-        bot.prices = m.history.prices.map((p) => p.at(-1)!);
+        bot.tickers = m.tickers;
+        bot.prices = m.prices;
         bot.book = m.book;
         bot.open = m.session?.phase === 'trading' || m.session?.phase === 'closing';
         resolve();
@@ -79,6 +86,10 @@ function connect(bot: Bot): Promise<void> {
         const arr = stats.tickArrivals.get(m.k) ?? [];
         arr.push(Date.now());
         stats.tickArrivals.set(m.k, arr);
+      } else if (m.t === 'event') {
+        const seen = stats.eventArrivals.get(m.ev.id) ?? new Set<number>();
+        seen.add(bot.i);
+        stats.eventArrivals.set(m.ev.id, seen);
       } else if (m.t === 'phase') {
         bot.open = m.session.phase === 'trading' || m.session.phase === 'closing';
       } else if (m.t === 'fill') {
@@ -127,6 +138,24 @@ function trade(bot: Bot) {
   }
 }
 
+/** A player opening a chart or a company page: the same requests the web client makes. */
+async function research(bot: Bot) {
+  if (!bot.tickers.length) return;
+  const ticker = bot.tickers[Math.floor(Math.random() * bot.tickers.length)]!;
+  const url = Math.random() < 0.7
+    ? `${TARGET}/api/prices/${ticker}?range=${RANGES[Math.floor(Math.random() * RANGES.length)]}`
+    : `${TARGET}/api/companies/${ticker}`;
+  const t = Date.now();
+  try {
+    const r = await fetch(url, { headers: { cookie: bot.cookie } });
+    await r.arrayBuffer();
+    if (!r.ok) stats.researchErrors++;
+    stats.researchMs.push(Date.now() - t);
+  } catch {
+    stats.researchErrors++;
+  }
+}
+
 async function main() {
   console.log(`load test: ${CLIENTS} clients against ${TARGET} for ${DURATION / 1000}s`);
   const bots: Bot[] = [];
@@ -142,7 +171,10 @@ async function main() {
     console.log(`admin start: ${r.status}`);
   }
 
-  const timers = bots.map((b) => setInterval(() => trade(b), ORDER_EVERY_MS * (0.5 + Math.random())));
+  const timers = [
+    ...bots.map((b) => setInterval(() => trade(b), ORDER_EVERY_MS * (0.5 + Math.random()))),
+    ...bots.map((b) => setInterval(() => void research(b), RESEARCH_EVERY_MS * (0.5 + Math.random()))),
+  ];
 
   // Mid-run: drop a slice of clients, reconnect them, and check the server restored the same book.
   await sleep(DURATION / 2);
@@ -165,6 +197,8 @@ async function main() {
   await sleep(1500);
   bots.forEach((b) => b.ws?.close());
 
+  // Reconnecting bots miss what was published while they were away (they get it in hello instead).
+  const missed = [...stats.eventArrivals.values()].filter((seen) => seen.size < CLIENTS - Math.floor(CLIENTS * RECONNECT_FRACTION)).length;
   const skews = [...stats.tickArrivals.values()].filter((a) => a.length > CLIENTS * 0.5).map((a) => Math.max(...a) - Math.min(...a));
   const report = {
     clients: CLIENTS,
@@ -176,10 +210,13 @@ async function main() {
     tickFanoutSkewMs: { p50: pct(skews, 50), p95: pct(skews, 95), ticks: skews.length },
     duplicates: { sent: stats.dupesSent, executedTwice: stats.dupesExecutedTwice },
     reconnects: { done: stats.reconnects, bookMismatches: stats.reconnectMismatch },
+    news: { stories: stats.eventArrivals.size, storiesSomeoneMissed: missed },
+    research: { requests: stats.researchMs.length, errors: stats.researchErrors, p50: pct(stats.researchMs, 50), p95: pct(stats.researchMs, 95), p99: pct(stats.researchMs, 99) },
     socketErrors: stats.errors,
   };
   console.log(JSON.stringify(report, null, 2));
-  const ok = stats.dupesExecutedTwice === 0 && stats.reconnectMismatch === 0 && stats.joined === CLIENTS && !stats.rejects.server_error;
+  const ok = stats.dupesExecutedTwice === 0 && stats.reconnectMismatch === 0 && stats.joined === CLIENTS && !stats.rejects.server_error
+    && missed === 0 && stats.researchErrors === 0;
   console.log(ok ? 'PASS' : 'FAIL');
   process.exit(ok ? 0 : 1);
 }

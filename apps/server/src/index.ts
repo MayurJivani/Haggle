@@ -20,6 +20,7 @@ const engine = new Engine(
     tickMs: env.TICK_MS,
     maxPlayers: env.MAX_PLAYERS,
     seed: env.MARKET_SEED,
+    marketSeed: env.MARKET_SEED,
   },
   logger,
 );
@@ -31,9 +32,9 @@ server.listen(env.PORT, () => logger.info({ port: env.PORT }, 'haggle listening'
 
 async function shutdown(signal: string) {
   logger.info({ signal }, 'shutting down');
-  engine.stop();
   for (const ws of wss.clients) ws.close(1012, 'restarting');
   server.close();
+  await engine.stop();
   await sql.end({ timeout: 5 });
   process.exit(0);
 }

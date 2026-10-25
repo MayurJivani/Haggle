@@ -31,4 +31,27 @@ export const SECTOR_COLOR: Record<string, string> = {
   Automotive: 'var(--color-automotive)',
   Consumer: 'var(--color-consumer)',
   Industrials: 'var(--color-industrials)',
+  'E-commerce': 'var(--color-ecommerce)',
+  Telecom: 'var(--color-telecom)',
+  'Aerospace & Defence': 'var(--color-aerospace)',
+  Materials: 'var(--color-materials)',
+  'Food & Beverage': 'var(--color-food)',
+  Media: 'var(--color-media)',
+  Logistics: 'var(--color-logistics)',
 };
+
+/** EUR millions to "EUR 1.2bn" style figures for financial tables. */
+export const millions = (m: number) => {
+  const sign = m < 0 ? '−' : '';
+  const a = Math.abs(m);
+  return `${sign}€${a >= 1000 ? `${(a / 1000).toFixed(1)}bn` : `${a.toFixed(0)}m`}`;
+};
+export const eps = (x: number) => (x < 0 ? '−' : '') + '€' + Math.abs(x).toFixed(2);
+/** A fraction to a signed percentage: 0.123 to "+12.3%". */
+export const ratio = (x: number | null, digits = 1) => (x === null ? 'N/A' : (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x * 100).toFixed(digits) + '%');
+
+const timeFmt = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const dayFmt = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+/** Wall-clock time of an event: seconds today, the date before that. */
+export const when = (ms: number, nowMs = Date.now()) => (nowMs - ms < 20 * 3_600_000 ? timeFmt.format(ms) : dayFmt.format(ms));
+

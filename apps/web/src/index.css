@@ -21,8 +21,8 @@
   --color-saffron: #ffb020;
   --color-saffron-deep: #3d2a07;
 
-  /* Awning colours: sectors only. Eight sectors need eight awnings, and saffron is reserved for
-     action and market-wide calls, so sky and sand join the six named awnings. */
+  /* Awning colours: sectors only, one per row of stalls. Saffron is reserved for action and
+     market-wide calls and green and red for direction, so the fifteen awnings avoid all three. */
   --color-technology: #7c83ff; /* indigo */
   --color-semiconductors: #b27cf2; /* violet */
   --color-healthcare: #36c2b4; /* teal */
@@ -31,6 +31,13 @@
   --color-automotive: #f0679a; /* rose */
   --color-consumer: #5ec3f0; /* sky */
   --color-industrials: #d9b98a; /* sand */
+  --color-ecommerce: #e48cf0; /* orchid */
+  --color-telecom: #4f9df0; /* cobalt */
+  --color-aerospace: #9fb3c8; /* steel */
+  --color-materials: #a3a35c; /* olive */
+  --color-food: #f2a6a0; /* blush */
+  --color-media: #6fe0e8; /* aqua */
+  --color-logistics: #c79a6e; /* umber */
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -64,6 +71,9 @@
   button:disabled {
     cursor: not-allowed;
   }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--color-night-4); border-radius: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
 }
 
 @layer components {
@@ -106,17 +116,10 @@
   0%, 100% { background-color: transparent; }
   20% { background-color: color-mix(in oklab, var(--stripe) 26%, transparent); }
 }
-@keyframes tape {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
 .flash-up { animation: flash-up 0.9s var(--ease-out-expo); }
 .flash-down { animation: flash-down 0.9s var(--ease-out-expo); }
 .struck { animation: struck 1.6s ease-out 3; }
-.tape { animation: tape var(--tape-duration, 90s) linear infinite; }
-.tape:hover { animation-play-state: paused; }
 
 @media (prefers-reduced-motion: reduce) {
   .flash-up, .flash-down, .struck { animation: none; }
-  .tape { animation: none; }
 }

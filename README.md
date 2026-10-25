@@ -2,9 +2,9 @@
 
 ![Stack](https://img.shields.io/badge/stack-React%20%C2%B7%20Node%20%C2%B7%20Postgres-ffb020) ![Realtime](https://img.shields.io/badge/realtime-WebSockets-7c83ff) ![Players](https://img.shields.io/badge/players-500%20per%20session-3ddc84)
 
-A live stock market for the whole room. Up to 500 players join with a nickname, get €10,000 of virtual money at the opening bell, trade 40 real companies at simulated prices, react to news that hits every screen at once, and finish ranked by portfolio value. A full event runs in about 15 minutes.
+A live stock market for the whole room. Up to 500 players join with a nickname, get €10,000 of virtual money at the opening bell, research and trade 120 real companies at simulated prices in one market that carries on from round to round, read news that hits every screen at once, and finish ranked by return. A full round runs in about 15 minutes.
 
-Virtual money only. Company names are real; every price, headline and euro is simulated.
+Virtual money only. Company names are real; every price, headline, financial report and euro is simulated.
 
 ## Run it
 
@@ -38,7 +38,7 @@ curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:4371/api/a
 ## Tests
 
 ```bash
-npm test                                                        # accounting, market, events, phases
+npm test                                                        # accounting, market and exploit tests, financials, chart history
 TEST_DATABASE_URL=postgres://user:pass@host/db npm test -w apps/server   # plus the Postgres integration test
 npm run loadtest                                                # 500 simulated players, see HOW-IT-WORKS.md
 ```

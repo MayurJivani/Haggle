@@ -1,23 +1,34 @@
 import { useSyncExternalStore } from 'react';
 import type {
-  AssetInfo, Board, BookInfo, ClientMsg, EventInfo, RejectReason, Results, ServerMsg, SessionInfo,
+  AssetInfo, Board, BookInfo, ClientMsg, EventInfo, MarketInfo, Regime, RejectReason, Results, ServerMsg, SessionInfo, TradeInfo,
 } from '../../../server/src/protocol';
 import { money } from './format';
 import { uuid } from './uuid';
 
-export type { AssetInfo, Board, BookInfo, EventInfo, PlayerResult, Results, SessionInfo } from '../../../server/src/protocol';
+export type {
+  AssetInfo, Board, BookInfo, EventInfo, PlayerResult, PriceHistory, Range, Regime, Report, Results, SessionInfo, Summary, TradeInfo,
+} from '../../../server/src/protocol';
 
 export type Conn = 'connecting' | 'open' | 'reconnecting';
-
-export interface Point {
-  tick: number;
-  price: number;
-}
 
 export interface Toast {
   id: string;
   tone: 'up' | 'down' | 'warn';
   text: string;
+}
+
+/** What happened to an order this tab sent, for the ticket that sent it. */
+export interface Outcome {
+  id: string;
+  ok: boolean;
+  text: string;
+}
+
+/** One market tick as received: the chart folds these into its bars. */
+export interface Tick {
+  seq: number;
+  at: number;
+  p: number[];
 }
 
 interface Pending {
@@ -33,23 +44,36 @@ export interface GameState {
   offset: number;
   you: { userId: string; nickname: string } | null;
   session: SessionInfo | null;
+  /** Listing in price-array order; empty until /api/market has loaded. */
   assets: AssetInfo[];
+  index: Map<string, number>;
   prices: number[];
   prev: number[];
-  tick: number;
-  /** Per asset, in asset order. Mutated in place; `tick` changing is the signal. */
-  history: Point[][];
+  /** Prices at the competition's opening bell: the change column is measured from here. */
+  open: number[];
+  seq: number;
+  /** Server time of the last tick, and when it arrived here, for the stale-data warning. */
+  at: number;
+  receivedAt: number;
+  regime: Regime;
+  /** Published news, newest first. */
   events: EventInfo[];
-  /** The event the crier is currently calling out. */
-  crier: EventInfo | null;
+  /** The story the news strip is calling out, until it settles or is dismissed. */
+  breaking: EventInfo | null;
+  /** Stories that landed while the news view was closed. */
+  unread: number;
   book: BookInfo | null;
+  trades: TradeInfo[];
   spectating: 'full' | 'closed' | null;
   board: Board;
   results: Results | null;
   /** Set when the bell rings while we watch, so the ceremony plays once. */
   bellAt: number | null;
   pending: number;
+  outcome: Outcome | null;
   toasts: Toast[];
+  favourites: string[];
+  recent: string[];
 }
 
 const REJECT_COPY: Record<RejectReason, string> = {
@@ -57,8 +81,8 @@ const REJECT_COPY: Record<RejectReason, string> = {
   insufficient_shares: 'You do not own that many shares.',
   invalid_quantity: 'Enter a whole number of shares.',
   invalid_price: 'That price is not tradeable right now.',
-  market_closed: 'The market is closed.',
-  not_in_session: 'You are watching this session, not trading in it.',
+  market_closed: 'The market is closed, so the order was not placed.',
+  not_in_session: 'You are watching this competition, not trading in it.',
   unknown_asset: 'That company is not listed.',
   duplicate: '',
   rate_limited: 'Slow down: too many orders at once.',
@@ -66,29 +90,53 @@ const REJECT_COPY: Record<RejectReason, string> = {
   server_error: 'The order did not go through. Try again.',
 };
 
-const CRIER_MS = 7000;
+/** How long a story stays called out in the strip. */
+const BREAKING_MS = 9000;
 /** A pending order older than this is not resent after a reconnect: the price has moved on. */
 const RESEND_WINDOW_MS = 5000;
+/** Ticks kept for charts: an hour at one per second. */
+const TICKS_KEPT = 3600;
+
+const PREFS_KEY = 'haggle:prefs';
+function loadPrefs(): { favourites: string[]; recent: string[] } {
+  try {
+    const p = JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as { favourites?: unknown; recent?: unknown };
+    const list = (x: unknown) => (Array.isArray(x) ? x.filter((t): t is string => typeof t === 'string').slice(0, 30) : []);
+    return { favourites: list(p.favourites), recent: list(p.recent) };
+  } catch {
+    return { favourites: [], recent: [] };
+  }
+}
 
 class Game {
   private state: GameState = {
-    conn: 'connecting', signedOut: false, offset: 0, you: null, session: null, assets: [], prices: [], prev: [], tick: 0,
-    history: [], events: [], crier: null, book: null, spectating: null, board: { top: [], count: 0, me: null },
-    results: null, bellAt: null, pending: 0, toasts: [],
+    conn: 'connecting', signedOut: false, offset: 0, you: null, session: null, assets: [], index: new Map(), prices: [], prev: [], open: [],
+    seq: 0, at: 0, receivedAt: 0, regime: 'calm', events: [], breaking: null, unread: 0, book: null, trades: [], spectating: null,
+    board: { top: [], count: 0, me: null }, results: null, bellAt: null, pending: 0, outcome: null, toasts: [], ...loadPrefs(),
   };
+  /** Recent ticks, outside React state: charts read them, nothing re-renders on them. */
+  readonly ticks: Tick[] = [];
+  private tickListeners = new Set<(t: Tick) => void>();
   private listeners = new Set<() => void>();
   private ws: WebSocket | null = null;
   private retries = 0;
   private pending = new Map<string, Pending>();
-  private crierTimer: ReturnType<typeof setTimeout> | undefined;
+  private breakingTimer: ReturnType<typeof setTimeout> | undefined;
   private started = false;
   private stopped = false;
+  private tickers: string[] = [];
+  private newsOpen = false;
 
   subscribe = (fn: () => void) => {
     this.listeners.add(fn);
     return () => this.listeners.delete(fn);
   };
   get = () => this.state;
+
+  onTick(fn: (t: Tick) => void): () => void {
+    this.tickListeners.add(fn);
+    return () => void this.tickListeners.delete(fn);
+  }
 
   private set(patch: Partial<GameState>) {
     this.state = { ...this.state, ...patch };
@@ -132,30 +180,46 @@ class Game {
     setTimeout(() => !this.stopped && this.connect(), delay);
   }
 
+  /** The listing changes only when a company reports, so it is fetched, not pushed on every connect. */
+  private async loadMarket(tickers: string[]) {
+    const r = await fetch('/api/market');
+    if (!r.ok) throw new Error(`market ${r.status}`);
+    const m = (await r.json()) as MarketInfo;
+    const byTicker = new Map(m.assets.map((a) => [a.ticker, a]));
+    const assets = tickers.flatMap((t) => byTicker.get(t) ?? []);
+    this.set({ assets, index: new Map(assets.map((a, i) => [a.ticker, i])) });
+  }
+
+  loadTrades() {
+    fetch('/api/me/trades')
+      .then((r) => r.json() as Promise<{ trades: TradeInfo[] }>)
+      .then(({ trades }) => this.set({ trades }))
+      .catch(() => {});
+  }
+
   private receive(m: ServerMsg) {
     const s = this.state;
     switch (m.t) {
       case 'hello': {
-        // The chart spaces points evenly, so the sampled history is filled back in to one point per tick.
-        const tick = m.session?.tick ?? 0;
-        const history = m.history.prices.map((series) => {
-          const out: Point[] = [];
-          series.forEach((price, i) => {
-            const t = i === series.length - 1 ? tick : i * m.history.step;
-            const from = out.at(-1);
-            if (from) for (let k = from.tick + 1; k < t; k++) out.push({ tick: k, price: Math.round(from.price + ((price - from.price) * (k - from.tick)) / (t - from.tick)) });
-            if (!from || t > from.tick) out.push({ tick: t, price });
-          });
-          return out;
-        });
-        const prices = m.history.prices.map((p) => p.at(-1) ?? 0);
         const isNewSession = s.session?.id !== m.session?.id;
+        const changed = m.tickers.join() !== this.tickers.join();
+        this.tickers = m.tickers;
+        // A reconnect starts the chart buffer over: the gap is fetched from the server, never guessed.
+        this.ticks.length = 0;
+        const known = new Set(s.events.map((e) => e.id));
         this.set({
           conn: 'open', signedOut: false, offset: m.serverNow - Date.now(), you: m.you, session: m.session,
-          assets: m.assets, prices, prev: prices, tick, history, events: m.events, book: m.book,
-          spectating: m.spectating, board: m.board, results: m.results,
-          crier: isNewSession ? null : s.crier, bellAt: isNewSession ? null : s.bellAt,
+          prices: m.prices, prev: m.prices, open: m.open, seq: m.seq, at: m.at, receivedAt: Date.now(), regime: m.regime,
+          events: m.events, book: m.book, spectating: m.spectating, board: m.board, results: m.results,
+          bellAt: isNewSession ? null : s.bellAt,
+          // Stories from before this tab existed are not news to it; ones missed while away are.
+          unread: s.events.length ? s.unread + m.events.filter((e) => !known.has(e.id)).length : 0,
+          trades: isNewSession ? [] : s.trades,
         });
+        if (changed || !s.assets.length) {
+          this.loadMarket(m.tickers).catch(() => this.toast('warn', 'Company data did not load. Reconnecting will retry.'));
+        }
+        if (m.book) this.loadTrades();
         // Orders sent just before a drop are resent with the same id: the server executes each id once.
         for (const [id, p] of this.pending) {
           if (Date.now() - p.sentAt < RESEND_WINDOW_MS) this.ws?.send(JSON.stringify(p.msg));
@@ -168,9 +232,13 @@ class Game {
         break;
       }
       case 'tick': {
-        if (m.k <= s.tick) break;
-        m.p.forEach((price, i) => s.history[i]?.push({ tick: m.k, price }));
-        this.set({ prev: s.prices, prices: m.p, tick: m.k, session: s.session && { ...s.session, tick: m.k } });
+        // Ticks carry the market's sequence number: a duplicate or a late one is dropped, not replayed.
+        if (m.k <= s.seq) break;
+        const t = { seq: m.k, at: m.at, p: m.p };
+        this.ticks.push(t);
+        if (this.ticks.length > TICKS_KEPT) this.ticks.splice(0, this.ticks.length - TICKS_KEPT);
+        this.set({ prev: s.prices, prices: m.p, seq: m.k, at: m.at, receivedAt: Date.now(), session: s.session && { ...s.session, tick: s.session.tick + 1 } });
+        for (const fn of this.tickListeners) fn(t);
         break;
       }
       case 'phase': {
@@ -178,32 +246,51 @@ class Game {
         this.set({
           offset: m.serverNow - Date.now(),
           session: m.session,
+          open: m.open,
           bellAt: wasLobby && m.session.phase === 'trading' && s.session?.id === m.session.id ? Date.now() : s.bellAt,
         });
         break;
       }
       case 'event': {
-        if (s.events.some((e) => e.seq === m.ev.seq)) break;
-        clearTimeout(this.crierTimer);
-        // Phones get a shorter call: the band covers the top of whatever tab is open.
-        this.crierTimer = setTimeout(() => this.set({ crier: null }), matchMedia('(min-width: 768px)').matches ? CRIER_MS : 4500);
-        this.set({ events: [...s.events, m.ev], crier: m.ev });
+        if (s.events.some((e) => e.id === m.ev.id)) break;
+        clearTimeout(this.breakingTimer);
+        this.breakingTimer = setTimeout(() => this.set({ breaking: null }), BREAKING_MS);
+        this.set({ events: [m.ev, ...s.events].slice(0, 60), breaking: m.ev, unread: this.newsOpen ? 0 : s.unread + 1 });
         break;
       }
+      case 'fund': {
+        const i = s.index.get(m.ticker);
+        if (i === undefined) break;
+        const assets = s.assets.slice();
+        assets[i] = { ...assets[i]!, fund: m.fund };
+        this.set({ assets });
+        break;
+      }
+      case 'regime':
+        this.set({ regime: m.regime });
+        break;
       case 'board':
         this.set({ board: m.board });
         break;
       case 'fill': {
         this.pending.delete(m.id);
         const verb = m.side === 'buy' ? 'Bought' : 'Sold';
-        this.toast(m.side === 'buy' ? 'up' : 'down', `${verb} ${m.qty} ${m.ticker} at ${money(m.price)}`);
-        this.set({ book: m.book, pending: this.pending.size });
+        const text = `${verb} ${m.qty} ${m.ticker} at ${money(m.price)}, ${money(m.total)} in all`;
+        this.toast(m.side === 'buy' ? 'up' : 'down', text);
+        this.set({
+          book: m.book, pending: this.pending.size, outcome: { id: m.id, ok: true, text },
+          trades: s.trades.some((t) => t.id === m.trade.id) ? s.trades : [m.trade, ...s.trades],
+        });
         break;
       }
       case 'reject': {
         const had = this.pending.delete(m.id);
-        if (m.reason !== 'duplicate' && (had || !m.id)) this.toast('warn', REJECT_COPY[m.reason]);
-        this.set({ pending: this.pending.size });
+        if (m.reason === 'duplicate') {
+          this.set({ pending: this.pending.size });
+          break;
+        }
+        if (had || !m.id) this.toast('warn', REJECT_COPY[m.reason]);
+        this.set({ pending: this.pending.size, outcome: { id: m.id, ok: false, text: REJECT_COPY[m.reason] } });
         break;
       }
       case 'results':
@@ -218,19 +305,45 @@ class Game {
     setTimeout(() => this.set({ toasts: this.state.toasts.filter((x) => x !== t) }), 3500);
   }
 
-  dismissCrier() {
-    clearTimeout(this.crierTimer);
-    this.set({ crier: null });
+  dismissBreaking() {
+    clearTimeout(this.breakingTimer);
+    this.set({ breaking: null });
   }
 
-  /** Sends a market order; returns false when it could not be sent at all. */
-  order(side: 'buy' | 'sell', ticker: string, qty: number): boolean {
-    if (this.ws?.readyState !== WebSocket.OPEN) return false;
+  /** The news view is on screen: what lands now is read as it lands. */
+  setNewsOpen(open: boolean) {
+    this.newsOpen = open;
+    if (open && this.state.unread) this.set({ unread: 0 });
+  }
+
+  /** Sends a market order; returns its id, or null when it could not be sent at all. */
+  order(side: 'buy' | 'sell', ticker: string, qty: number): string | null {
+    if (this.ws?.readyState !== WebSocket.OPEN) return null;
     const msg: ClientMsg = { t: 'order', id: uuid(), side, ticker, qty };
     this.pending.set(msg.id, { msg, sentAt: Date.now() });
     this.ws.send(JSON.stringify(msg));
     this.set({ pending: this.pending.size });
-    return true;
+    return msg.id;
+  }
+
+  private savePrefs() {
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify({ favourites: this.state.favourites, recent: this.state.recent }));
+    } catch {
+      // Private mode or blocked storage: favourites last as long as the tab.
+    }
+  }
+
+  toggleFavourite(ticker: string) {
+    const f = this.state.favourites;
+    this.set({ favourites: f.includes(ticker) ? f.filter((t) => t !== ticker) : [ticker, ...f].slice(0, 30) });
+    this.savePrefs();
+  }
+
+  visit(ticker: string) {
+    if (this.state.recent[0] === ticker) return;
+    this.set({ recent: [ticker, ...this.state.recent.filter((t) => t !== ticker)].slice(0, 8) });
+    this.savePrefs();
   }
 }
 

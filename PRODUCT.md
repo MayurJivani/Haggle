@@ -16,7 +16,7 @@ Players at a hosted live event (meetup, classroom, office party). An organiser r
 
 ## Product Purpose
 
-Haggle is a short, synchronised stock-market competition with virtual money only. Up to 500 players start with exactly €10,000, trade simulated prices for real company names, react to broadcast market events, and finish ranked by portfolio value. Success: a full session runs start to finish with no accounting error, everyone sees the same market at the same moment, and the room cares about the leaderboard.
+Haggle is a short, synchronised stock-market competition with virtual money only. Up to 500 players start with exactly €10,000, research 120 real company names (simulated prices and financials), interpret broadcast news, trade, and finish ranked by return. The market persists from one competition to the next; only the players' accounts reset. Success: a full session runs start to finish with no accounting error, everyone sees the same market at the same moment, and the room cares about the leaderboard.
 
 ## Positioning
 
@@ -34,7 +34,8 @@ A shared live event, not a solo trading simulator: one market, one clock, one ev
 - Virtual money only. No deposits, withdrawals, brokerage, leverage, shorting, options or margin.
 - Market buy/sell only, integer share quantities, no fees.
 - All prices and market data are simulated and must be labelled as such; real company names never imply live quotes.
-- Trading does not move prices.
+- Trading does not move prices. News moves them once, on the tick it is published, so a headline is something to interpret, not a guaranteed trade.
+- Financial reports, fair values and P/E are simulated estimates and are labelled as such; never advice.
 - Main winner: highest final portfolio value. Secondary awards: risk-adjusted return and best performance during major events.
 - Undecided: account recovery across devices (not offered in v1).
 
@@ -46,7 +47,7 @@ A shared live event, not a solo trading simulator: one market, one clock, one ev
 
 ## Evidence on Hand
 
-None. No real users, testimonials or partners exist; do not invent any. Company list and events are authored seed data, labelled simulated.
+None. No real users, testimonials or partners exist; do not invent any. Company list, financial reports and events are authored or generated seed data, labelled simulated.
 
 ## Product Principles
 

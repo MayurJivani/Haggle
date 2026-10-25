@@ -222,7 +222,7 @@ export function Bell() {
 }
 
 function CountUp({ cents, delay = 0 }: { cents: number; delay?: number }) {
-  const v = useMotionValue(STARTING_CASH);
+  const v = useMotionValue(useGame((s) => s.session?.startingCash ?? STARTING_CASH));
   const text = useTransform(v, (x) => moneyWhole(Math.round(x)));
   useEffect(() => {
     const c = animate(v, cents, { delay, duration: 1.4, ease });
@@ -267,7 +267,7 @@ export function ResultCard({ r, share = true }: { r: PlayerResult; share?: boole
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
           <div>
             <dt className="text-ink-3">Profit</dt>
-            <dd><Pnl cents={r.value - STARTING_CASH} className="font-semibold" /></dd>
+            <dd><Pnl cents={r.value - (r.start ?? Math.round((r.value * 10_000) / (10_000 + r.bps)))} className="font-semibold" /></dd>
           </div>
           <div>
             <dt className="text-ink-3">Trades</dt>

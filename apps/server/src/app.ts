@@ -2,7 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import express, { type Request, type Response, type NextFunction } from 'express';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import helmet from 'helmet';
 import { z } from 'zod';
 import { COOKIE, COOKIE_MAX_AGE_MS, cookieFrom, createUser, nicknameSchema, originAllowed, userForToken } from './auth.js';
@@ -11,7 +11,16 @@ import type { Env } from './env.js';
 import { logger } from './logger.js';
 import { metrics, renderMetrics } from './metrics.js';
 import type { Engine } from './session/engine.js';
-import { resultFor, sessionResults } from './session/store.js';
+import type { PriceHistory, Range } from './protocol.js';
+import { priceBars, priceSpan, resultFor, sessionResults, sessionsBetween, tradesFor } from './session/store.js';
+
+const RANGE_MS: Record<Exclude<Range, 'all'>, number> = {
+  '1m': 60_000, '5m': 300_000, '15m': 900_000, '1h': 3_600_000, '1d': 86_400_000, '1w': 604_800_000, '1mo': 2_592_000_000,
+};
+/** Most bars one history response carries; the bucket grows with the range to stay under it. */
+const MAX_BARS = 600;
+const rangeSchema = z.enum(['1m', '5m', '15m', '1h', '1d', '1w', '1mo', 'all']);
+const tickerSchema = z.string().regex(/^[A-Z0-9]{1,10}$/);
 
 const WEB_DIST = fileURLToPath(new URL('../../web/dist/', import.meta.url));
 
@@ -93,6 +102,61 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
     res.status(204).end();
   });
 
+  // Research data. Prices and reports are the same for everyone, so a short shared cache absorbs a
+  // whole room opening the same chart at the same moment.
+  const cache = new Map<string, { until: number; body: PriceHistory }>();
+  const researchLimiter = rateLimit({
+    windowMs: 60_000,
+    limit: 240,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    // A hosted room shares one IP; the player's cookie is the fairer key when there is one.
+    keyGenerator: (req) => cookieFrom(req.headers.cookie, COOKIE) ?? ipKeyGenerator(req.ip ?? ''),
+  });
+
+  app.get('/api/market', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache').type('application/json').send(engine.marketJsonBody());
+  });
+
+  app.get('/api/companies/:ticker', researchLimiter, (req, res) => {
+    const ticker = tickerSchema.safeParse(req.params.ticker);
+    const reports = ticker.success ? engine.companyReports(ticker.data) : null;
+    if (!reports) return void res.status(404).json({ error: 'That company is not listed' });
+    res.setHeader('Cache-Control', 'no-cache').json({ ticker: ticker.data, reports });
+  });
+
+  app.get('/api/prices/:ticker', researchLimiter, async (req, res) => {
+    const ticker = tickerSchema.safeParse(req.params.ticker);
+    const range = rangeSchema.safeParse(req.query.range ?? 'all');
+    if (!ticker.success || !range.success || !engine.companyReports(ticker.data)) return void res.status(400).json({ error: 'Unknown company or range' });
+    const key = `${ticker.data}:${range.data}`;
+    const hit = cache.get(key);
+    if (hit && hit.until > Date.now()) return void res.json(hit.body);
+    const span = await priceSpan(sql, ticker.data);
+    const tickMs = engine.sessionInfo()?.tickMs ?? 1000;
+    let body: PriceHistory = { ticker: ticker.data, range: range.data, bucketMs: tickMs, bars: [], span, sessions: [] };
+    if (span) {
+      // Ranges count back from the latest stored price, so a lobby still shows the last competition.
+      const from = range.data === 'all' ? span.first : Math.max(span.first, span.last - RANGE_MS[range.data]);
+      const wanted = Math.ceil((span.last - from + tickMs) / MAX_BARS / 1000) * 1000;
+      const bucketMs = Math.max(tickMs, wanted);
+      const [bars, sessions] = await Promise.all([
+        priceBars(sql, ticker.data, new Date(from), bucketMs),
+        sessionsBetween(sql, new Date(from), new Date(span.last)),
+      ]);
+      body = { ...body, bucketMs, bars: bars.map((b) => [b.at, b.o, b.h, b.l, b.c, b.seq]), sessions };
+    }
+    if (cache.size > 2000) cache.clear();
+    cache.set(key, { until: Date.now() + 1000, body });
+    res.json(body);
+  });
+
+  app.get('/api/me/trades', async (req, res) => {
+    const user = await userForToken(sql, cookieFrom(req.headers.cookie, COOKIE));
+    const participant = user ? engine.participantOf(user.id) : null;
+    res.setHeader('Cache-Control', 'no-store').json({ trades: participant ? await tradesFor(sql, participant, 200) : [] });
+  });
+
   app.get('/api/results/:participantId', async (req, res) => {
     const id = z.uuid().safeParse(req.params.participantId);
     const result = id.success ? await resultFor(sql, id.data) : null;
@@ -138,8 +202,12 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
   app.get('/healthz', async (_req, res) => {
     try {
       await sql`SELECT 1`;
-      const lagging = metrics.tickLagMs > 5000;
-      res.status(lagging ? 503 : 200).json({ ok: !lagging, db: true, tickLagMs: metrics.tickLagMs, session: engine.sessionInfo()?.phase ?? null });
+      // Stale market: the clock is behind, ticks are piling up undurable, or another process fenced us.
+      const lagging = metrics.tickLagMs > 5000 || metrics.checkpointLagTicks > 120 || engine.fenced;
+      res.status(lagging ? 503 : 200).json({
+        ok: !lagging, db: true, tickLagMs: metrics.tickLagMs, checkpointLagTicks: metrics.checkpointLagTicks, fenced: engine.fenced,
+        session: engine.sessionInfo()?.phase ?? null,
+      });
     } catch {
       res.status(503).json({ ok: false, db: false });
     }
