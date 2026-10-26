@@ -17,7 +17,7 @@ apps/web      React + Vite + Tailwind, Lightweight Charts, Motion
   src/lib       game.ts (socket and store), series.ts (chart history), research.ts (P/E, valuation ranks)
 ```
 
-One Node process owns the market. That is deliberate: a single authority for the clock, the prices and every order is what makes the market fair and the ranking exact, and one process comfortably carries 500 players (see Load testing). Postgres is the durable truth; Redis is not used, because there is no second process to coordinate with, and nothing durable may live only in a cache anyway. A second process on the same database refuses to start (see The persistent market).
+One Node process owns the market. That is deliberate: a single authority for the clock, the prices and every order is what makes the market fair and the ranking exact, and one process comfortably carries 1,000 players (see Load testing). Postgres is the durable truth; Redis is not used, because there is no second process to coordinate with, and nothing durable may live only in a cache anyway. A second process on the same database refuses to start (see The persistent market).
 
 There are two lifetimes. **The market** lives forever: one set of prices, one news history, one set of financial reports, carried across every competition and restart. **A competition** (a "session" in the code) lives ten minutes or so: its players, their cash and positions, its leaderboard and results. Starting a competition resets the players' accounts, never the market.
 
@@ -178,23 +178,23 @@ Run it against its own server and database so the join limit and lobby suit it:
 
 ```bash
 NODE_ENV=production JOIN_RATE_LIMIT=100000 LOBBY_SECONDS=600 TRADING_SECONDS=300 ADMIN_TOKEN=<token> PORT=4391 npm start
-TARGET=http://localhost:4391 CLIENTS=500 DURATION=120 ADMIN_TOKEN=<token> npm run loadtest
+TARGET=http://localhost:4391 CLIENTS=1000 DURATION=120 ADMIN_TOKEN=<token> npm run loadtest
 ```
 
 It exits non-zero on any double execution, book mismatch, missed story, failed research request or server error.
 
-Result on a laptop (one Node process, Postgres 16 in Docker), 500 clients for 120 s, 120 companies, October 2026:
+Result on a laptop (one Node process, built, `NODE_ENV=production`, Postgres 17 in Docker, pool of 10), 1,000 clients for 120 s, 75 companies, 26 October 2026:
 
 | Measure | Result |
 | --- | --- |
-| Fills / rejections | 16,683 / 388 (cash and shares) |
-| Order round trip | p50 4 ms, p95 7 ms, p99 12 ms |
-| Tick fan-out spread across 500 clients | p50 7 ms, p95 11 ms |
-| Chart and company requests | 4,235, p50 2 ms, p95 4 ms, p99 6 ms, 0 errors |
-| Orders sent twice | 907, executed twice: 0 |
-| Reconnects | 50, book mismatches: 0 |
+| Fills / rejections | 32,087 / 716 (cash and shares) |
+| Order round trip | p50 3 ms, p95 5 ms, p99 18 ms |
+| Tick fan-out spread across 1,000 clients | p50 10 ms, p95 17 ms |
+| Chart and company requests | 8,261, p50 2 ms, p95 3 ms, p99 15 ms, 0 errors |
+| Orders sent twice | 1,615, executed twice: 0 |
+| Reconnects | 100, book mismatches: 0 |
 | Stories missed by a connected client | 0 |
-| Server | 0 database errors, checkpoint lag 0, event loop delay p99 23 ms, heap 49 MB |
+| Server | 0 socket errors, RSS peak 271 MB, CPU peak 67% of one core (17% average) |
 
 Afterwards every participant's ledger summed to its cash. This covers trading, ticks, news, chart traffic and reconnects together on one machine; it has not been run across a real network or through Cloudflare.
 

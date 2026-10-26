@@ -4,7 +4,7 @@ import postgres from 'postgres';
 
 export type Sql = postgres.Sql;
 
-export function connect(url: string, max = 20): Sql {
+export function connect(url: string, max = 10): Sql {
   return postgres(url, {
     max,
     onnotice: () => {},
