@@ -282,7 +282,8 @@ describe('runaway-price exploit', () => {
           expect(p).toBeLessThanOrEqual(SIM.ceilCents);
         }
       }
-      expect(s.stress).toBeLessThanOrEqual(SIM.stressMax);
+      expect(s.variance).toBeLessThanOrEqual(25);
+      expect(Number.isFinite(s.credit) && s.credit >= SIM.creditFloor && s.credit <= SIM.creditCeil).toBe(true);
     }
   });
 

@@ -48,6 +48,27 @@ function CompanyRow({ m, onSelect, children }: { m: Metrics; onSelect: Pick; chi
 }
 
 /** The market's state in words: open or not, how fresh the prices are, and whether they are live. */
+/**
+ * The two market-wide conditions a real trader can see: how jumpy prices are, and what companies pay
+ * to borrow. Both are public; the business cycle, sector demand and speculation behind them are not.
+ */
+function Conditions() {
+  const regime = useGame((s) => s.regime);
+  const credit = useGame((s) => s.credit);
+  if (!credit) return null;
+  const tight = credit >= 3;
+  return (
+    <>
+      <span title="How much prices are swinging across the market right now">
+        · volatility <span className={regime === 'calm' ? 'text-ink-2' : regime === 'nervous' ? 'text-saffron' : 'text-down'}>{regime}</span>
+      </span>
+      <span title="Corporate credit spread: the extra interest companies pay to borrow over government debt. Wider spreads hurt banks and smaller or indebted companies most.">
+        · credit spread <span className={tight ? 'text-down' : 'text-ink-2'}>{credit.toFixed(1)} pts</span>
+      </span>
+    </>
+  );
+}
+
 function MarketStatus() {
   const session = useGame((s) => s.session);
   const conn = useGame((s) => s.conn);
@@ -65,6 +86,7 @@ function MarketStatus() {
         {state}
       </span>
       {at > 0 && <span>Last price {when(at, t)}</span>}
+      <Conditions />
       {session?.phase === 'lobby' && <span>· opens in {Math.max(0, Math.ceil((session.opensAt - t) / 1000))}s</span>}
     </p>
   );

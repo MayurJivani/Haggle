@@ -321,7 +321,8 @@ export async function openSession(
 
 /** Every event that can still move a price after `seq`: not yet landed, or still drifting in. */
 export async function liveEvents(sql: Sql, seq: number, assets: Asset[]): Promise<StoredEvent[]> {
-  return eventsWhere(sql, sql`e.status <> 'cancelled' AND e.market_seq IS NOT NULL AND e.market_seq + e.duration > ${seq}`, assets);
+  // Market-made news is not replayed as an event: the replayed ticks make it again.
+  return eventsWhere(sql, sql`e.status <> 'cancelled' AND e.market_seq IS NOT NULL AND e.market_seq + e.duration > ${seq} AND e.id > 0`, assets);
 }
 
 async function eventsWhere(sql: Sql, where: ReturnType<Sql>, assets: Asset[]): Promise<StoredEvent[]> {
@@ -348,7 +349,7 @@ async function eventsWhere(sql: Sql, where: ReturnType<Sql>, assets: Asset[]): P
 export async function recentNews(sql: Sql, limit: number): Promise<EventInfo[]> {
   const rows = await sql<{ id: number; session_id: string; market_seq: number | null; category: Category; scope: Scope; target: string | null; related: string[]; headline: string; description: string; figures: Figure[]; severity: 1 | 2 | 3; published_at: Date }[]>`
     SELECT id, session_id, market_seq, category, scope, target, related, headline, description, figures, severity, published_at
-    FROM market_events WHERE status = 'published' ORDER BY published_at DESC, id DESC LIMIT ${limit}`;
+    FROM market_events WHERE status = 'published' AND template <> 'quiet-report' ORDER BY published_at DESC, id DESC LIMIT ${limit}`;
   return rows.map((r) => ({
     id: r.id, sessionId: r.session_id, seq: r.market_seq ?? 0, at: r.published_at.getTime(), category: r.category, scope: r.scope,
     target: r.target, related: r.related, headline: r.headline, body: r.description, figures: r.figures, severity: r.severity,
@@ -364,6 +365,25 @@ export interface Checkpoint {
   published: { id: number; at: number }[];
   cancelled: number[];
   reports: { report: Report; eventId: number }[];
+  /** News the market itself made (crashes, panics, the cycle, credit), already published. */
+  notes: StoredNote[];
+}
+
+export interface StoredNote {
+  id: number;
+  sessionId: string;
+  seq: number;
+  at: number;
+  tick: number;
+  template: string;
+  category: Category;
+  scope: Scope;
+  target: string | null;
+  related: string[];
+  headline: string;
+  body: string;
+  figures: Figure[];
+  severity: 1 | 2 | 3;
 }
 
 /**
@@ -389,6 +409,15 @@ export async function writeCheckpoint(sql: Sql, c: Checkpoint) {
     }
     if (c.cancelled.length) await tx`UPDATE market_events SET status = 'cancelled' WHERE id = ANY(${c.cancelled}) AND status = 'scheduled'`;
     for (const r of c.reports) await insertReports(tx as unknown as Sql, [r.report], r.eventId);
+    // Market-made news has a negative id derived from its tick: a replay inserts nothing twice.
+    for (const n of c.notes) {
+      await tx`
+        INSERT INTO market_events (id, session_id, seq, template, headline, description, severity, scope, target, tick, duration,
+          category, related, figures, jump, persistence, market_seq, status, published_at)
+        VALUES (${n.id}, ${n.sessionId}, ${n.id}, ${n.template}, ${n.headline}, ${n.body}, ${n.severity}, ${n.scope}, ${n.target}, ${n.tick}, 1,
+          ${n.category}, ${n.related}, ${tx.json(n.figures as never)}, 0, 0, ${n.seq}, 'published', ${new Date(n.at)})
+        ON CONFLICT DO NOTHING`;
+    }
     await tx`INSERT INTO market_checkpoints (seq, state) VALUES (${c.state.seq}, ${tx.json(c.state as never)}) ON CONFLICT DO NOTHING`;
   });
 }

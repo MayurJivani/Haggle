@@ -92,6 +92,19 @@ export function nextReport(a: Asset, reports: Report[], surprise: number, revenu
   };
 }
 
+/**
+ * How a company's next quarter compares with consensus, read from the market's hidden value of it:
+ * when the business has been doing better than the last reports showed, the quarter beats, and the
+ * other way round. The log gap between that value and the last report-based fair value, capped at
+ * +-40%. With trailing EPS made of four quarters, reported fair value follows the hidden value with
+ * about a year's lag, so the published fundamentals track what moved the price, without ever leading it.
+ */
+export function readoutSurprise(a: Asset, reports: Report[], valueCents: number): number {
+  const fair = summarize(a, reports).fair;
+  if (!fair || valueCents <= 0) return 0;
+  return clamp(Math.log(valueCents / fair.cents), -0.4, 0.4);
+}
+
 export interface Summary {
   /** Trailing twelve-month EPS from the last four consecutive quarters; null when a quarter is missing. */
   epsTtm: number | null;

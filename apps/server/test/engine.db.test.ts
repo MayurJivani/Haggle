@@ -178,6 +178,15 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
     const statuses = await sql<{ status: string; published_at: Date | null }[]>`SELECT status, published_at FROM market_events WHERE session_id = ${session!.id}`;
     expect(statuses.length).toBeGreaterThan(0);
     expect(statuses.every((e) => e.status === 'published' && e.published_at)).toBe(true);
+    // Every company without an earnings story filed its quarter quietly: stored as a report, never as news.
+    const [quiet] = await sql<{ n: number; filed: number }[]>`
+      SELECT count(*)::int AS n, (SELECT count(*)::int FROM financial_reports f JOIN market_events e ON e.id = f.event_id
+        WHERE e.session_id = ${session!.id} AND e.template = 'quiet-report') AS filed
+      FROM market_events WHERE session_id = ${session!.id} AND template = 'quiet-report' AND status = 'published'`;
+    expect(quiet!.n).toBeGreaterThan(ASSETS.length / 2);
+    expect(quiet!.filed).toBe(quiet!.n);
+    const news = (alice.inbox.filter((m) => m.t === 'hello').at(-1) as Extract<ServerMsg, { t: 'hello' }>).events;
+    expect(news.some((e) => / files Q\d FY\d+ results$/.test(e.headline))).toBe(false);
     // Final value recomputed from the stored closing prices matches the stored result.
     const pos = await sql<{ participant_id: string; ticker: string; quantity: number }[]>`SELECT participant_id, ticker, quantity FROM positions`;
     for (const b of books) {

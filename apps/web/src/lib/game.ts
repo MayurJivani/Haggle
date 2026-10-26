@@ -62,6 +62,8 @@ export interface GameState {
   at: number;
   receivedAt: number;
   regime: Regime;
+  /** Corporate credit spread, percentage points: what companies pay to borrow over government debt. */
+  credit: number;
   /** Published news, newest first. */
   events: EventInfo[];
   /** The story the news strip is calling out, until it settles or is dismissed. */
@@ -117,7 +119,7 @@ function loadPrefs(): { favourites: string[]; recent: string[] } {
 class Game {
   private state: GameState = {
     conn: 'connecting', signedOut: false, offset: 0, you: null, session: null, assets: [], index: new Map(), prices: [], prev: [], open: [],
-    seq: 0, at: 0, receivedAt: 0, regime: 'calm', events: [], breaking: null, unread: 0, book: null, trades: [], spectating: null,
+    seq: 0, at: 0, receivedAt: 0, regime: 'calm', credit: 0, events: [], breaking: null, unread: 0, book: null, trades: [], spectating: null,
     board: { top: [], count: 0, me: null, at: 0 }, results: null, bellAt: null, pending: 0, outcome: null, toasts: [], ...loadPrefs(),
   };
   /** Recent ticks, outside React state: charts read them, nothing re-renders on them. */
@@ -215,7 +217,7 @@ class Game {
         const known = new Set(s.events.map((e) => e.id));
         this.set({
           conn: 'open', signedOut: false, offset: m.serverNow - Date.now(), you: m.you, session: m.session,
-          prices: m.prices, prev: m.prices, open: m.open, seq: m.seq, at: m.at, receivedAt: Date.now(), regime: m.regime,
+          prices: m.prices, prev: m.prices, open: m.open, seq: m.seq, at: m.at, receivedAt: Date.now(), regime: m.regime, credit: m.credit,
           events: m.events, book: m.book, spectating: m.spectating, board: m.board, results: m.results,
           bellAt: isNewSession ? null : s.bellAt,
           // Stories from before this tab existed are not news to it; ones missed while away are.
@@ -273,7 +275,7 @@ class Game {
         break;
       }
       case 'regime':
-        this.set({ regime: m.regime });
+        this.set({ regime: m.regime, credit: m.credit });
         break;
       case 'board':
         this.set({ board: m.board });
