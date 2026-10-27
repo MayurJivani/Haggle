@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
+import { ipKeyGenerator } from 'express-rate-limit';
 import { z } from 'zod';
 import type { Sql } from './db/db.js';
 
@@ -59,4 +60,15 @@ export function originAllowed(origin: string | undefined, host: string | undefin
   } catch {
     return false;
   }
+}
+
+/**
+ * Who is asking, for rate limits. Behind cloudflared and Caddy every request arrives from loopback and
+ * X-Forwarded-For ends in loopback too, so req.ip would put every visitor in one bucket and a full room
+ * would lock itself out. Cloudflare's CF-Connecting-IP names the visitor; it is read only behind the
+ * proxy (TRUST_PROXY), where a client cannot set it. IPv6 addresses are grouped by /56 so one host
+ * cannot rotate through its block.
+ */
+export function clientKey(req: { ip?: string; get(name: string): string | undefined }, trustProxy: boolean): string {
+  return ipKeyGenerator((trustProxy && req.get('cf-connecting-ip')?.trim()) || req.ip || '');
 }

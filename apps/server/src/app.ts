@@ -2,10 +2,10 @@ import { timingSafeEqual } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import express, { type Request, type Response, type NextFunction } from 'express';
-import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { z } from 'zod';
-import { COOKIE, COOKIE_MAX_AGE_MS, cookieFrom, createUser, nicknameSchema, originAllowed, userForToken } from './auth.js';
+import { COOKIE, COOKIE_MAX_AGE_MS, clientKey, cookieFrom, createUser, nicknameSchema, originAllowed, userForToken } from './auth.js';
 import type { Sql } from './db/db.js';
 import type { Env } from './env.js';
 import { logger } from './logger.js';
@@ -66,13 +66,15 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
     next();
   });
 
+  const ipKey = (req: Request) => clientKey(req, env.TRUST_PROXY);
   const joinLimiter = rateLimit({
     windowMs: 60_000,
     limit: env.JOIN_RATE_LIMIT,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
+    keyGenerator: ipKey,
     handler: (req, res) => {
-      logger.warn({ ip: req.ip }, 'join rate limit hit');
+      logger.warn({ ip: ipKey(req) }, 'join rate limit hit');
       res.status(429).json({ error: 'Too many joins from this network. Wait a minute and try again.' });
     },
   });
@@ -132,13 +134,18 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
     const [rows, sessions] = await Promise.all([bars(new Date(from), bucketMs), sessionsBetween(sql, new Date(from), new Date(span.last))]);
     return { ...body, bucketMs, bars: rows.map((b) => [b.at, b.o, b.h, b.l, b.c, b.seq]), sessions };
   };
+  // A hosted room shares one IP, so a signed-in trader is limited as themselves. Only a cookie that names a
+  // real user counts: keyed on the raw cookie, every made-up value was a fresh bucket.
+  const userKey = async (req: Request) => {
+    const user = await userOf(req);
+    return user ? `u:${user.id}` : ipKey(req);
+  };
   const researchLimiter = rateLimit({
     windowMs: 60_000,
     limit: 240,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
-    // A hosted room shares one IP; the player's cookie is the fairer key when there is one.
-    keyGenerator: (req) => cookieFrom(req.headers.cookie, COOKIE) ?? ipKeyGenerator(req.ip ?? ''),
+    keyGenerator: userKey,
   });
 
   app.get('/api/market', (_req, res) => {
@@ -223,7 +230,7 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
     limit: 6,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
-    keyGenerator: (req) => cookieFrom(req.headers.cookie, COOKIE) ?? ipKeyGenerator(req.ip ?? ''),
+    keyGenerator: userKey,
     handler: (_req, res) => void res.status(429).json({ error: 'You have opened several rooms just now. Wait a few minutes.' }),
   });
 
