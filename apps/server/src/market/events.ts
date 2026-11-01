@@ -1,5 +1,5 @@
 import type { Asset, Factor, Sector } from './assets.js';
-import { nextReport, type Report } from './fundamentals.js';
+import { nextReport, readoutSurprise, type Report } from './fundamentals.js';
 import { between, rng } from './rng.js';
 
 export type Scope = 'asset' | 'sector' | 'basket' | 'market' | 'factor';
@@ -41,42 +41,42 @@ const bp = (next: () => number, lo: number, hi: number) => String(Math.round(bet
 // Copy reports what happened and leaves the consequences to the player: no story names a winner.
 export const TEMPLATES: EventTemplate[] = [
   // ---------------------------------------------------------------- macro
-  { id: 'rate-hike', category: 'macro', scope: 'factor', factor: 'rates', impact: [-0.07, -0.035], severity: 2, seconds: [30, 60], jump: 0.5, persistence: 0.85, weight: 3,
+  { id: 'rate-hike', category: 'macro', scope: 'factor', factor: 'rates', impact: [-0.021, -0.0105], severity: 2, seconds: [30, 60], jump: 0.5, persistence: 0.85, weight: 3,
     headlines: ['Central bank raises rates by {bp} basis points to {rate}%', 'Surprise hike: policy rate lifted to {rate}%'],
     bodies: ['Policymakers cited sticky services inflation and signalled that further moves remain on the table. Borrowing costs rise for households and companies; lenders reprice loans faster than deposits.'],
     vars: (n) => ({ bp: bp(n, 25, 50), rate: (3 + n() * 1.5).toFixed(2) }) },
-  { id: 'rate-cut', category: 'macro', scope: 'factor', factor: 'rates', impact: [0.035, 0.07], severity: 2, seconds: [30, 60], jump: 0.5, persistence: 0.85, weight: 3,
+  { id: 'rate-cut', category: 'macro', scope: 'factor', factor: 'rates', impact: [0.0105, 0.021], severity: 2, seconds: [30, 60], jump: 0.5, persistence: 0.85, weight: 3,
     headlines: ['Central bank cuts rates by {bp} basis points to {rate}%', 'Policy rate lowered to {rate}% as inflation cools'],
     bodies: ['The decision was earlier than most economists expected. Cheaper money lowers the discount on future profits, while banks face thinner lending margins.'],
     vars: (n) => ({ bp: bp(n, 25, 50), rate: (2 + n() * 1.5).toFixed(2) }) },
-  { id: 'inflation-hot', category: 'macro', scope: 'factor', factor: 'rates', impact: [-0.045, -0.02], severity: 1, seconds: [30, 70], jump: 0.4, persistence: 0.7, weight: 2,
+  { id: 'inflation-hot', category: 'macro', scope: 'factor', factor: 'rates', impact: [-0.0135, -0.006], severity: 1, seconds: [30, 70], jump: 0.4, persistence: 0.7, weight: 2,
     headlines: ['Inflation runs hotter than expected at {cpi}%'],
     bodies: ['Consensus had pencilled in {exp}%. Traders now see a higher chance that rates stay restrictive for longer.'],
     vars: (n) => { const exp = 2.4 + n() * 1.2; return { exp: exp.toFixed(1), cpi: (exp + 0.3 + n() * 0.6).toFixed(1) }; } },
-  { id: 'growth-upgrade', category: 'macro', scope: 'factor', factor: 'growth', impact: [0.025, 0.05], severity: 1, seconds: [40, 80], jump: 0.3, persistence: 0.8, weight: 2,
+  { id: 'growth-upgrade', category: 'macro', scope: 'factor', factor: 'growth', impact: [0.0075, 0.015], severity: 1, seconds: [40, 80], jump: 0.3, persistence: 0.8, weight: 2,
     headlines: ['Economists raise this year\'s growth forecast to {g}%'],
     bodies: ['Stronger factory orders and hiring pushed forecasters to revise their outlook up from {was}%. Cyclical businesses tend to feel a turn in the economy first.'],
     vars: (n) => { const was = 0.8 + n(); return { was: was.toFixed(1), g: (was + 0.4 + n() * 0.5).toFixed(1) }; } },
-  { id: 'recession-fears', category: 'macro', scope: 'factor', factor: 'growth', impact: [-0.06, -0.03], severity: 2, seconds: [40, 80], jump: 0.4, persistence: 0.8, weight: 2,
+  { id: 'recession-fears', category: 'macro', scope: 'factor', factor: 'growth', impact: [-0.018, -0.009], severity: 2, seconds: [40, 80], jump: 0.4, persistence: 0.8, weight: 2,
     headlines: ['Recession fears grow as output contracts for a second quarter'],
     bodies: ['GDP shrank {g}% on the quarter. Purchasing managers report falling new orders; companies tied to industrial demand and credit quality are under scrutiny.'],
     vars: (n) => ({ g: (0.1 + n() * 0.4).toFixed(1) }) },
-  { id: 'euro-strength', category: 'macro', scope: 'factor', factor: 'euro', impact: [-0.035, -0.015], severity: 1, seconds: [40, 80], jump: 0.3, persistence: 0.75, weight: 2,
+  { id: 'euro-strength', category: 'macro', scope: 'factor', factor: 'euro', impact: [-0.0105, -0.0045], severity: 1, seconds: [40, 80], jump: 0.3, persistence: 0.75, weight: 2,
     headlines: ['Euro climbs to a {m}-month high against the dollar'],
     bodies: ['The single currency is up {pct} this month. A stronger euro shrinks the value of overseas sales when they are translated back for European exporters.'],
     vars: (n) => ({ m: String(6 + Math.floor(n() * 18)), pct: pct1(0.02 + n() * 0.03) }) },
-  { id: 'consumer-slump', category: 'macro', scope: 'factor', factor: 'consumer', impact: [-0.06, -0.03], severity: 1, seconds: [40, 80], jump: 0.3, persistence: 0.8, weight: 2,
+  { id: 'consumer-slump', category: 'macro', scope: 'factor', factor: 'consumer', impact: [-0.018, -0.009], severity: 1, seconds: [40, 80], jump: 0.3, persistence: 0.8, weight: 2,
     headlines: ['Consumer confidence slumps to a two-year low'],
     bodies: ['The index fell {pts} points. Households say they plan to postpone large purchases and cut back on travel.'],
     vars: (n) => ({ pts: String(4 + Math.floor(n() * 6)) }) },
-  { id: 'consumer-boom', category: 'macro', scope: 'factor', factor: 'consumer', impact: [0.03, 0.055], severity: 1, seconds: [40, 80], jump: 0.3, persistence: 0.75, weight: 2,
+  { id: 'consumer-boom', category: 'macro', scope: 'factor', factor: 'consumer', impact: [0.009, 0.0165], severity: 1, seconds: [40, 80], jump: 0.3, persistence: 0.75, weight: 2,
     headlines: ['Retail sales jump {pct} as shoppers return'],
     bodies: ['The strongest month in over a year. Some economists warn that spending this strong could keep inflation, and rates, higher.'],
     vars: (n) => ({ pct: pct1(0.012 + n() * 0.015) }) },
-  { id: 'market-panic', category: 'macro', scope: 'market', impact: [-0.11, -0.06], severity: 3, seconds: [20, 45], jump: 0.6, persistence: 0.5, weight: 0,
+  { id: 'market-panic', category: 'macro', scope: 'market', impact: [-0.0275, -0.015], severity: 3, seconds: [20, 45], jump: 0.6, persistence: 0.5, weight: 0,
     headlines: ['Forced selling sweeps global markets'],
     bodies: ['A large fund is reported to be unwinding leveraged positions. Volatility gauges have spiked and selling is broad across sectors.'] },
-  { id: 'market-rally', category: 'macro', scope: 'market', impact: [0.05, 0.09], severity: 3, seconds: [30, 60], jump: 0.4, persistence: 0.7, weight: 0,
+  { id: 'market-rally', category: 'macro', scope: 'market', impact: [0.0125, 0.0225], severity: 3, seconds: [30, 60], jump: 0.4, persistence: 0.7, weight: 0,
     headlines: ['Stocks surge on blowout jobs report'],
     bodies: ['Employers added far more jobs than forecast while wage growth cooled. Risk appetite returns across the board.'] },
 
@@ -237,6 +237,12 @@ export interface Context {
   maxTick: number;
   /** Epoch ms of a tick, for report dates. */
   at: (tick: number) => number;
+  /**
+   * The market's hidden value of a company per share, in cents. Earnings stories read their numbers
+   * from it (a beat when the business did better than the last reports showed), and so do the quiet
+   * quarterly reports every other company files.
+   */
+  value?: (asset: number) => number;
 }
 
 const pickWeighted = <T extends { weight: number }>(next: () => number, items: T[]): T => {
@@ -249,13 +255,20 @@ const eurM = (m: number) => (Math.abs(m) >= 1000 ? `EUR ${(m / 1000).toFixed(1)}
 const eps = (x: number) => `EUR ${x.toFixed(2)}`;
 const fill = (s: string, v: Vars) => s.replace(/\{(\w+)\}/g, (_, k: string) => v[k] ?? k);
 
+/** Gameplay-tuned (docs/calibration.md): company and sector stories at 60% of their template strength. */
+export const STORY_SCALE = 0.6;
+
 /** Chance a company or sector story is already priced in: the reaction is muted, or even reversed. */
 export const PRICED_IN = 0.15;
 
-export function instantiate(t: EventTemplate, ctx: Context, next: () => number, ord: number, tick: number, forAsset?: number): ScheduledEvent {
+export function instantiate(t: EventTemplate, ctx: Context, next: () => number, ord: number, tick: number, forAsset?: number, surprise?: number): ScheduledEvent {
   const { assets } = ctx;
-  let impact = between(next, t.impact[0], t.impact[1]);
+  // Company and sector templates are written at headline strength; scaled so a quarter's worth of stories
+  // adds what real news days add, not more (docs/calibration.md). Macro templates are sized directly.
+  let impact = between(next, t.impact[0], t.impact[1]) * (t.category === 'macro' ? 1 : STORY_SCALE);
   if (t.category !== 'macro' && next() < PRICED_IN) impact *= between(next, -0.4, 0.3);
+  // An earnings reaction scales with how big the surprise was.
+  if (surprise !== undefined) impact *= Math.max(0.3, Math.min(1.5, Math.abs(surprise) / 0.1));
   let target: string | null = null;
   let related: string[] = [];
   let effects: Effect[] = [];
@@ -274,7 +287,9 @@ export function instantiate(t: EventTemplate, ctx: Context, next: () => number, 
     effects = [{ asset: i, pct: impact }];
     if (t.report) {
       const history = ctx.reports(i);
-      report = nextReport(a, history, between(next, ...t.report.surprise), between(next, ...t.report.revenue), ctx.at(tick));
+      report = surprise === undefined
+        ? nextReport(a, history, between(next, ...t.report.surprise), between(next, ...t.report.revenue), ctx.at(tick))
+        : nextReport(a, history, surprise, surprise * 0.3, ctx.at(tick));
       const yearAgo = history.find((r) => r.fiscalYear === report!.fiscalYear - 1 && r.fiscalQuarter === report!.fiscalQuarter);
       const yoy = yearAgo ? report.revenue / yearAgo.revenue - 1 : 0;
       Object.assign(vars, {
@@ -350,6 +365,13 @@ export function schedule(seed: number, ctx: Context, totalTicks: number): Schedu
   ticks.forEach((tick, i) => {
     let t = i === shockAt ? pick(next, market) : i === twistAt ? pickWeighted(next, strong) : pickWeighted(next, ordinary);
     let ev = instantiate(t, ctx, next, 0, tick);
+    if (ctx.value && (t.id === 'earnings-beat' || t.id === 'earnings-miss')) {
+      // The quarter's numbers come from how the business has really been doing; beat or miss follows.
+      const asset = ev.effects[0]!.asset;
+      const surprise = readoutSurprise(ctx.assets[asset]!, ctx.reports(asset), ctx.value(asset)) + between(next, -0.02, 0.02);
+      t = byId(surprise >= 0 ? 'earnings-beat' : 'earnings-miss');
+      ev = instantiate(t, ctx, next, 0, tick, asset, surprise);
+    }
     if (ev.report && reported.has(ev.effects[0]!.asset)) {
       t = byId('margin-pressure');
       ev = instantiate(t, ctx, next, 0, tick, ev.effects[0]!.asset);
@@ -363,3 +385,31 @@ export function schedule(seed: number, ctx: Context, totalTicks: number): Schedu
   });
   return out.sort((a, b) => a.tick - b.tick).map((e, k) => ({ ...e, ord: k + 1 }));
 }
+
+/**
+ * Every company reports every quarter. The companies without an earnings story in this competition
+ * (about a quarter) file their results quietly, spread across it like an earnings season: numbers read
+ * from the market's hidden value plus a small measurement noise, no headline and no price move of
+ * their own (the business they describe has already been moving the price). They travel as scheduled
+ * events so a restart replays them exactly; the engine keeps them out of the news feed.
+ */
+export function quietReports(seed: number, ctx: Context, storied: Set<number>, totalTicks: number): ScheduledEvent[] {
+  if (!ctx.value) return [];
+  const next = rng(seed ^ 0x9e9047);
+  return ctx.assets.flatMap((a, i) => {
+    const noise = between(next, -0.02, 0.02);
+    const tick = 1 + Math.floor(next() * totalTicks * 0.9);
+    if (storied.has(i)) return [];
+    const surprise = readoutSurprise(a, ctx.reports(i), ctx.value!(i)) + noise;
+    const report = nextReport(a, ctx.reports(i), surprise, surprise * 0.3, ctx.at(tick));
+    return [{
+      ord: 0, tick, template: QUIET_REPORT, category: 'company' as const, scope: 'asset' as const, target: a.ticker, related: [a.ticker],
+      headline: `${a.name} files Q${report.fiscalQuarter} FY${report.fiscalYear} results`,
+      body: `EPS ${eps(report.eps)} against ${eps(report.epsEstimate ?? report.eps)} expected, revenue ${eurM(report.revenue)}.`,
+      figures: [], severity: 1 as const, duration: 1, jump: 0, persistence: 0, effects: [], report,
+    }];
+  });
+}
+
+/** Template id of a quiet quarterly filing: stored and replayed like any event, never shown as news. */
+export const QUIET_REPORT = 'quiet-report';

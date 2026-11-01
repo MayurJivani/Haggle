@@ -1,0 +1,1106 @@
+{
+  "generated": "2026-10-26",
+  "sources": {
+    "french": "Kenneth R. French Data Library, https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html (CRSP-based)",
+    "fred": "FRED, Federal Reserve Bank of St. Louis: NASDAQCOM, BAA10Y, DGS10, VIXCLS"
+  },
+  "market": {
+    "sample": "1963-07-01 to 2026-08-31",
+    "days": 15897,
+    "dailyMean": 0.00041,
+    "dailySd": 0.0102,
+    "annualSd": 0.1626,
+    "skew": -0.7747,
+    "excessKurtosis": 18.0762,
+    "acfReturnLag1": 0.0157,
+    "acfAbsLag": {
+      "1": 0.2625,
+      "5": 0.3088,
+      "20": 0.2031,
+      "60": 0.0947,
+      "120": 0.0904
+    },
+    "leverageEffect": -0.0899,
+    "shareBeyond3Sd": 0.0143,
+    "shareBeyond5Sd": 0.003,
+    "worstDay": {
+      "date": "1987-10-19",
+      "r": -0.19128157816546576
+    },
+    "bestDay": {
+      "date": "2008-10-13",
+      "r": 0.10759801059801807
+    }
+  },
+  "marketDrawdowns": [
+    {
+      "peak": "1929-09-03",
+      "trough": "1932-07-08",
+      "recovered": "1945-02-06",
+      "depth": -0.8407,
+      "daysToTrough": 845,
+      "daysToRecover": 4613
+    },
+    {
+      "peak": "2007-10-09",
+      "trough": "2009-03-09",
+      "recovered": "2012-02-28",
+      "depth": -0.5457,
+      "daysToTrough": 355,
+      "daysToRecover": 1105
+    },
+    {
+      "peak": "2000-03-24",
+      "trough": "2002-10-09",
+      "recovered": "2006-10-23",
+      "depth": -0.4923,
+      "daysToTrough": 637,
+      "daysToRecover": 1654
+    },
+    {
+      "peak": "1973-01-11",
+      "trough": "1974-10-03",
+      "recovered": "1976-12-28",
+      "depth": -0.4816,
+      "daysToTrough": 436,
+      "daysToRecover": 1000
+    },
+    {
+      "peak": "1968-11-29",
+      "trough": "1970-05-26",
+      "recovered": "1971-04-27",
+      "depth": -0.3682,
+      "daysToTrough": 369,
+      "daysToRecover": 602
+    },
+    {
+      "peak": "2020-02-19",
+      "trough": "2020-03-23",
+      "recovered": "2020-08-05",
+      "depth": -0.3422,
+      "daysToTrough": 23,
+      "daysToRecover": 117
+    },
+    {
+      "peak": "1987-08-25",
+      "trough": "1987-12-04",
+      "recovered": "1989-05-15",
+      "depth": -0.3311,
+      "daysToTrough": 71,
+      "daysToRecover": 435
+    },
+    {
+      "peak": "1946-05-29",
+      "trough": "1947-05-17",
+      "recovered": "1949-12-15",
+      "depth": -0.2827,
+      "daysToTrough": 273,
+      "daysToRecover": 995
+    },
+    {
+      "peak": "1961-12-12",
+      "trough": "1962-06-26",
+      "recovered": "1963-05-31",
+      "depth": -0.277,
+      "daysToTrough": 135,
+      "daysToRecover": 369
+    },
+    {
+      "peak": "2021-11-08",
+      "trough": "2022-10-14",
+      "recovered": "2023-12-19",
+      "depth": -0.2556,
+      "daysToTrough": 235,
+      "daysToRecover": 531
+    }
+  ],
+  "industries": {
+    "names": [
+      "NoDur",
+      "Durbl",
+      "Manuf",
+      "Enrgy",
+      "Chems",
+      "BusEq",
+      "Telcm",
+      "Utils",
+      "Shops",
+      "Hlth",
+      "Money",
+      "Other"
+    ],
+    "avgPairwiseCorr": 0.6754,
+    "avgPairwiseCorrCalm2004to2006": 0.639,
+    "avgPairwiseCorrCrisis2008Sep2009Mar": 0.8773,
+    "annualSd": {
+      "NoDur": 0.1406,
+      "Durbl": 0.2485,
+      "Manuf": 0.1834,
+      "Enrgy": 0.2251,
+      "Chems": 0.1646,
+      "BusEq": 0.2283,
+      "Telcm": 0.1747,
+      "Utils": 0.1423,
+      "Shops": 0.1713,
+      "Hlth": 0.1714,
+      "Money": 0.1993,
+      "Other": 0.1778
+    },
+    "betaToMarket": {
+      "NoDur": 0.7031,
+      "Durbl": 1.191,
+      "Manuf": 1.0495,
+      "Enrgy": 0.9451,
+      "Chems": 0.843,
+      "BusEq": 1.2387,
+      "Telcm": 0.8447,
+      "Utils": 0.5885,
+      "Shops": 0.9237,
+      "Hlth": 0.8524,
+      "Money": 1.0738,
+      "Other": 1.0132
+    },
+    "residualAnnualSd": {
+      "NoDur": 0.0819,
+      "Durbl": 0.1559,
+      "Manuf": 0.0672,
+      "Enrgy": 0.1646,
+      "Chems": 0.0911,
+      "BusEq": 0.1076,
+      "Telcm": 0.1079,
+      "Utils": 0.1054,
+      "Shops": 0.0824,
+      "Hlth": 0.1009,
+      "Money": 0.0963,
+      "Other": 0.067
+    },
+    "recoveryYearAfter2009Trough": {
+      "NoDur": 0.5647,
+      "Durbl": 2.2571,
+      "Manuf": 1.1393,
+      "Enrgy": 0.4323,
+      "Chems": 0.7599,
+      "BusEq": 0.8652,
+      "Telcm": 0.6569,
+      "Utils": 0.451,
+      "Shops": 0.6258,
+      "Hlth": 0.4673,
+      "Money": 1.2175,
+      "Other": 0.9278
+    },
+    "gfcDrawdown2007Oct2009Mar": {
+      "NoDur": -0.3556,
+      "Durbl": -0.7735,
+      "Manuf": -0.6416,
+      "Enrgy": -0.4376,
+      "Chems": -0.459,
+      "BusEq": -0.5215,
+      "Telcm": -0.5511,
+      "Utils": -0.4275,
+      "Shops": -0.3987,
+      "Hlth": -0.3394,
+      "Money": -0.7605,
+      "Other": -0.6358
+    }
+  },
+  "runups": {
+    "definition": "industry two-year return above 100% at a month end; crash = a later 40% fall from that month-end level within 24 months",
+    "industryMonths": 13848,
+    "baseRateCrash": 0.0674,
+    "runupMonths": 478,
+    "crashGivenRunup": 0.2992,
+    "episodes": [
+      {
+        "industry": "NoDur",
+        "month": "1934-05",
+        "twoYear": 1.1309,
+        "crashed": false
+      },
+      {
+        "industry": "NoDur",
+        "month": "1986-03",
+        "twoYear": 1.0797,
+        "crashed": false
+      },
+      {
+        "industry": "NoDur",
+        "month": "1987-01",
+        "twoYear": 1.0506,
+        "crashed": false
+      },
+      {
+        "industry": "NoDur",
+        "month": "1987-07",
+        "twoYear": 1.1028,
+        "crashed": false
+      },
+      {
+        "industry": "Durbl",
+        "month": "1928-07",
+        "twoYear": 1.3146,
+        "crashed": true
+      },
+      {
+        "industry": "Durbl",
+        "month": "1934-01",
+        "twoYear": 1.2256,
+        "crashed": false
+      },
+      {
+        "industry": "Durbl",
+        "month": "1934-10",
+        "twoYear": 1.2439,
+        "crashed": false
+      },
+      {
+        "industry": "Durbl",
+        "month": "1935-10",
+        "twoYear": 1.2515,
+        "crashed": false
+      },
+      {
+        "industry": "Durbl",
+        "month": "1936-05",
+        "twoYear": 1.2005,
+        "crashed": true
+      },
+      {
+        "industry": "Durbl",
+        "month": "1940-03",
+        "twoYear": 1.2438,
+        "crashed": false
+      },
+      {
+        "industry": "Durbl",
+        "month": "1944-06",
+        "twoYear": 1.0111,
+        "crashed": false
+      },
+      {
+        "industry": "Durbl",
+        "month": "1951-02",
+        "twoYear": 1.1345,
+        "crashed": false
+      },
+      {
+        "industry": "Durbl",
+        "month": "1955-07",
+        "twoYear": 1.2396,
+        "crashed": false
+      },
+      {
+        "industry": "Durbl",
+        "month": "1976-09",
+        "twoYear": 1.0561,
+        "crashed": false
+      },
+      {
+        "industry": "Durbl",
+        "month": "1976-11",
+        "twoYear": 1.0268,
+        "crashed": false
+      },
+      {
+        "industry": "Durbl",
+        "month": "1983-09",
+        "twoYear": 1.0155,
+        "crashed": false
+      },
+      {
+        "industry": "Durbl",
+        "month": "1987-08",
+        "twoYear": 1.0486,
+        "crashed": false
+      },
+      {
+        "industry": "Durbl",
+        "month": "1993-11",
+        "twoYear": 1.041,
+        "crashed": false
+      },
+      {
+        "industry": "Durbl",
+        "month": "2010-10",
+        "twoYear": 1.1286,
+        "crashed": false
+      },
+      {
+        "industry": "Durbl",
+        "month": "2020-08",
+        "twoYear": 1.2108,
+        "crashed": false
+      },
+      {
+        "industry": "Manuf",
+        "month": "1929-01",
+        "twoYear": 1.105,
+        "crashed": true
+      },
+      {
+        "industry": "Manuf",
+        "month": "1929-06",
+        "twoYear": 1.0356,
+        "crashed": true
+      },
+      {
+        "industry": "Manuf",
+        "month": "1929-08",
+        "twoYear": 1.0351,
+        "crashed": true
+      },
+      {
+        "industry": "Manuf",
+        "month": "1934-01",
+        "twoYear": 1.0823,
+        "crashed": false
+      },
+      {
+        "industry": "Manuf",
+        "month": "1934-03",
+        "twoYear": 1.2329,
+        "crashed": false
+      },
+      {
+        "industry": "Manuf",
+        "month": "1934-11",
+        "twoYear": 1.1359,
+        "crashed": false
+      },
+      {
+        "industry": "Manuf",
+        "month": "1936-07",
+        "twoYear": 1.2529,
+        "crashed": true
+      },
+      {
+        "industry": "Manuf",
+        "month": "1955-04",
+        "twoYear": 1.0315,
+        "crashed": false
+      },
+      {
+        "industry": "Manuf",
+        "month": "1956-07",
+        "twoYear": 1.0051,
+        "crashed": false
+      },
+      {
+        "industry": "Manuf",
+        "month": "2011-01",
+        "twoYear": 1.0434,
+        "crashed": false
+      },
+      {
+        "industry": "Enrgy",
+        "month": "1933-12",
+        "twoYear": 1.0403,
+        "crashed": false
+      },
+      {
+        "industry": "Enrgy",
+        "month": "1937-01",
+        "twoYear": 1.0426,
+        "crashed": true
+      },
+      {
+        "industry": "Enrgy",
+        "month": "1951-06",
+        "twoYear": 1.0082,
+        "crashed": false
+      },
+      {
+        "industry": "Enrgy",
+        "month": "1951-11",
+        "twoYear": 1.0242,
+        "crashed": false
+      },
+      {
+        "industry": "Enrgy",
+        "month": "1952-06",
+        "twoYear": 1.1279,
+        "crashed": false
+      },
+      {
+        "industry": "Enrgy",
+        "month": "1955-12",
+        "twoYear": 1.0066,
+        "crashed": false
+      },
+      {
+        "industry": "Enrgy",
+        "month": "1956-03",
+        "twoYear": 1.0135,
+        "crashed": false
+      },
+      {
+        "industry": "Enrgy",
+        "month": "1980-01",
+        "twoYear": 1.1167,
+        "crashed": false
+      },
+      {
+        "industry": "Enrgy",
+        "month": "1980-05",
+        "twoYear": 1.0098,
+        "crashed": false
+      },
+      {
+        "industry": "Enrgy",
+        "month": "2005-02",
+        "twoYear": 1.0847,
+        "crashed": false
+      },
+      {
+        "industry": "Enrgy",
+        "month": "2005-07",
+        "twoYear": 1.052,
+        "crashed": false
+      },
+      {
+        "industry": "Enrgy",
+        "month": "2022-03",
+        "twoYear": 2.1016,
+        "crashed": false
+      },
+      {
+        "industry": "Enrgy",
+        "month": "2023-08",
+        "twoYear": 1.0287,
+        "crashed": false
+      },
+      {
+        "industry": "Chems",
+        "month": "1928-07",
+        "twoYear": 1.1186,
+        "crashed": false
+      },
+      {
+        "industry": "Chems",
+        "month": "1934-01",
+        "twoYear": 1.0023,
+        "crashed": false
+      },
+      {
+        "industry": "Chems",
+        "month": "1934-03",
+        "twoYear": 1.0499,
+        "crashed": false
+      },
+      {
+        "industry": "Chems",
+        "month": "1934-10",
+        "twoYear": 1.2239,
+        "crashed": false
+      },
+      {
+        "industry": "Chems",
+        "month": "1936-07",
+        "twoYear": 1.0071,
+        "crashed": false
+      },
+      {
+        "industry": "Chems",
+        "month": "1951-04",
+        "twoYear": 1.0863,
+        "crashed": false
+      },
+      {
+        "industry": "Chems",
+        "month": "1955-06",
+        "twoYear": 1.0865,
+        "crashed": false
+      },
+      {
+        "industry": "Chems",
+        "month": "1955-08",
+        "twoYear": 1.0961,
+        "crashed": false
+      },
+      {
+        "industry": "Chems",
+        "month": "1987-03",
+        "twoYear": 1.1021,
+        "crashed": false
+      },
+      {
+        "industry": "Chems",
+        "month": "1987-06",
+        "twoYear": 1.0465,
+        "crashed": false
+      },
+      {
+        "industry": "BusEq",
+        "month": "1928-08",
+        "twoYear": 1.0329,
+        "crashed": false
+      },
+      {
+        "industry": "BusEq",
+        "month": "1930-01",
+        "twoYear": 1.0162,
+        "crashed": true
+      },
+      {
+        "industry": "BusEq",
+        "month": "1934-05",
+        "twoYear": 1.6025,
+        "crashed": false
+      },
+      {
+        "industry": "BusEq",
+        "month": "1935-02",
+        "twoYear": 1.0975,
+        "crashed": false
+      },
+      {
+        "industry": "BusEq",
+        "month": "1935-10",
+        "twoYear": 1.0056,
+        "crashed": false
+      },
+      {
+        "industry": "BusEq",
+        "month": "1936-05",
+        "twoYear": 1.0186,
+        "crashed": false
+      },
+      {
+        "industry": "BusEq",
+        "month": "1936-07",
+        "twoYear": 1.5954,
+        "crashed": false
+      },
+      {
+        "industry": "BusEq",
+        "month": "1955-02",
+        "twoYear": 1.0681,
+        "crashed": false
+      },
+      {
+        "industry": "BusEq",
+        "month": "1955-12",
+        "twoYear": 1.0183,
+        "crashed": false
+      },
+      {
+        "industry": "BusEq",
+        "month": "1997-01",
+        "twoYear": 1.0498,
+        "crashed": false
+      },
+      {
+        "industry": "BusEq",
+        "month": "1999-01",
+        "twoYear": 1.0848,
+        "crashed": false
+      },
+      {
+        "industry": "BusEq",
+        "month": "1999-03",
+        "twoYear": 1.2916,
+        "crashed": false
+      },
+      {
+        "industry": "BusEq",
+        "month": "1999-06",
+        "twoYear": 1.1544,
+        "crashed": false
+      },
+      {
+        "industry": "BusEq",
+        "month": "1999-10",
+        "twoYear": 1.1215,
+        "crashed": true
+      },
+      {
+        "industry": "BusEq",
+        "month": "2011-02",
+        "twoYear": 1.1081,
+        "crashed": false
+      },
+      {
+        "industry": "BusEq",
+        "month": "2020-12",
+        "twoYear": 1.103,
+        "crashed": false
+      },
+      {
+        "industry": "BusEq",
+        "month": "2021-08",
+        "twoYear": 1.0885,
+        "crashed": false
+      },
+      {
+        "industry": "BusEq",
+        "month": "2021-10",
+        "twoYear": 1.0243,
+        "crashed": false
+      },
+      {
+        "industry": "Telcm",
+        "month": "1929-08",
+        "twoYear": 1.0683,
+        "crashed": false
+      },
+      {
+        "industry": "Telcm",
+        "month": "1936-11",
+        "twoYear": 1.0167,
+        "crashed": false
+      },
+      {
+        "industry": "Telcm",
+        "month": "1986-05",
+        "twoYear": 1.1315,
+        "crashed": false
+      },
+      {
+        "industry": "Telcm",
+        "month": "1998-12",
+        "twoYear": 1.0964,
+        "crashed": false
+      },
+      {
+        "industry": "Telcm",
+        "month": "1999-10",
+        "twoYear": 1.1035,
+        "crashed": true
+      },
+      {
+        "industry": "Utils",
+        "month": "1928-11",
+        "twoYear": 1.1556,
+        "crashed": false
+      },
+      {
+        "industry": "Utils",
+        "month": "1930-02",
+        "twoYear": 1.0154,
+        "crashed": true
+      },
+      {
+        "industry": "Utils",
+        "month": "1936-10",
+        "twoYear": 1.1093,
+        "crashed": true
+      },
+      {
+        "industry": "Utils",
+        "month": "1944-03",
+        "twoYear": 1.1156,
+        "crashed": false
+      },
+      {
+        "industry": "Utils",
+        "month": "1946-04",
+        "twoYear": 1.0164,
+        "crashed": false
+      },
+      {
+        "industry": "Utils",
+        "month": "1986-07",
+        "twoYear": 1.0424,
+        "crashed": false
+      },
+      {
+        "industry": "Shops",
+        "month": "1928-10",
+        "twoYear": 1.0717,
+        "crashed": true
+      },
+      {
+        "industry": "Shops",
+        "month": "1934-04",
+        "twoYear": 1.0292,
+        "crashed": false
+      },
+      {
+        "industry": "Shops",
+        "month": "1934-11",
+        "twoYear": 1.0767,
+        "crashed": false
+      },
+      {
+        "industry": "Shops",
+        "month": "1935-02",
+        "twoYear": 1.3045,
+        "crashed": false
+      },
+      {
+        "industry": "Shops",
+        "month": "1945-11",
+        "twoYear": 1.001,
+        "crashed": false
+      },
+      {
+        "industry": "Shops",
+        "month": "1946-01",
+        "twoYear": 1.1317,
+        "crashed": false
+      },
+      {
+        "industry": "Shops",
+        "month": "1983-06",
+        "twoYear": 1.0786,
+        "crashed": false
+      },
+      {
+        "industry": "Shops",
+        "month": "1986-05",
+        "twoYear": 1.1241,
+        "crashed": false
+      },
+      {
+        "industry": "Hlth",
+        "month": "1928-08",
+        "twoYear": 1.1721,
+        "crashed": false
+      },
+      {
+        "industry": "Hlth",
+        "month": "1934-05",
+        "twoYear": 1.1806,
+        "crashed": false
+      },
+      {
+        "industry": "Hlth",
+        "month": "1946-04",
+        "twoYear": 1.2421,
+        "crashed": false
+      },
+      {
+        "industry": "Hlth",
+        "month": "1958-09",
+        "twoYear": 1.0667,
+        "crashed": false
+      },
+      {
+        "industry": "Hlth",
+        "month": "1960-05",
+        "twoYear": 1.0442,
+        "crashed": false
+      },
+      {
+        "industry": "Hlth",
+        "month": "1986-05",
+        "twoYear": 1.0141,
+        "crashed": false
+      },
+      {
+        "industry": "Hlth",
+        "month": "1987-02",
+        "twoYear": 1.0179,
+        "crashed": false
+      },
+      {
+        "industry": "Hlth",
+        "month": "1987-08",
+        "twoYear": 1.0203,
+        "crashed": false
+      },
+      {
+        "industry": "Money",
+        "month": "1928-10",
+        "twoYear": 1.019,
+        "crashed": true
+      },
+      {
+        "industry": "Money",
+        "month": "1929-06",
+        "twoYear": 1.0925,
+        "crashed": true
+      },
+      {
+        "industry": "Money",
+        "month": "1934-04",
+        "twoYear": 1.1646,
+        "crashed": false
+      },
+      {
+        "industry": "Money",
+        "month": "1936-07",
+        "twoYear": 1.2138,
+        "crashed": true
+      },
+      {
+        "industry": "Money",
+        "month": "1944-03",
+        "twoYear": 1.0414,
+        "crashed": false
+      },
+      {
+        "industry": "Money",
+        "month": "1944-06",
+        "twoYear": 1.0511,
+        "crashed": false
+      },
+      {
+        "industry": "Money",
+        "month": "1968-08",
+        "twoYear": 1.0523,
+        "crashed": false
+      },
+      {
+        "industry": "Money",
+        "month": "1986-05",
+        "twoYear": 1.1241,
+        "crashed": false
+      },
+      {
+        "industry": "Money",
+        "month": "1992-10",
+        "twoYear": 1.1215,
+        "crashed": false
+      },
+      {
+        "industry": "Money",
+        "month": "1996-11",
+        "twoYear": 1.049,
+        "crashed": false
+      },
+      {
+        "industry": "Money",
+        "month": "1997-01",
+        "twoYear": 1.0067,
+        "crashed": false
+      },
+      {
+        "industry": "Money",
+        "month": "1997-07",
+        "twoYear": 1.1037,
+        "crashed": false
+      },
+      {
+        "industry": "Money",
+        "month": "1998-03",
+        "twoYear": 1.0489,
+        "crashed": false
+      },
+      {
+        "industry": "Money",
+        "month": "2011-02",
+        "twoYear": 1.0505,
+        "crashed": false
+      },
+      {
+        "industry": "Other",
+        "month": "1934-04",
+        "twoYear": 1.4924,
+        "crashed": false
+      },
+      {
+        "industry": "Other",
+        "month": "1937-02",
+        "twoYear": 1.204,
+        "crashed": true
+      },
+      {
+        "industry": "Other",
+        "month": "1945-11",
+        "twoYear": 1.1531,
+        "crashed": false
+      },
+      {
+        "industry": "Other",
+        "month": "1946-01",
+        "twoYear": 1.0361,
+        "crashed": false
+      },
+      {
+        "industry": "Other",
+        "month": "1980-11",
+        "twoYear": 1.0664,
+        "crashed": false
+      },
+      {
+        "industry": "Other",
+        "month": "2011-02",
+        "twoYear": 1.1207,
+        "crashed": false
+      }
+    ]
+  },
+  "size": {
+    "annualSdSmallestDecile": 0.1617,
+    "annualSdLargestDecile": 0.1672,
+    "betaSmallestDecile": 0.773,
+    "betaLargestDecile": 1.0123,
+    "monthlyAnnualSdSmallestDecile": 0.22,
+    "monthlyAnnualSdLargestDecile": 0.1479,
+    "monthlyBetaSmallestDecile": 1.1186,
+    "monthlyBetaLargestDecile": 0.9336,
+    "smbAnnualSd": 0.0869,
+    "smbAnnualMean": 0.0111,
+    "smbCorrWithMarket": -0.0361,
+    "gfcSmallest": -0.6499,
+    "gfcLargest": -0.5271,
+    "recoveryYearSmallest": 1.2609,
+    "recoveryYearLargest": 0.6449
+  },
+  "momentum": {
+    "annualMean": 0.0636,
+    "annualSd": 0.1261,
+    "skew": -1.436,
+    "worstDrawdowns": [
+      {
+        "peak": "1932-05-27",
+        "trough": "1942-07-11",
+        "recovered": "1960-05-25",
+        "depth": -0.7232,
+        "daysToTrough": 3029,
+        "daysToRecover": 7884
+      },
+      {
+        "peak": "2008-11-20",
+        "trough": "2010-01-29",
+        "recovered": null,
+        "depth": -0.6329,
+        "daysToTrough": 298,
+        "daysToRecover": null
+      },
+      {
+        "peak": "2002-10-08",
+        "trough": "2004-05-17",
+        "recovered": "2007-12-26",
+        "depth": -0.3201,
+        "daysToTrough": 404,
+        "daysToRecover": 1313
+      }
+    ],
+    "marketPast12mVsNextMonthCorr": 0.0497
+  },
+  "nasdaq": {
+    "start1995": {
+      "date": "1995-01-03",
+      "p": 743.58
+    },
+    "peak": {
+      "date": "2000-03-10",
+      "p": 5048.62
+    },
+    "trough": {
+      "date": "2002-10-09",
+      "p": 1114.11
+    },
+    "runUp1995ToPeak": 5.7896,
+    "peakToTrough": -0.7793,
+    "recoveredToPeak": {
+      "date": "2015-04-23",
+      "p": 5056.06
+    },
+    "annualSd1995to1997": 0.1589,
+    "annualSd1999to2002": 0.3933
+  },
+  "credit": {
+    "baaSpreadMean1990to2006": 2.0596,
+    "baaSpreadPeak2008to2009": {
+      "date": "2008-12-04",
+      "s": 6.16
+    },
+    "baaSpreadMin2004to2007": {
+      "date": "2005-03-11",
+      "s": 1.48
+    },
+    "vixMedian": 17.56,
+    "vixPeak2008": {
+      "date": "2008-11-20",
+      "s": 80.86
+    },
+    "vixPeak2020": {
+      "date": "2020-03-16",
+      "s": 82.69
+    },
+    "marketReturnPerSpreadPoint": -0.0316,
+    "corrMarketWithSpreadChange": -0.0998,
+    "dailySdSpreadChange": 0.0359,
+    "spreadAr1Daily": 0.9987,
+    "spreadHalfLifeDays": 520
+  },
+  "rates": {
+    "tenYear2021Low": {
+      "date": "2021-01-04",
+      "s": 0.93
+    },
+    "tenYear2023High": {
+      "date": "2023-10-19",
+      "s": 4.98
+    },
+    "nasdaq2022": {
+      "start": {
+        "date": "2022-01-03",
+        "p": 15832.8
+      },
+      "low": {
+        "date": "2022-12-28",
+        "p": 10213.29
+      }
+    }
+  },
+  "cycle": {
+    "recessionShareOfDays": 0.1121,
+    "annualMeanInRecession": -0.0383,
+    "annualMeanOutsideRecession": 0.1212,
+    "annualSdInRecession": 0.2626,
+    "annualSdOutsideRecession": 0.1451,
+    "meanRecessionMonthsSince1945": 10.1538,
+    "meanExpansionMonthsSince1945": 58.3636
+  },
+  "paths": {
+    "nasdaqYearEnd": {
+      "1994": 751.96,
+      "1995": 1052.13,
+      "1996": 1291.03,
+      "1997": 1570.35,
+      "1998": 2192.69,
+      "1999": 4069.31,
+      "2000": 2470.52,
+      "2001": 1950.4,
+      "2002": 1335.51,
+      "2003": 1996.62,
+      "2004": 2175.44
+    },
+    "marketSinceOct2007": {
+      "2008-01": -0.1084,
+      "2008-03": -0.1407,
+      "2008-06": -0.1558,
+      "2008-09": -0.2237,
+      "2008-10": -0.3572,
+      "2008-11": -0.4069,
+      "2008-12": -0.3964,
+      "2009-01": -0.4456,
+      "2009-02": -0.5017,
+      "2009-03": -0.457,
+      "2009-06": -0.3679,
+      "2009-09": -0.2675,
+      "2009-12": -0.2248,
+      "2010-03": -0.1765,
+      "2010-06": -0.2696,
+      "2010-12": -0.0904
+    },
+    "marketSinceFeb2000": {
+      "2000-03": 0.0565,
+      "2000-09": 0.0041,
+      "2001-03": -0.2149,
+      "2001-09": -0.2935,
+      "2002-03": -0.1959,
+      "2002-09": -0.4152,
+      "2002-10": -0.368,
+      "2003-03": -0.3875,
+      "2003-12": -0.1736
+    },
+    "marketSinceJan2020": {
+      "2020-02": -0.0796,
+      "2020-03": -0.201,
+      "2020-04": -0.0922,
+      "2020-06": -0.0183,
+      "2020-08": 0.1182,
+      "2020-12": 0.2408
+    }
+  },
+  "industryMomentum": {
+    "past12mRelVsNextMonthRelCorr": 0.0583,
+    "top3MinusBottom3MonthlyMean": 0.0059,
+    "top3MinusBottom3MonthlySd": 0.0396,
+    "shareOfMonthsPositive": 0.582
+  }
+}

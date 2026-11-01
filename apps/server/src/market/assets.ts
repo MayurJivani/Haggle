@@ -69,6 +69,33 @@ const SECTOR_SENS: Record<Sector, Partial<Record<Factor, number>>> = {
   Logistics: { oil: -0.8, consumer: 0.6, supply: 0.9, growth: 1, rates: 0.3 },
 };
 
+/**
+ * How each sector behaves as a group, measured on the closest of Kenneth French's 12 US industry
+ * portfolios (daily, 1963 to 2026; docs/data/history-stats.json, docs/calibration.md):
+ * - `residual`: annual volatility left once the industry's market beta is taken out, the size of the
+ *   shock every company in the sector shares;
+ * - `crisis`: the industry's log loss from the October 2007 peak to the March 2009 trough over the
+ *   market's (1 = fell like the market). It scales how hard a recession leans on the sector. One episode
+ *   is thin evidence, so it is a guide, not an estimate.
+ */
+export const SECTOR_PROFILE: Record<Sector, { industry: string; residual: number; crisis: number }> = {
+  Technology: { industry: 'BusEq', residual: 0.1076, crisis: 0.93 },
+  Semiconductors: { industry: 'BusEq', residual: 0.1076, crisis: 0.93 },
+  Healthcare: { industry: 'Hlth', residual: 0.1009, crisis: 0.53 },
+  Finance: { industry: 'Money', residual: 0.0963, crisis: 1.81 },
+  Energy: { industry: 'Enrgy', residual: 0.1646, crisis: 0.73 },
+  Automotive: { industry: 'Durbl', residual: 0.1559, crisis: 1.88 },
+  Consumer: { industry: 'Shops', residual: 0.0824, crisis: 0.64 },
+  'E-commerce': { industry: 'Shops', residual: 0.0824, crisis: 0.64 },
+  Telecom: { industry: 'Telcm', residual: 0.1079, crisis: 1.02 },
+  'Aerospace & Defence': { industry: 'Manuf', residual: 0.0672, crisis: 1.3 },
+  Industrials: { industry: 'Manuf', residual: 0.0672, crisis: 1.3 },
+  Materials: { industry: 'Chems', residual: 0.0911, crisis: 0.78 },
+  'Food & Beverage': { industry: 'NoDur', residual: 0.0819, crisis: 0.56 },
+  Media: { industry: 'Telcm', residual: 0.1079, crisis: 1.02 },
+  Logistics: { industry: 'Other', residual: 0.067, crisis: 1.28 },
+};
+
 type Row = [
   ticker: string, name: string, exchange: string, industry: string, base: number, vol: number, beta: number,
   revenueBn: number, margin: number, growth: number, mult: number, description: string, sens?: Partial<Record<Factor, number>>,

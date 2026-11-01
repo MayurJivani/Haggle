@@ -265,6 +265,8 @@ export type ServerMsg =
       /** Prices at the current (or last) competition's opening bell, for the change column. */
       open: number[];
       regime: Regime;
+      /** Corporate credit spread in percentage points: what companies pay over government debt. */
+      credit: number;
       /** Latest published news, newest first. */
       events: EventInfo[];
       book: BookInfo | null;
@@ -277,7 +279,7 @@ export type ServerMsg =
   | { t: 'phase'; serverNow: number; session: SessionInfo; open: number[] }
   | { t: 'event'; ev: EventInfo }
   | { t: 'fund'; ticker: string; fund: Summary }
-  | { t: 'regime'; regime: Regime }
+  | { t: 'regime'; regime: Regime; credit: number }
   | { t: 'board'; board: Board }
   | { t: 'fill'; id: string; side: 'buy' | 'sell'; ticker: string; qty: number; price: number; total: number; realized: number; book: BookInfo; trade: TradeInfo }
   | { t: 'reject'; id: string; reason: RejectReason }

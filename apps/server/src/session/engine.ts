@@ -1,10 +1,11 @@
 import { randomInt } from 'node:crypto';
 import type { Logger } from 'pino';
 import type { Sql } from '../db/db.js';
-import { ASSETS } from '../market/assets.js';
-import { schedule } from '../market/events.js';
+import { ASSETS, SECTORS } from '../market/assets.js';
+import { QUIET_REPORT, quietReports, schedule, type Context } from '../market/events.js';
+import { noteId, noteStory } from '../market/notes.js';
 import { seedReports, summarize, type Report, type Summary } from '../market/fundamentals.js';
-import { initialState, MarketSim, type SimEvent } from '../market/sim.js';
+import { initialState, MarketSim, type SimEvent, type SimNote } from '../market/sim.js';
 import { metrics } from '../metrics.js';
 import { reactionBps, reactionMembers } from '../market/dashboard.js';
 import type {
@@ -158,7 +159,7 @@ export interface RoomInput {
 }
 
 type Buffer = Omit<store.Checkpoint, 'prevSeq' | 'state'>;
-const emptyBuffer = (): Buffer => ({ prices: [], published: [], cancelled: [], reports: [] });
+const emptyBuffer = (): Buffer => ({ prices: [], published: [], cancelled: [], reports: [], notes: [] });
 
 export class Engine {
   /** Every competition still in memory: the house one and each custom room, keyed by session id. */
@@ -242,8 +243,8 @@ export class Engine {
     }
     this.market = new MarketSim(ASSETS, state, fairs);
     this.savedSeq = state.seq;
-    // A changed valuation model or a new report moves the fair value without jumping any price.
-    this.summaries.forEach((s, i) => s.fair && this.market.setFair(i, s.fair.cents));
+    // Fair values move only when a report lands, inside the tape: re-applying them here would make a
+    // restarted market diverge from one that never stopped.
     this.regime = this.market.regime();
     for (const ev of await store.liveEvents(this.sql, state.seq, ASSETS)) this.track(ev);
     this.news = await store.recentNews(this.sql, NEWS_KEPT);
@@ -375,13 +376,19 @@ export class Engine {
     const opensAt = this.anchor ? this.atOf(this.market.seq) : live.opensAt;
     // shortcut: rooms that overlap each add their own schedule to the one shared tape, so the news is
     // denser while several rooms trade at once; share one market-level schedule if that gets noisy.
-    const events = schedule(Number(live.row.seed), {
+    const ctx: Context = {
       assets: ASSETS,
       reports: (i) => this.reports.get(ASSETS[i]!.ticker) ?? [],
       ticksPerSecond: 1000 / tickMs,
       maxTick: live.cfg.totalTicks,
       at: (tick) => opensAt + tick * tickMs,
-    }, live.cfg.totalTicks);
+      value: (i) => this.market.value(i),
+    };
+    const stories = schedule(Number(live.row.seed), ctx, live.cfg.totalTicks);
+    // Every other company files its quarter quietly during the competition.
+    const storied = new Set(stories.flatMap((e) => (e.report ? [e.effects[0]!.asset] : [])));
+    const quiet = quietReports(Number(live.row.seed), ctx, storied, live.cfg.totalTicks);
+    const events = [...stories, ...quiet.map((e, k) => ({ ...e, ord: stories.length + k + 1 }))];
     const opening = Object.fromEntries(ASSETS.map((a, i) => [a.ticker, this.market.prices[i]!]));
     const closesAt = opensAt + live.cfg.totalTicks * tickMs;
     const opened = await store.openSession(this.sql, live.row.id, this.market.seq, opening, events, ASSETS, new Date(opensAt), new Date(closesAt));
@@ -427,6 +434,7 @@ export class Engine {
     metrics.ticks++;
     if (broadcast) this.broadcastAll({ t: 'tick', k: seq, at, p: Array.from(this.market.prices) });
 
+    if (running[0]) for (const note of this.market.notes) this.publishNote(note, at, running[0], broadcast);
     for (const sim of fired) {
       const ev = this.events.get(sim.id);
       if (!ev) continue;
@@ -439,9 +447,9 @@ export class Engine {
     for (const t of this.tapes.values()) if (!t.after && seq >= t.endSeq) t.after = Array.from(this.market.prices);
     if (fired.length) for (const id of this.tapes.keys()) if (!this.news.some((n) => n.id === id)) this.tapes.delete(id);
     const regime = this.market.regime();
-    if (regime !== this.regime) {
+    if (regime !== this.regime || this.market.notes.some((n) => n.kind.startsWith('credit'))) {
       this.regime = regime;
-      if (broadcast) this.broadcastAll({ t: 'regime', regime });
+      if (broadcast) this.broadcastAll({ t: 'regime', regime, credit: this.market.credit });
     }
 
     let froze = false;
@@ -477,8 +485,9 @@ export class Engine {
     ev.publishedAt = at;
     this.buffer.published.push({ id: ev.id, at });
     metrics.eventsPublished++;
+    const quiet = ev.template === QUIET_REPORT;
     const info = eventInfo(ev);
-    this.news = [info, ...this.news.filter((n) => n.id !== ev.id)].slice(0, NEWS_KEPT);
+    if (!quiet) this.news = [info, ...this.news.filter((n) => n.id !== ev.id)].slice(0, NEWS_KEPT);
     if (ev.report) {
       const i = TICKER_INDEX.get(ev.report.ticker);
       const list = this.reports.get(ev.report.ticker) ?? [];
@@ -494,6 +503,21 @@ export class Engine {
         if (broadcast) this.broadcastAll({ t: 'fund', ticker: ev.report.ticker, fund: this.summaries[i]! });
       }
     }
+    if (broadcast && !quiet) this.broadcastAll({ t: 'event', ev: info });
+  }
+
+  /**
+   * Something the market itself did (a crash, a panic, the economy or credit turning) becomes news on
+   * the tick it happened. Its id comes from the tick, so a replay after a restart stores and shows it once.
+   */
+  private publishNote(note: SimNote, at: number, live: Live, broadcast: boolean) {
+    const id = noteId(note, note.sector ? SECTORS.indexOf(note.sector) : 0);
+    if (this.news.some((n) => n.id === id)) return;
+    const story = noteStory(note, this.market.credit);
+    const info: EventInfo = { id, sessionId: live.row.id, seq: note.seq, at, ...story };
+    this.buffer.notes.push({ ...story, id, sessionId: live.row.id, seq: note.seq, at, tick: this.localTick(live) });
+    metrics.eventsPublished++;
+    this.news = [info, ...this.news].slice(0, NEWS_KEPT);
     if (broadcast) this.broadcastAll({ t: 'event', ev: info });
   }
 
@@ -508,10 +532,13 @@ export class Engine {
     this.saving = this.saving.then(async () => {
       const f = this.failed;
       const job: store.Checkpoint = f
-        ? { ...c, prices: [...f.prices, ...c.prices], published: [...f.published, ...c.published], cancelled: [...f.cancelled, ...c.cancelled], reports: [...f.reports, ...c.reports] }
+        ? {
+          ...c, prices: [...f.prices, ...c.prices], published: [...f.published, ...c.published], cancelled: [...f.cancelled, ...c.cancelled],
+          reports: [...f.reports, ...c.reports], notes: [...f.notes, ...c.notes],
+        }
         : c;
       job.prevSeq = this.savedSeq;
-      if (job.state.seq === this.savedSeq && !f && !c.prices.length && !c.cancelled.length) return true;
+      if (job.state.seq === this.savedSeq && !f && !c.prices.length && !c.cancelled.length && !c.notes.length) return true;
       try {
         await store.writeCheckpoint(this.sql, job);
         this.failed = null;
@@ -1116,6 +1143,7 @@ export class Engine {
       prices: Array.from(this.market.prices),
       open: live.open,
       regime: this.regime,
+      credit: this.market.credit,
       events: this.news,
       book: p ? bookInfo(p) : null,
       spectating: p

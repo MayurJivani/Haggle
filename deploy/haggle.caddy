@@ -1,5 +1,5 @@
 http://haggle.futile.studio {
-	encode zstd gzip
+	import common
 	# One WebSocket carries every price tick; buffered, prices land late and out of step between phones.
 	reverse_proxy 127.0.0.1:4371 {
 		flush_interval -1

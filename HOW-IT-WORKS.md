@@ -6,8 +6,9 @@ A modular monolith in one npm workspace, following the FRC "app shape":
 
 ```
 apps/server   Node + TypeScript: Express for a handful of routes, one WebSocket server, Postgres
-  src/market    assets.ts (75 companies, five per sector), fundamentals.ts (simulated reports, fair value, P/E),
-                events.ts (news templates and the competition schedule), sim.ts (price model)
+  src/market    assets.ts (75 companies, five per sector, sector profiles), fundamentals.ts (simulated reports, fair value, P/E),
+                events.ts (news templates, the competition schedule, quiet quarterly filings), notes.ts (news the market makes),
+                sim.ts (price model)
   src/trading   portfolio.ts (pure accounting in integer cents)
   src/session   engine.ts (clock, ticks, checkpoints, orders, results), store.ts (every SQL statement), ranking.ts
   src/app.ts    HTTP routes, security headers, static web build
@@ -16,7 +17,7 @@ apps/web      React + Vite + Tailwind, Lightweight Charts, Motion
   src/lib       game.ts (socket and store), series.ts (chart history), research.ts (P/E, valuation ranks)
 ```
 
-One Node process owns the market. That is deliberate: a single authority for the clock, the prices and every order is what makes the market fair and the ranking exact, and one process comfortably carries 500 players (see Load testing). Postgres is the durable truth; Redis is not used, because there is no second process to coordinate with, and nothing durable may live only in a cache anyway. A second process on the same database refuses to start (see The persistent market).
+One Node process owns the market. That is deliberate: a single authority for the clock, the prices and every order is what makes the market fair and the ranking exact, and one process comfortably carries 1,000 players (see Load testing). Postgres is the durable truth; Redis is not used, because there is no second process to coordinate with, and nothing durable may live only in a cache anyway. A second process on the same database refuses to start (see The persistent market).
 
 There are two lifetimes. **The market** lives forever: one set of prices, one news history, one set of financial reports, carried across every competition and restart. **A competition** (a "session" in the code) lives ten minutes or so: its players, their cash and positions, its leaderboard and results. Starting a competition resets the players' accounts, never the market.
 
@@ -28,22 +29,39 @@ Defaults: 2 min lobby, 10 min trading, 3 min results. All configurable in `.env`
 
 ## The price model
 
-Prices are integer cents, recomputed once per tick (1 s by default) by `MarketSim`, and only while a competition is trading. Between competitions the market is closed and does not move.
+Prices are integer cents, recomputed once per tick (1 s by default) by `MarketSim`, and only while a competition is trading. Between competitions the market is closed and does not move. One tick stands for a tenth of a trading day, so a ten-minute competition is about a quarter of market time. The full model, the research behind it and its calibration against US market history are in [docs/](docs/):
+
+- [market-model.md](docs/market-model.md): the equations
+- [market-research.md](docs/market-research.md): findings and sources
+- [historical-market-cases.md](docs/historical-market-cases.md): measured episodes
+- [scenario-library.md](docs/scenario-library.md): how each scenario arises
+- [calibration.md](docs/calibration.md): every parameter with its basis, and the simulated-against-historical table
+- [simulation-test-plan.md](docs/simulation-test-plan.md): the checks
+
+In short:
 
 ```
-log return = beta * market noise + sector noise + own noise + pull toward the anchor  (bounded per tick)
-           + the whole move of any story published on this tick                      (bounded per story and per window)
-anchor     = fair value (from the reports) + sentiment (lasting) + transient (temporary)
+log return = beta * (market drift + clustered market shock + credit)      the economy
+           + sector exposure * (sector demand + sector shock)             the industry
+           + speculation (builds froth over fair value)                   enthusiasm
+           + size * size shock + credit exposure * credit                 small and indebted firms
+           + growth + own noise + pull toward the anchor                  the company
+           + any story, sector crash or panic landing on this tick
+anchor     = value of the business + sentiment + froth + transient
 ```
 
-- **Noise** is seeded (`mulberry32`), Gaussian, clamped to 3 sigma, with each company's own volatility, so steady companies move less than risky ones. Draw order is fixed per tick (market, then each sector, then each company), so a story never shifts which random numbers the rest of the market draws; the tests compare runs with and without one story and see exactly what it moved.
-- **News is a jump, never a drift.** A story's whole move lands on the tick it is published, and the anchor moves with it, so the pull toward the anchor adds nothing of its own afterwards. The share the template calls lasting goes into `sentiment` (half-life about twenty competitions); the rest into `transient` (half-life about five). Both fade slowly on purpose: a fade quick enough to see inside one competition would be a trade anyone could take off the headline. Measured over 400 simulated competitions, buying every positive headline wins 47% of the time over two minutes and 44% over ten, with a slightly negative mean; the stories are worth reading, not chasing.
-- **Fair value** comes from the company's reports (see Financials) and moves only when a report is filed. A new fair value never jumps the price: the gap moves into sentiment and fades, so prices drift toward what the numbers justify over many competitions.
-- **Market stress** rises with a market-wide shock and decays; it scales market noise, so volatility clusters after a crash the way it does in real markets.
-- **Bounds**: a quiet tick moves at most 5%; one story at most 30% on one company; stacked stories at most 35% within any 60-tick window (and the anchor moves only by what actually landed, so a clipped story leaves no catch-up drift); a price stays within e^1 of its anchor, and between €0.50 and €1,000,000.
-- **Trading never moves prices.** Nothing about orders reaches `MarketSim`. Every player trades the same tape, so buying a stock hard cannot push it up, and a supply-and-demand mode would need its own liquidity model behind its own switch.
+- **Hidden economy.** A business cycle (NBER-length expansions and recessions), a credit spread, each sector's demand and speculative enthusiasm, and each company's growth evolve under the prices. Players never see them directly. They see their effects: prices, quarterly reports, the volatility regime, the credit spread, and the stories the market publishes about itself.
+- **Reports follow the business.** Every company reports once per competition, through an earnings story or quietly. The quarter's surprise is read from how the business really did against its last reports, so beats and misses explain what moved the price, with a lag. A filed report never jumps the price.
+- **Crashes have causes.** Sector crashes and market panics come from hazards that rise with speculative froth and credit stress, never from a schedule. Each one becomes a published story stating what happened. Bad news hurts a stock trading far above its fundamentals more, at most twice as much.
+- **News is still a jump, never a drift.** A story's whole move lands on the tick it is published, split into lasting `sentiment` and a fading `transient` part, so the pull toward the anchor adds nothing of its own afterwards. Over 400 simulated years with the full news schedule, buying a company at the close of the day a positive story about it landed beat the market 50.0% of the time over 12 days and 48.4% over 60, with a mean excess return of zero or slightly negative.
+- **Bounds:**
+  - a quiet tick moves at most 5%;
+  - stacked shocks move a company at most 35% per tick and per 60-tick window (the anchor moves only by what landed, so a clipped shock leaves no catch-up drift);
+  - a price stays within e^1 of its anchor, and between €0.50 and €1,000,000;
+  - variance and credit stay within fixed ranges.
+- **Trading never moves prices.** Nothing about orders reaches `MarketSim`. Every player trades the same tape, so buying a stock hard cannot push it up.
 
-The simulation's whole state (every log price, sentiment, transient, fair value, window sum, the stress level and the RNG's 32-bit state) round-trips through `state()`. That is what a checkpoint stores, and resuming from it replays the exact same tape.
+The draw order per tick is fixed whatever happens (market, size, credit, cycle, each sector, the panic draw, each company), so one story never shifts which random numbers the rest of the market draws. The simulation's whole state round-trips through `state()`: every price, premium, fair value and growth, the cycle, variance, credit, sector demand and enthusiasm, and the RNG. That is what a checkpoint stores, and resuming from it replays the exact same tape, the market's own news included (its story ids derive from the tick, so nothing is stored twice).
 
 ## Market events
 
@@ -51,7 +69,7 @@ The simulation's whole state (every log price, sentiment, transient, fair value,
 
 Cross-sector effects come from per-company sensitivities to ten factors (rates, oil, chips, consumer, data centres, credit, supply chains, growth, the euro, tech regulation), not from rules in the UI: dear oil lifts producers and grounds airlines, a rate hike pressures expensive growth stocks and helps banks, a chip shortage lifts chipmakers and hurts carmakers, a shipping disruption hurts manufacturers and helps container lines. Every company reacts with its own jitter, and 15% of company and sector stories turn out to be priced in: the reaction is muted or even reversed. Copy reports what happened; it never names a winner, and the client is never sent a story's price impact or any company's sensitivities.
 
-Earnings stories file the company's next quarterly report: consensus expects last year's quarter grown at trend, the story's surprise sets the actual EPS, and revenue gets its own surprise. The report changes trailing EPS and so the fair value. A beat can still fall (the record-profit, cut-outlook story), and one company files at most one report per competition.
+Every company files one quarterly report per competition. Earnings stories file theirs: consensus expects last year's quarter grown at trend, and the actual EPS is read from the market's hidden value of the business against its last reports, so the story is a beat or a miss because the business did better or worse, and the price reaction scales with the surprise. The other companies file quietly (`quiet-report` events spread across the competition, no headline, no price move of their own, never in the news feed). A report changes trailing EPS and so the fair value. A beat can still fall (the record-profit, cut-outlook story).
 
 When the bell rings, `schedule()` decides the competition's news from its seed (roughly one story every 7 to 12% of the competition, one market-wide shock in the middle, a strong late twist, and follow-ups) and `openSession()` stores the whole schedule, unpublished, in the same transaction that opens the competition. Unpublished stories never leave the server. Each is published on its tick, to every player in the same broadcast, and marked `published` at the next checkpoint; stories still waiting when a competition closes early are marked `cancelled` and never carry over. Every story's per-company impact is stored in `market_event_effects` for audit.
 
@@ -102,7 +120,7 @@ One WebSocket per tab at `/ws`, authenticated by the nickname cookie and an Orig
 | `tick` | every tick | `{t,k,at,p:[75 prices]}`, about 500 bytes; `k` is the market sequence number |
 | `event` | when a story is published | one story, no price impact |
 | `fund` | when a report is filed | that company's new summary |
-| `regime` | when market stress changes band | |
+| `regime` | when the volatility regime changes or credit tightens or eases | regime and the credit spread |
 | `board` | every 2 s | top 10 serialised once, plus each player's own row appended; every row carries value, cash, return and trades, all valued at one tick (`at`) |
 | `fill` / `reject` | per order | to that player's sockets only; a fill carries the trade record |
 | `phase`, `results` | on transitions | |
@@ -160,23 +178,23 @@ Run it against its own server and database so the join limit and lobby suit it:
 
 ```bash
 NODE_ENV=production JOIN_RATE_LIMIT=100000 LOBBY_SECONDS=600 TRADING_SECONDS=300 ADMIN_TOKEN=<token> PORT=4391 npm start
-TARGET=http://localhost:4391 CLIENTS=500 DURATION=120 ADMIN_TOKEN=<token> npm run loadtest
+TARGET=http://localhost:4391 CLIENTS=1000 DURATION=120 ADMIN_TOKEN=<token> npm run loadtest
 ```
 
 It exits non-zero on any double execution, book mismatch, missed story, failed research request or server error.
 
-Result on a laptop (one Node process, Postgres 16 in Docker), 500 clients for 120 s, 120 companies, October 2026:
+Result on a laptop (one Node process, built, `NODE_ENV=production`, Postgres 17 in Docker, pool of 10), 1,000 clients for 120 s, 75 companies, 26 October 2026:
 
 | Measure | Result |
 | --- | --- |
-| Fills / rejections | 16,683 / 388 (cash and shares) |
-| Order round trip | p50 4 ms, p95 7 ms, p99 12 ms |
-| Tick fan-out spread across 500 clients | p50 7 ms, p95 11 ms |
-| Chart and company requests | 4,235, p50 2 ms, p95 4 ms, p99 6 ms, 0 errors |
-| Orders sent twice | 907, executed twice: 0 |
-| Reconnects | 50, book mismatches: 0 |
+| Fills / rejections | 32,087 / 716 (cash and shares) |
+| Order round trip | p50 3 ms, p95 5 ms, p99 18 ms |
+| Tick fan-out spread across 1,000 clients | p50 10 ms, p95 17 ms |
+| Chart and company requests | 8,261, p50 2 ms, p95 3 ms, p99 15 ms, 0 errors |
+| Orders sent twice | 1,615, executed twice: 0 |
+| Reconnects | 100, book mismatches: 0 |
 | Stories missed by a connected client | 0 |
-| Server | 0 database errors, checkpoint lag 0, event loop delay p99 23 ms, heap 49 MB |
+| Server | 0 socket errors, RSS peak 271 MB, CPU peak 67% of one core (17% average) |
 
 Afterwards every participant's ledger summed to its cash. This covers trading, ticks, news, chart traffic and reconnects together on one machine; it has not been run across a real network or through Cloudflare.
 
