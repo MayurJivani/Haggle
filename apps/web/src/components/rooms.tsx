@@ -18,7 +18,12 @@ async function post<T>(path: string, body?: unknown): Promise<{ ok: boolean; bod
 const MIN_COMPANIES = 5;
 
 /** Which companies a room lists: the main market's 75, all of them, or a hand-picked set. */
-function CompanyPicker({ all, failed, picked, setPicked }: { all: AssetInfo[]; failed: boolean; picked: Set<string>; setPicked: (s: Set<string>) => void }) {
+function CompanyPicker({ all, failed, picked, setPicked, purseCents }: { all: AssetInfo[]; failed: boolean; picked: Set<string>; setPicked: (s: Set<string>) => void; purseCents: number }) {
+  const [quotes, setQuotes] = useState<Record<string, number>>({});
+  useEffect(() => {
+    fetch('/api/quotes').then((r) => (r.ok ? (r.json() as Promise<{ quotes: Record<string, number> }>) : Promise.reject(new Error()))).then((d) => setQuotes(d.quotes)).catch(() => {});
+  }, []);
+  const outOfReach = [...picked].filter((t) => (quotes[t] ?? 0) > purseCents);
   const [custom, setCustom] = useState(false);
   const [query, setQuery] = useState('');
   const core = all.filter((a) => a.core).map((a) => a.ticker);
@@ -80,6 +85,12 @@ function CompanyPicker({ all, failed, picked, setPicked }: { all: AssetInfo[]; f
             </span>
             <button type="button" onClick={() => setPicked(new Set())} className="font-semibold text-ink-3 underline underline-offset-4 hover:text-ink">Clear all</button>
           </div>
+        </div>
+      )}
+      {outOfReach.length > 0 && (
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-2 rounded-md border border-saffron/50 bg-saffron-deep px-3 py-2 text-[13px] text-saffron" role="status">
+          <span>A {moneyWhole(purseCents)} purse cannot buy one share of {outOfReach.slice(0, 4).join(', ')}{outOfReach.length > 4 ? ` and ${outOfReach.length - 4} more` : ''}. They stay listed to watch.</span>
+          <button type="button" onClick={() => { setCustom(true); change(outOfReach, false); }} className="font-semibold underline underline-offset-4">Remove {outOfReach.length === 1 ? 'it' : 'them'}</button>
         </div>
       )}
     </fieldset>
@@ -180,7 +191,7 @@ function CreateRoom() {
           <input id="room-at" type="datetime-local" required value={startAt} onChange={(e) => setStartAt(e.target.value)} className={field} />
         </div>
       )}
-      <CompanyPicker all={all} failed={listFailed} picked={picked} setPicked={setPicked} />
+      <CompanyPicker all={all} failed={listFailed} picked={picked} setPicked={setPicked} purseCents={purse * 100} />
       <details className="group rounded-md border border-rule">
         <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2.5 text-[14px] font-semibold text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
           <ChevronRight size={15} className="transition-transform group-open:rotate-90 motion-reduce:transition-none" aria-hidden />

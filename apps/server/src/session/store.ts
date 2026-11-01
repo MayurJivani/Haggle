@@ -3,6 +3,7 @@ import type { Asset } from '../market/assets.js';
 import type { Category, Figure, ScheduledEvent, Scope } from '../market/events.js';
 import { sharesOf, type Report } from '../market/fundamentals.js';
 import type { MarketState } from '../market/sim.js';
+import { ENGINE_VERSION, type TapeEvent } from '../market/tape.js';
 import type { EventInfo, PlayerResult, Results, TradeInfo } from '../protocol.js';
 import type { Fill, Position } from '../trading/portfolio.js';
 
@@ -45,6 +46,8 @@ export interface SessionConfig {
   publicResults?: boolean;
   /** The companies this competition lists. Missing = the core listing. */
   tickers?: string[];
+  /** The engine that played this competition's tape. Missing = before versions were recorded. */
+  engineVersion?: string;
 }
 
 const COLS = 'id, code, name, description, host_user_id, visibility, awards, seed, status, config, opens_at, closes_at, finished_at, start_seq, opening_prices';
@@ -281,7 +284,8 @@ export async function initMarket(sql: Sql, state: MarketState) {
 export interface StoredEvent extends ScheduledEvent {
   id: number;
   seq: number;
-  sessionId: string;
+  /** The competition that scheduled it, on stories from before the shared schedule; null since. */
+  sessionId: string | null;
   status: 'scheduled' | 'published' | 'cancelled';
   publishedAt: number | null;
 }
@@ -291,33 +295,13 @@ export interface StoredEvent extends ScheduledEvent {
  * transaction with the status change. Running it again after a lost reply opens nothing twice: the
  * events already stored come back instead.
  */
-export async function openSession(
-  sql: Sql, sessionId: string, startSeq: number, openingPrices: Record<string, number>, events: ScheduledEvent[], assets: Asset[],
-  opensAt: Date, closesAt: Date,
-): Promise<{ startSeq: number; events: StoredEvent[] }> {
+export async function openSession(sql: Sql, sessionId: string, startSeq: number, openingPrices: Record<string, number>, opensAt: Date, closesAt: Date): Promise<number> {
   return sql.begin(async (tx) => {
-    const [opened] = await tx<{ start_seq: number }[]>`
+    await tx`
       UPDATE sessions SET status = 'trading', start_seq = ${startSeq}, opening_prices = ${tx.json(openingPrices)}, opens_at = ${opensAt}, closes_at = ${closesAt}
-      WHERE id = ${sessionId} AND status = 'lobby' RETURNING start_seq`;
-    if (opened) {
-      for (const ev of events) {
-        const [row] = await tx<{ id: number }[]>`
-          INSERT INTO market_events (session_id, seq, template, headline, description, severity, scope, target, tick, duration,
-            category, related, figures, jump, persistence, report, market_seq, status)
-          VALUES (${sessionId}, ${ev.ord}, ${ev.template}, ${ev.headline}, ${ev.body}, ${ev.severity}, ${ev.scope}, ${ev.target}, ${ev.tick}, ${ev.duration},
-            ${ev.category}, ${ev.related}, ${tx.json(ev.figures as never)}, ${ev.jump}, ${ev.persistence}, ${ev.report ? tx.json(ev.report as never) : null},
-            ${startSeq + ev.tick}, 'scheduled')
-          RETURNING id`;
-        if (ev.effects.length) {
-          await tx`
-            INSERT INTO market_event_effects (event_id, ticker, impact_bps, pct)
-            SELECT ${row!.id}, * FROM unnest(${ev.effects.map((e) => assets[e.asset]!.ticker)}::text[],
-              ${ev.effects.map((e) => Math.round(e.pct * 10_000))}::int[], ${ev.effects.map((e) => e.pct)}::float8[])`;
-        }
-      }
-    }
+      WHERE id = ${sessionId} AND status = 'lobby'`;
     const [s] = await tx<{ start_seq: number }[]>`SELECT start_seq FROM sessions WHERE id = ${sessionId}`;
-    return { startSeq: Number(s!.start_seq), events: await eventsWhere(tx as unknown as Sql, tx`e.session_id = ${sessionId}`, assets) };
+    return Number(s!.start_seq);
   });
 }
 
@@ -330,9 +314,9 @@ export async function liveEvents(sql: Sql, seq: number, assets: Asset[]): Promis
 async function eventsWhere(sql: Sql, where: ReturnType<Sql>, assets: Asset[]): Promise<StoredEvent[]> {
   const index = new Map(assets.map((a, i) => [a.ticker, i]));
   const rows = await sql<{
-    id: number; session_id: string; seq: number; template: string; category: Category; scope: Scope; target: string | null; related: string[];
+    id: number; session_id: string | null; seq: number; template: string; category: Category; scope: Scope; target: string | null; related: string[];
     headline: string; description: string; figures: Figure[]; severity: 1 | 2 | 3; tick: number; duration: number; jump: number; persistence: number;
-    report: Report | null; market_seq: number; status: StoredEvent['status']; published_at: Date | null; effects: { ticker: string; pct: number }[];
+    report: Report | null; source: ScheduledEvent['source'] | null; market_seq: number; status: StoredEvent['status']; published_at: Date | null; effects: { ticker: string; pct: number }[];
   }[]>`
     SELECT e.*, coalesce((SELECT json_agg(json_build_object('ticker', f.ticker, 'pct', coalesce(f.pct, f.impact_bps / 10000.0)))
       FROM market_event_effects f WHERE f.event_id = e.id), '[]') AS effects
@@ -340,7 +324,7 @@ async function eventsWhere(sql: Sql, where: ReturnType<Sql>, assets: Asset[]): P
   return rows.map((r) => ({
     id: r.id, sessionId: r.session_id, seq: r.market_seq, ord: r.seq, tick: r.tick, template: r.template, category: r.category, scope: r.scope,
     target: r.target, related: r.related, headline: r.headline, body: r.description, figures: r.figures, severity: r.severity,
-    duration: r.duration, jump: r.jump, persistence: r.persistence, report: r.report, status: r.status,
+    duration: r.duration, jump: r.jump, persistence: r.persistence, report: r.report, source: r.source ?? 'breaking', status: r.status,
     publishedAt: r.published_at?.getTime() ?? null,
     // A company delisted from the code since the event was stored simply stops being moved by it.
     effects: r.effects.flatMap((e) => (index.has(e.ticker) ? [{ asset: index.get(e.ticker)!, pct: e.pct }] : [])),
@@ -349,12 +333,13 @@ async function eventsWhere(sql: Sql, where: ReturnType<Sql>, assets: Asset[]): P
 
 /** The latest published news across every competition, newest first. */
 export async function recentNews(sql: Sql, limit: number): Promise<EventInfo[]> {
-  const rows = await sql<{ id: number; session_id: string; market_seq: number | null; category: Category; scope: Scope; target: string | null; related: string[]; headline: string; description: string; figures: Figure[]; severity: 1 | 2 | 3; published_at: Date }[]>`
-    SELECT id, session_id, market_seq, category, scope, target, related, headline, description, figures, severity, published_at
+  const rows = await sql<{ id: number; session_id: string | null; market_seq: number | null; category: Category; scope: Scope; target: string | null; related: string[]; headline: string; description: string; figures: Figure[]; severity: 1 | 2 | 3; published_at: Date; source: ScheduledEvent['source'] | null; report: Report | null }[]>`
+    SELECT id, session_id, market_seq, category, scope, target, related, headline, description, figures, severity, published_at, source, report
     FROM market_events WHERE status = 'published' AND template <> 'quiet-report' ORDER BY published_at DESC, id DESC LIMIT ${limit}`;
   return rows.map((r) => ({
     id: r.id, sessionId: r.session_id, seq: r.market_seq ?? 0, at: r.published_at.getTime(), category: r.category, scope: r.scope,
-    target: r.target, related: r.related, headline: r.headline, body: r.description, figures: r.figures, severity: r.severity,
+    target: r.target, related: r.related, headline: r.headline, body: r.description, figures: r.figures, severity: r.severity, source: r.source ?? undefined,
+    earnings: r.report?.epsEstimate != null ? { actual: r.report.eps, expected: r.report.epsEstimate, guidance: r.report.guidance } : undefined,
   }));
 }
 
@@ -363,9 +348,11 @@ export class CheckpointConflict extends Error {}
 export interface Checkpoint {
   prevSeq: number;
   state: MarketState;
-  prices: { ticker: string; seq: number; at: number; sessionId: string | null; price: number }[];
+  assets: Asset[];
+  prices: { ticker: string; seq: number; at: number; price: number }[];
   published: { id: number; at: number }[];
-  cancelled: number[];
+  /** Stories planned since the last checkpoint: durable before any of them can matter to a restart. */
+  planned: TapeEvent[];
   reports: { report: Report; eventId: number }[];
   /** News the market itself made (crashes, panics, the cycle, credit), already published. */
   notes: StoredNote[];
@@ -373,7 +360,6 @@ export interface Checkpoint {
 
 export interface StoredNote {
   id: number;
-  sessionId: string;
   seq: number;
   at: number;
   tick: number;
@@ -400,24 +386,38 @@ export async function writeCheckpoint(sql: Sql, c: Checkpoint) {
     if (head!.seq !== c.prevSeq) throw new CheckpointConflict(`market head is ${head!.seq}, this writer built on ${c.prevSeq}`);
     if (c.prices.length) {
       await tx`
-        INSERT INTO market_prices (ticker, seq, at, session_id, price_cents)
+        INSERT INTO market_prices (ticker, seq, at, price_cents)
         SELECT * FROM unnest(${c.prices.map((p) => p.ticker)}::text[], ${c.prices.map((p) => p.seq)}::bigint[],
-          ${c.prices.map((p) => new Date(p.at).toISOString())}::timestamptz[], ${c.prices.map((p) => p.sessionId) as string[]}::uuid[],
-          ${c.prices.map((p) => p.price)}::int[])
+          ${c.prices.map((p) => new Date(p.at).toISOString())}::timestamptz[], ${c.prices.map((p) => p.price)}::int[])
         ON CONFLICT DO NOTHING`;
+    }
+    for (const ev of c.planned) {
+      await tx`
+        INSERT INTO market_events (id, seq, template, headline, description, severity, scope, target, tick, duration,
+          category, related, figures, jump, persistence, report, market_seq, status, engine_version, source)
+        VALUES (${ev.id}, ${ev.ord}, ${ev.template}, ${ev.headline}, ${ev.body}, ${ev.severity}, ${ev.scope}, ${ev.target}, ${ev.tick}, ${ev.duration},
+          ${ev.category}, ${ev.related}, ${tx.json(ev.figures as never)}, ${ev.jump}, ${ev.persistence}, ${ev.report ? tx.json(ev.report as never) : null},
+          ${ev.seq}, 'scheduled', ${ENGINE_VERSION}, ${ev.source})
+        ON CONFLICT (id) DO NOTHING`;
+      if (ev.effects.length) {
+        await tx`
+          INSERT INTO market_event_effects (event_id, ticker, impact_bps, pct)
+          SELECT ${ev.id}, * FROM unnest(${ev.effects.map((e) => c.assets[e.asset]!.ticker)}::text[],
+            ${ev.effects.map((e) => Math.round(e.pct * 10_000))}::int[], ${ev.effects.map((e) => e.pct)}::float8[])
+          ON CONFLICT DO NOTHING`;
+      }
     }
     for (const p of c.published) {
       await tx`UPDATE market_events SET status = 'published', published_at = ${new Date(p.at)} WHERE id = ${p.id} AND status = 'scheduled'`;
     }
-    if (c.cancelled.length) await tx`UPDATE market_events SET status = 'cancelled' WHERE id = ANY(${c.cancelled}) AND status = 'scheduled'`;
     for (const r of c.reports) await insertReports(tx as unknown as Sql, [r.report], r.eventId);
     // Market-made news has a negative id derived from its tick: a replay inserts nothing twice.
     for (const n of c.notes) {
       await tx`
-        INSERT INTO market_events (id, session_id, seq, template, headline, description, severity, scope, target, tick, duration,
-          category, related, figures, jump, persistence, market_seq, status, published_at)
-        VALUES (${n.id}, ${n.sessionId}, ${n.id}, ${n.template}, ${n.headline}, ${n.body}, ${n.severity}, ${n.scope}, ${n.target}, ${n.tick}, 1,
-          ${n.category}, ${n.related}, ${tx.json(n.figures as never)}, 0, 0, ${n.seq}, 'published', ${new Date(n.at)})
+        INSERT INTO market_events (id, seq, template, headline, description, severity, scope, target, tick, duration,
+          category, related, figures, jump, persistence, market_seq, status, published_at, engine_version)
+        VALUES (${n.id}, ${n.id}, ${n.template}, ${n.headline}, ${n.body}, ${n.severity}, ${n.scope}, ${n.target}, ${n.tick}, 1,
+          ${n.category}, ${n.related}, ${tx.json(n.figures as never)}, 0, 0, ${n.seq}, 'published', ${new Date(n.at)}, ${ENGINE_VERSION})
         ON CONFLICT DO NOTHING`;
     }
     await tx`INSERT INTO market_checkpoints (seq, state) VALUES (${c.state.seq}, ${tx.json(c.state as never)}) ON CONFLICT DO NOTHING`;
@@ -438,17 +438,46 @@ export interface PricePoint {
 export async function priceBars(sql: Sql, ticker: string, from: Date, bucketMs: number): Promise<PricePoint[]> {
   const rows = await sql<{ t: Date; o: number; h: number; l: number; c: number; seq: number }[]>`
     SELECT date_bin(make_interval(secs => ${bucketMs / 1000}), at, timestamptz 'epoch') AS t,
-      (array_agg(price_cents ORDER BY seq))[1] AS o, max(price_cents) AS h, min(price_cents) AS l,
-      (array_agg(price_cents ORDER BY seq DESC))[1] AS c, max(seq) AS seq
-    FROM market_prices WHERE ticker = ${ticker} AND at >= ${from} GROUP BY 1 ORDER BY 1`;
-  return rows.map((r) => ({ at: r.t.getTime(), o: r.o, h: r.h, l: r.l, c: r.c, seq: r.seq }));
+      (array_agg(o ORDER BY seq))[1] AS o, max(h) AS h, min(l) AS l, (array_agg(c ORDER BY seq DESC))[1] AS c, max(seq) AS seq
+    FROM (
+      SELECT at, seq, price_cents AS o, price_cents AS h, price_cents AS l, price_cents AS c FROM market_prices WHERE ticker = ${ticker} AND at >= ${from}
+      UNION ALL SELECT bucket, last_seq, o, h, l, c FROM market_prices_1m WHERE ticker = ${ticker} AND bucket >= ${from}
+    ) x GROUP BY 1 ORDER BY 1`;
+  return rows.map((r) => ({ at: r.t.getTime(), o: r.o, h: r.h, l: r.l, c: r.c, seq: Number(r.seq) }));
 }
 
 export async function priceSpan(sql: Sql, ticker: string): Promise<{ first: number; last: number } | null> {
   const [row] = await sql<{ first: Date | null; last: Date | null }[]>`
-    SELECT (SELECT at FROM market_prices WHERE ticker = ${ticker} ORDER BY seq LIMIT 1) AS first,
-           (SELECT at FROM market_prices WHERE ticker = ${ticker} ORDER BY seq DESC LIMIT 1) AS last`;
+    SELECT coalesce((SELECT bucket FROM market_prices_1m WHERE ticker = ${ticker} ORDER BY first_seq LIMIT 1),
+        (SELECT at FROM market_prices WHERE ticker = ${ticker} ORDER BY seq LIMIT 1)) AS first,
+      coalesce((SELECT at FROM market_prices WHERE ticker = ${ticker} ORDER BY seq DESC LIMIT 1),
+        (SELECT bucket FROM market_prices_1m WHERE ticker = ${ticker} ORDER BY last_seq DESC LIMIT 1)) AS last`;
   return row?.first && row.last ? { first: row.first.getTime(), last: row.last.getTime() } : null;
+}
+
+/**
+ * Folds the oldest ticks before `before` into minute bars and deletes them, in one statement, at most
+ * `limit` rows. A bar split across batches merges. Ticks from `keepFrom` on are never touched.
+ */
+export async function foldOldPrices(sql: Sql, before: Date, keepFrom: number, limit: number): Promise<number> {
+  const [row] = await sql<{ n: number }[]>`
+    WITH victims AS (
+      SELECT ticker, seq FROM market_prices WHERE at < ${before} AND seq < ${keepFrom} ORDER BY seq LIMIT ${limit}
+    ), gone AS (
+      DELETE FROM market_prices m USING victims v WHERE m.ticker = v.ticker AND m.seq = v.seq RETURNING m.ticker, m.seq, m.at, m.price_cents
+    ), bars AS (
+      SELECT ticker, date_bin('1 minute', at, timestamptz 'epoch') AS bucket, (array_agg(price_cents ORDER BY seq))[1] AS o, max(price_cents) AS h, min(price_cents) AS l,
+        (array_agg(price_cents ORDER BY seq DESC))[1] AS c, min(seq) AS first_seq, max(seq) AS last_seq
+      FROM gone GROUP BY 1, 2
+    ), saved AS (
+      INSERT INTO market_prices_1m AS b (ticker, bucket, o, h, l, c, first_seq, last_seq) SELECT * FROM bars
+      ON CONFLICT (ticker, bucket) DO UPDATE SET h = greatest(b.h, excluded.h), l = least(b.l, excluded.l),
+        o = CASE WHEN excluded.first_seq < b.first_seq THEN excluded.o ELSE b.o END, c = CASE WHEN excluded.last_seq > b.last_seq THEN excluded.c ELSE b.c END,
+        first_seq = least(b.first_seq, excluded.first_seq), last_seq = greatest(b.last_seq, excluded.last_seq)
+      RETURNING 1
+    )
+    SELECT (SELECT count(*)::int FROM gone) AS n, (SELECT count(*) FROM saved) AS bars`;
+  return row!.n;
 }
 
 /** Competitions that traded inside a window, for session separators on charts. */
@@ -470,7 +499,8 @@ export async function tradesFor(sql: Sql, participantId: string, limit: number):
 /** Each company's first recorded price: the base of the equal-weighted indices. */
 export async function firstPrices(sql: Sql, tickers: string[]): Promise<Record<string, number>> {
   const rows = await sql<{ ticker: string; price_cents: number | null }[]>`
-    SELECT t.ticker, (SELECT price_cents FROM market_prices m WHERE m.ticker = t.ticker ORDER BY seq LIMIT 1) AS price_cents
+    SELECT t.ticker, coalesce((SELECT o FROM market_prices_1m b WHERE b.ticker = t.ticker ORDER BY first_seq LIMIT 1),
+      (SELECT price_cents FROM market_prices m WHERE m.ticker = t.ticker ORDER BY seq LIMIT 1)) AS price_cents
     FROM unnest(${tickers}::text[]) AS t(ticker)`;
   return Object.fromEntries(rows.flatMap((r) => (r.price_cents ? [[r.ticker, r.price_cents]] : [])));
 }
@@ -481,8 +511,9 @@ export async function indexBars(sql: Sql, base: Record<string, number>, from: Da
   const rows = await sql<{ t: Date; r: number; seq: number }[]>`
     SELECT x.t, avg(x.c::float8 / b.base) AS r, max(x.seq) AS seq FROM (
       SELECT ticker, date_bin(make_interval(secs => ${bucketMs / 1000}), at, timestamptz 'epoch') AS t,
-        (array_agg(price_cents ORDER BY seq DESC))[1] AS c, max(seq) AS seq
-      FROM market_prices WHERE ticker = ANY(${tickers}::text[]) AND at >= ${from} GROUP BY 1, 2) x
+        (array_agg(c ORDER BY seq DESC))[1] AS c, max(seq) AS seq
+      FROM (SELECT ticker, at, seq, price_cents AS c FROM market_prices WHERE ticker = ANY(${tickers}::text[]) AND at >= ${from}
+        UNION ALL SELECT ticker, bucket, last_seq, c FROM market_prices_1m WHERE ticker = ANY(${tickers}::text[]) AND bucket >= ${from}) p GROUP BY 1, 2) x
     JOIN unnest(${tickers}::text[], ${tickers.map((t) => base[t]!)}::int[]) AS b(ticker, base) USING (ticker)
     GROUP BY x.t ORDER BY x.t`;
   return rows.map((row) => {

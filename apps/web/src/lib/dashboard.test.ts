@@ -10,7 +10,7 @@ const fund = (o: Partial<AssetInfo['fund']> = {}): AssetInfo['fund'] => ({
   epsTtm: 2, revenueTtm: 1000, netIncomeTtm: 100, epsGrowth: 0.1, revenueGrowth: 0.05, latest: null, fair: null, ...o,
 });
 const row = (ticker: string, sector: string, bps: number, o: Partial<ScreenRow> & { fund?: Partial<AssetInfo['fund']> } = {}): ScreenRow => ({
-  asset: { ticker, name: `${ticker} Corp`, exchange: 'X', sector, industry: 'Things', description: '', beta: 1, risk: 'medium', core: true, fund: fund(o.fund) },
+  asset: { ticker, name: `${ticker} Corp`, exchange: 'X', sector, industry: 'Things', description: '', beta: 1, risk: 'medium', core: true, traits: { growth: 0, cyclical: 1, speculation: 1, debt: 0, oil: 0, defensive: false }, fund: fund(o.fund) },
   index: 0, price: 1000, bps, pe: 20, vsFair: null, cheaperThan: null, trades: 0, margin: 0.1, ...o,
 });
 

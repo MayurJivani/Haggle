@@ -1,9 +1,12 @@
 // One seed of an experiment: writes its summaries as one JSON line. Run through scripts/lab/run.ts.
 import { ASSETS } from '../../src/market/assets.js';
+import { SIM } from '../../src/market/sim.js';
 import { simulate } from '../calibration/simulate.js';
 import { anchorStudy, backtest } from './strategies.js';
 import { playRound } from './gameplay.js';
 
+// An experiment overrides parameters without touching the code: LAB_SET='{"reversion":0.002}'.
+Object.assign(SIM, JSON.parse(process.env.LAB_SET ?? '{}'));
 const [mode, seedsArg, yearsArg] = process.argv.slice(2);
 const years = Number(yearsArg);
 const core = ASSETS.flatMap((a, i) => (a.core ? [i] : []));

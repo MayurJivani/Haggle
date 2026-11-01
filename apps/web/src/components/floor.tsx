@@ -2,7 +2,7 @@ import { motion } from 'motion/react';
 import { ArrowDownUp, Minus, Plus, Search, Star } from 'lucide-react';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { eps, millions, money, pct, ratio, SECTOR_COLOR, signedMoney, tone, when } from '../lib/format';
-import { game, useGame, type Report } from '../lib/game';
+import { game, useGame, type AssetInfo, type Report } from '../lib/game';
 import { usePortfolio, type Holding } from '../lib/portfolio';
 import { peText, SECTOR_NOTES, useResearch, type Metrics } from '../lib/research';
 import { concerns, PriceChart } from './chart';
@@ -519,6 +519,20 @@ function Position({ h }: { h: Holding }) {
 
 type Tab = 'chart' | 'financials' | 'news';
 
+/** A company's character in plain words, read from the same numbers its price model uses. */
+function character(a: AssetInfo): string[] {
+  const t = a.traits;
+  if (!t) return [];
+  return [
+    t.defensive && 'defensive',
+    t.growth >= 0.2 && 'fast grower',
+    t.speculation >= 1.4 && 'rides enthusiasm',
+    t.debt >= 1 && 'credit sensitive',
+    Math.abs(t.oil) >= 0.7 && (t.oil > 0 ? 'gains on dear oil' : 'hurt by dear oil'),
+    t.cyclical >= 1.6 && 'cyclical',
+  ].filter((x): x is string => !!x);
+}
+
 export function CompanyPanel({ ticker, onSelect }: { ticker: string; onSelect: (t: string) => void }) {
   const { byTicker, rows } = useResearch();
   const prev = useGame((s) => s.prev[s.index.get(ticker) ?? -1]);
@@ -555,6 +569,7 @@ export function CompanyPanel({ ticker, onSelect }: { ticker: string; onSelect: (
             <span>{a.industry}</span>
             <span>· {a.exchange}</span>
             <span>· {a.risk} risk, beta {a.beta.toFixed(2)}</span>
+            {character(a).map((c) => <span key={c}>· {c}</span>)}
           </p>
         </div>
         <div className="flex items-center gap-2">

@@ -48,6 +48,36 @@ export const SIM = {
   garchAlpha: 0.01,
   garchGamma: 0.04,
   garchBeta: 0.9695,
+  /**
+   * Volatility has two speeds (a component GARCH, Engle and Lee 1999): the fast part above reverts to a
+   * slow level, and the slow level remembers months of stress. Keeps both the day-to-day clustering and
+   * the 120-day memory that one component cannot carry at once.
+   */
+  varLongHalfLife: months(9),
+  varLongAlpha: 0.0012,
+  /** A market in drawdown is an uncertain market: long-run variance target per unit of log drawdown. */
+  drawdownVariance: 2.5,
+  /** Rare outsized ticks: chance per tick, and how much a tick's market shock is scaled. The volatility update reads the shock clipped, so one tick cannot blow the variance up. */
+  jumpChance: 0.004,
+  jumpScale: 2.6,
+  // ---- the mood of the market (hidden): what makes bull, sideways and bear stretches
+  /** Risk appetite, -1 to 1: a slow AR(1) fed by the market's own recent return and by credit. */
+  moodHalfLife: months(5),
+  moodVol: 0.011,
+  moodFromReturn: 2.2,
+  moodFromCredit: -0.0012,
+  /** Expansion drift is scaled by 1 + moodDrift * mood, so sideways stretches come and go without any schedule. */
+  moodDrift: 0.9,
+  /** Recession hazard per point of credit stress and per unit of market froth, and recovery's reliance on credit easing. */
+  recessionCredit: 0.8,
+  recessionHeat: 3,
+  recoveryCredit: -0.25,
+  /** Gameplay-tuned to industry momentum: part of a sector's shared shock is lasting news about its demand. */
+  demandFromShock: 0.0004,
+  /** Gameplay-tuned to stock momentum: part of a company's value news changes its prospects. */
+  growthFromNews: 0.0012,
+  /** Gameplay-tuned: an earnings surprise changes prospects, the post-earnings drift documented in real markets. */
+  surpriseGrowth: 0.000012,
   /** Gameplay-tuned: how far a severity-3 story (a market-wide shock) lifts volatility, in long-run variances. */
   storyVariance: 0.2,
   // ---- business cycle (hidden)
@@ -221,6 +251,11 @@ export interface MarketState {
   stress: number;
   /** Market variance in units of its long-run level (GARCH). */
   variance?: number;
+  /** The slow volatility level, the market's own level and its peak, and its mood. */
+  varLong?: number;
+  level?: number;
+  peak?: number;
+  mood?: number;
   recession?: boolean;
   /** Ticks since the cycle last turned, and whether that turn has been reported yet. */
   sinceTurn?: number;
@@ -261,6 +296,22 @@ export function sizeLoadings(assets: Asset[]): number[] {
   return caps.map((c) => clamp((mid - c) / spread, -1.5, 1.5));
 }
 
+/** How strongly a company rides its sector's demand: a fast grower harder than a mature giant. */
+export const sectorExposureOf = (a: Asset) => clamp(0.6 + 2 * a.growth, 0.3, 1.8);
+/** How strongly it rides speculation: a loss-maker or a high-volatility name hardest. */
+export const speculationOf = (a: Asset) => clamp(0.4 + a.vol * 150 + (a.margin <= 0 ? 0.5 : 0) + Math.max(0, a.growth) * 2, 0.3, 2.2);
+
+/**
+ * What kind of company this is, in the units the simulation actually uses, so what a player reads about
+ * a company is what its price does: market beta, volatility, speculation, credit and oil exposure.
+ */
+export function companyTraits(a: Asset): { growth: number; cyclical: number; speculation: number; debt: number; oil: number; defensive: boolean } {
+  return {
+    growth: a.growth, cyclical: a.beta * (SECTOR_PROFILE[a.sector].crisis), speculation: speculationOf(a), debt: Math.max(0, a.sens.credit ?? 0) + (a.margin <= 0 ? 0.6 : 0),
+    oil: a.sens.oil ?? 0, defensive: a.beta <= 0.65 && SECTOR_PROFILE[a.sector].crisis <= 1.05,
+  };
+}
+
 /**
  * Server-authoritative price model for the one persistent market. Each tick a company's log return is
  *
@@ -290,6 +341,11 @@ export class MarketSim {
   seq: number;
   /** Market variance in units of its long-run level. */
   variance: number;
+  varLong: number;
+  /** The equal-weighted market's log level and its running peak: how far it has fallen. */
+  level: number;
+  peak: number;
+  mood: number;
   recession: boolean;
   credit: number;
   readonly prices: Int32Array;
@@ -331,6 +387,10 @@ export class MarketSim {
     this.seq = state.seq;
     // An older checkpoint carried only a stress level; it maps onto an elevated variance.
     this.variance = state.variance ?? 1 + (state.stress ?? 0);
+    this.varLong = state.varLong ?? 1;
+    this.level = state.level ?? 0;
+    this.peak = state.peak ?? 0;
+    this.mood = state.mood ?? 0;
     this.recession = state.recession ?? false;
     this.sinceTurn = state.sinceTurn ?? 0;
     this.turnReported = state.turnReported ?? true;
@@ -361,8 +421,8 @@ export class MarketSim {
     this.creditExposure = Float64Array.from(assets, (a, i) => Math.max(0, a.sens.credit ?? 0) * 0.5 + Math.max(0, this.size[i]!) * 0.5);
     // A fast grower rides its sector's demand harder than a mature giant; a loss-maker or a
     // high-volatility name rides its speculation harder (gameplay, from each company's simulated profile).
-    this.sectorExposure = Float64Array.from(assets, (a) => clamp(0.6 + 2 * a.growth, 0.3, 1.8));
-    this.specExposure = Float64Array.from(assets, (a) => clamp(0.4 + a.vol * 150 + (a.margin <= 0 ? 0.5 : 0) + Math.max(0, a.growth) * 2, 0.3, 2.2));
+    this.sectorExposure = Float64Array.from(assets, (a) => sectorExposureOf(a));
+    this.specExposure = Float64Array.from(assets, (a) => speculationOf(a));
     // Sector weights by seed market capitalisation: how far one company's froth counts in its sector's.
     const caps = assets.map((a) => sharesOf(a) * a.base);
     const totals = SECTORS.map((sec) => assets.reduce((t, a, i) => t + (a.sector === sec ? caps[i]! : 0), 0));
@@ -387,13 +447,6 @@ export class MarketSim {
       if (ev.seq > this.seq) this.pending.push(ev);
     }
     this.pending.sort((a, b) => a.seq - b.seq || a.id - b.id);
-  }
-
-  /** Drops every event that has not landed yet (a competition closed early) and returns them. */
-  cancelPending(): SimEvent[] {
-    const dropped = this.pending;
-    this.pending = [];
-    return dropped;
   }
 
   /** A company's premium over what its fundamentals support, in log terms: what makes bad news hurt more. */
@@ -442,10 +495,19 @@ export class MarketSim {
     const uPanic = this.next();
     const jPanic = this.next();
     const own = this.assets.map(() => ({ z: gauss(this.next), zg: gauss(this.next) }));
+    const uJump = this.next();
+    const zMood = gauss(this.next);
 
     // ---- the economy: cycle, volatility, credit
     this.sinceTurn++;
-    if (uCycle < 1 / (this.recession ? SIM.recessionTicks : SIM.expansionTicks)) {
+    // Turns are driven by the economy's own state: stress and froth bring a recession closer, easing credit ends one.
+    let heatNow = 0;
+    for (let k = 0; k < SECTORS.length; k++) heatNow += Math.max(0, this.heat(k)) / SECTORS.length;
+    const stress = this.credit - SIM.creditExpansion;
+    const turnOdds = this.recession
+      ? (1 / SIM.recessionTicks) * Math.exp(clamp(SIM.recoveryCredit * (this.credit - SIM.creditRecession), -1, 1))
+      : (1 / SIM.expansionTicks) * Math.exp(clamp(SIM.recessionCredit * Math.max(0, stress) + SIM.recessionHeat * heatNow, 0, 3));
+    if (uCycle < turnOdds) {
       this.recession = !this.recession;
       this.sinceTurn = 0;
       this.turnReported = false;
@@ -455,12 +517,16 @@ export class MarketSim {
       this.turnReported = true;
       this.notes.push({ kind: this.recession ? 'recession' : 'recovery', seq: t, sector: null, size: 0, heat: 0, tickers: [] });
     }
-    const target = this.recession ? SIM.varRecession : SIM.varExpansion;
+    const drawdown = Math.max(0, this.peak - this.level);
+    const target = (this.recession ? SIM.varRecession : SIM.varExpansion) * (1 + SIM.drawdownVariance * drawdown);
     const vol = Math.sqrt(this.variance);
-    const marketShock = SIM.marketVol * SIM.marketShare * vol * zMarket;
+    const jump = uJump < SIM.jumpChance ? SIM.jumpScale : 1;
+    const marketShock = SIM.marketVol * SIM.marketShare * vol * zMarket * jump;
     const z2 = zMarket * zMarket;
+    const keepLong = keepFor(SIM.varLongHalfLife);
+    this.varLong = clamp(keepLong * this.varLong + (1 - keepLong) * target + SIM.varLongAlpha * this.variance * (z2 - 1), 0.3, 12);
     this.variance = clamp(
-      target * (1 - SIM.garchAlpha - SIM.garchBeta - SIM.garchGamma / 2) + (SIM.garchAlpha + (zMarket < 0 ? SIM.garchGamma : 0)) * z2 * this.variance + SIM.garchBeta * this.variance,
+      this.varLong * (1 - SIM.garchAlpha - SIM.garchBeta - SIM.garchGamma / 2) + (SIM.garchAlpha + (zMarket < 0 ? SIM.garchGamma : 0)) * z2 * this.variance + SIM.garchBeta * this.variance,
       0.2, 25,
     );
     const creditTarget = this.recession ? SIM.creditRecession : SIM.creditExpansion;
@@ -502,7 +568,7 @@ export class MarketSim {
       this.notes.push({ kind: 'credit-easy', seq: t, sector: null, size: this.credit, heat: 0, tickers: [] });
     }
 
-    const driftM = this.recession ? SIM.driftRecession : SIM.driftExpansion;
+    const driftM = this.recession ? SIM.driftRecession : SIM.driftExpansion * (1 + SIM.moodDrift * this.mood);
     const sizeShock = SIM.sizeVol * zSize;
 
     // ---- sectors: demand and speculation evolve; a sector's own shock is shared by its companies
@@ -512,8 +578,9 @@ export class MarketSim {
       const p = SECTOR_PROFILE[sector];
       // A recession pulls cyclical demand down and leaves defensive sectors relatively better off.
       const target = this.recession ? -SIM.recessionDemand * (p.crisis - 1) * SIM.demandScale : 0;
-      this.demand[k] = keepDemand * this.demand[k]! + (1 - keepDemand) * target + SIM.demandVol * sectorDraws[k]!.zd;
-      return perTick(p.residual) * sectorDraws[k]!.z;
+      const shared = perTick(p.residual) * sectorDraws[k]!.z;
+      this.demand[k] = keepDemand * this.demand[k]! + (1 - keepDemand) * target + SIM.demandVol * sectorDraws[k]!.zd + SIM.demandFromShock * shared;
+      return shared;
     });
 
     const keep = 1 - 1 / SIM.window;
@@ -554,7 +621,7 @@ export class MarketSim {
       this.window[i] = recent + Math.abs(d);
 
       // News about value: the economy, credit, the sector, size, the company's prospects, part of its noise.
-      this.growth[i] = keepGrowth * this.growth[i]! + SIM.growthVol * own[i]!.zg;
+      this.growth[i] = keepGrowth * this.growth[i]! + SIM.growthVol * own[i]!.zg + SIM.growthFromNews * SIM.idioInfo * a.vol * own[i]!.z;
       const liquid = 1 + SIM.liquidity * Math.max(0, this.size[i]!) * Math.max(0, vol - 1);
       const noise = a.vol * own[i]!.z * liquid;
       const beta = a.beta * (1 + SIM.sizeBeta * this.size[i]!);
@@ -580,6 +647,14 @@ export class MarketSim {
       this.logP[i] = clamp(next, lo, hi);
       this.prices[i] = Math.round(Math.exp(this.logP[i]!));
     });
+
+    // The economy's own level, and the mood it feeds: a falling market and wide spreads cool risk appetite.
+    // Read from the market factor, not from prices, so one company's story never reaches anyone else.
+    const levelMove = driftM + marketShock + panic;
+    this.level += levelMove;
+    this.peak = Math.max(this.peak, this.level);
+    const keepMood = keepFor(SIM.moodHalfLife);
+    this.mood = clamp(keepMood * this.mood + SIM.moodFromReturn * (1 - keepMood) * levelMove * SIM.window + SIM.moodFromCredit * Math.max(0, this.credit - SIM.creditExpansion) + SIM.moodVol * zMood, -1, 1);
 
     // Enthusiasm follows a sector's own recent return over the market's (extrapolation), and fades.
     let marketReturn = 0;
@@ -627,6 +702,21 @@ export class MarketSim {
     return Math.exp(this.fairLog[i]!);
   }
 
+  /**
+   * The market's hidden phase, read from its state rather than switched at random. Never sent to players;
+   * they read it from prices, reports and the news. The lab's reports break results down by it.
+   */
+  phase(): 'bull' | 'bear' | 'sideways' | 'crisis' {
+    if (this.variance >= SIM.stressedVar && (this.credit >= SIM.creditTightAt || this.peak - this.level > 0.2)) return 'crisis';
+    if (this.recession || this.peak - this.level > 0.2) return 'bear';
+    return this.mood > 0.15 ? 'bull' : 'sideways';
+  }
+
+  /** An earnings surprise changes the company's prospects for a while. */
+  surprise(i: number, size: number) {
+    this.growth[i] = this.growth[i]! + SIM.surpriseGrowth * clamp(size, -0.4, 0.4);
+  }
+
   regime(): 'calm' | 'nervous' | 'stressed' {
     return this.variance < SIM.nervousVar ? 'calm' : this.variance < SIM.stressedVar ? 'nervous' : 'stressed';
   }
@@ -637,6 +727,10 @@ export class MarketSim {
       rng: this.next.state(),
       stress: 0,
       variance: this.variance,
+      varLong: this.varLong,
+      level: this.level,
+      peak: this.peak,
+      mood: this.mood,
       recession: this.recession,
       sinceTurn: this.sinceTurn,
       turnReported: this.turnReported,

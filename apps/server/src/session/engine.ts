@@ -2,10 +2,11 @@ import { randomInt } from 'node:crypto';
 import type { Logger } from 'pino';
 import type { Sql } from '../db/db.js';
 import { ASSETS, CORE_TICKERS, SECTORS } from '../market/assets.js';
-import { QUIET_REPORT, quietReports, schedule, type Context } from '../market/events.js';
+import { QUIET_REPORT } from '../market/events.js';
 import { noteId, noteStory } from '../market/notes.js';
-import { seedReports, summarize, type Report, type Summary } from '../market/fundamentals.js';
-import { initialState, MarketSim, type SimEvent, type SimNote } from '../market/sim.js';
+import { seedReports, summarize, type Report } from '../market/fundamentals.js';
+import { companyTraits, initialState, type MarketSim, type SimNote } from '../market/sim.js';
+import { ENGINE_VERSION, Tape } from '../market/tape.js';
 import { metrics } from '../metrics.js';
 import { reactionBps, reactionMembers } from '../market/dashboard.js';
 import type {
@@ -27,6 +28,8 @@ export interface EngineConfig {
   maxRooms: number;
   /** Fixed seed for each competition's news (reproducible demos); unset = random per competition. */
   seed?: number;
+  /** How long every tick is kept before it is folded into minute bars. */
+  tickRetentionDays: number;
   /** Seed for the market's first-ever state. Only used once, when no checkpoint exists. */
   marketSeed?: number;
 }
@@ -58,7 +61,7 @@ interface Player {
 }
 
 /** Prices around one story: the tick before it landed, and the end of its reaction window once reached. */
-interface Tape {
+interface ReactionTape {
   seq: number;
   endSeq: number;
   before: number[];
@@ -116,6 +119,9 @@ const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 /** Initial market seed when none is configured: the first market is the same on every install. */
 const GENESIS_SEED = 0x4a6716;
 const LOCK_KEY = 4373;
+const MAINTAIN_MS = 60_000;
+/** Rows folded per run: a few a second overall, well under what the market writes while trading. */
+const FOLD_BATCH = 20_000;
 /** How long after a story its reaction is measured. */
 const REACTION_MS = 60_000;
 
@@ -123,13 +129,10 @@ const TICKERS = ASSETS.map((a) => a.ticker);
 const TICKER_INDEX = new Map(ASSETS.map((a, i) => [a.ticker, i]));
 const risk = (vol: number): AssetInfo['risk'] => (vol < 0.0026 ? 'low' : vol < 0.004 ? 'medium' : 'high');
 
-const toSim = (ev: store.StoredEvent): SimEvent => ({
-  id: ev.id, seq: ev.seq, duration: ev.duration, jump: ev.jump, persistence: ev.persistence, severity: ev.severity, effects: ev.effects,
-});
-
 const eventInfo = (ev: store.StoredEvent): EventInfo => ({
   id: ev.id, sessionId: ev.sessionId, seq: ev.seq, at: ev.publishedAt ?? 0, category: ev.category, scope: ev.scope, target: ev.target,
-  related: ev.related, headline: ev.headline, body: ev.body, figures: ev.figures, severity: ev.severity,
+  related: ev.related, headline: ev.headline, body: ev.body, figures: ev.figures, severity: ev.severity, source: ev.source,
+  earnings: ev.report?.epsEstimate != null ? { actual: ev.report.eps, expected: ev.report.epsEstimate, guidance: ev.report.guidance } : undefined,
 });
 
 const bookInfo = (p: Player): BookInfo => ({
@@ -162,14 +165,14 @@ export interface RoomInput {
   tickers: string[];
 }
 
-type Buffer = Omit<store.Checkpoint, 'prevSeq' | 'state'>;
-const emptyBuffer = (): Buffer => ({ prices: [], published: [], cancelled: [], reports: [], notes: [] });
+type Buffer = Omit<store.Checkpoint, 'prevSeq' | 'state' | 'assets'>;
+const emptyBuffer = (): Buffer => ({ prices: [], planned: [], published: [], reports: [], notes: [] });
 
 export class Engine {
   /** Every competition still in memory: the house one and each custom room, keyed by session id. */
   readonly rooms = new Map<string, Live>();
   house: Live | null = null;
-  market!: MarketSim;
+  tape!: Tape;
   /** Set when another process turned out to own the market: this one stops advancing it. */
   fenced = false;
   /**
@@ -179,11 +182,9 @@ export class Engine {
   private anchor: { seq: number; at: number } | null = null;
   private readonly clients = new Map<string, Map<string, Set<Client>>>();
   private readonly joining = new Map<string, Promise<Player | null>>();
-  private readonly reports = new Map<string, Report[]>();
-  private summaries: Summary[] = [];
   private readonly events = new Map<number, store.StoredEvent>();
   private news: EventInfo[] = [];
-  private readonly tapes = new Map<number, Tape>();
+  private readonly tapes = new Map<number, ReactionTape>();
   private readonly activityCache = new Map<string, { until: number; body: Activity }>();
   private regime: Regime = 'calm';
   private lastAt = Date.now();
@@ -194,6 +195,7 @@ export class Engine {
   private marketJson: string | null = null;
   private lock: Awaited<ReturnType<Sql['reserve']>> | null = null;
   private timer: NodeJS.Timeout | null = null;
+  private maintenance: NodeJS.Timeout | null = null;
   private busy = false;
   private retryAt = 0;
 
@@ -220,6 +222,7 @@ export class Engine {
       throw err;
     }
     this.timer = setInterval(() => void this.pump(), 100);
+    this.maintenance = setInterval(() => void this.maintain(), MAINTAIN_MS);
   }
 
   private async boot() {
@@ -231,12 +234,8 @@ export class Engine {
       await store.insertReports(this.sql, missing.flatMap(seedReports));
       stored = await store.loadReports(this.sql);
     }
-    for (const r of stored) {
-      if (!this.reports.has(r.ticker)) this.reports.set(r.ticker, []);
-      this.reports.get(r.ticker)!.push(r);
-    }
-    this.summaries = ASSETS.map((a) => summarize(a, this.reports.get(a.ticker) ?? []));
-    const fairs = this.summaries.map((s, i) => s.fair?.cents ?? ASSETS[i]!.base);
+    const reports = ASSETS.map((a) => stored.filter((r) => r.ticker === a.ticker));
+    const fairs = ASSETS.map((a, i) => summarize(a, reports[i]!).fair?.cents ?? a.base);
 
     let state = await store.latestCheckpoint(this.sql);
     if (!state) {
@@ -245,7 +244,7 @@ export class Engine {
       state = (await store.latestCheckpoint(this.sql))!;
       this.log.info({ seq: state.seq }, 'market initialised');
     }
-    this.market = new MarketSim(ASSETS, state, fairs);
+    this.tape = new Tape(ASSETS, state, fairs, reports, this.cfg.marketSeed ?? GENESIS_SEED);
     this.savedSeq = state.seq;
     // Fair values move only when a report lands, inside the tape: re-applying them here would make a
     // restarted market diverge from one that never stopped.
@@ -262,6 +261,7 @@ export class Engine {
   /** Stops the clock, waits for the last checkpoint and releases the market. */
   async stop() {
     if (this.timer) clearInterval(this.timer);
+    if (this.maintenance) clearInterval(this.maintenance);
     this.timer = null;
     await this.saving;
     if (this.lock) {
@@ -271,9 +271,29 @@ export class Engine {
     }
   }
 
+  /**
+   * Folds old ticks into minute bars, a batch at a time and off the tick loop. Never touches a tick a live
+   * competition could still need; finished ones keep their opening and closing prices and can be replayed.
+   */
+  async maintain() {
+    if (this.fenced) return;
+    const live = [...this.rooms.values()].flatMap((l) => (l.startSeq === null ? [] : [l.startSeq]));
+    const keepFrom = Math.min(this.savedSeq, ...live);
+    try {
+      await store.foldOldPrices(this.sql, new Date(Date.now() - this.cfg.tickRetentionDays * 86_400_000), keepFrom, FOLD_BATCH);
+    } catch (err) {
+      metrics.dbErrors++;
+      this.log.error({ err }, 'price maintenance failed');
+    }
+  }
+
+  get market(): MarketSim {
+    return this.tape.sim;
+  }
+
   private track(ev: store.StoredEvent) {
     this.events.set(ev.id, ev);
-    this.market.load([toSim(ev)]);
+    this.tape.load([ev]);
   }
 
   // ---------------------------------------------------------------- clock
@@ -371,58 +391,38 @@ export class Engine {
   }
 
   /**
-   * The opening bell. The competition's news is decided from its seed and stored, unpublished, in the
-   * same transaction that opens it; the market starts from wherever it stands. A room that opens while
-   * the market is already running joins its tick grid, so every room shares one tape.
+   * The opening bell. The competition starts on whatever tick the tape has reached and adds nothing to
+   * it. A room that opens while the market is running joins its tick grid.
    */
   private async open(live: Live) {
     const tickMs = this.cfg.tickMs;
     const opensAt = this.anchor ? this.atOf(this.market.seq) : live.opensAt;
-    // shortcut: rooms that overlap each add their own schedule to the one shared tape, so the news is
-    // denser while several rooms trade at once; share one market-level schedule if that gets noisy.
-    const ctx: Context = {
-      assets: ASSETS,
-      reports: (i) => this.reports.get(ASSETS[i]!.ticker) ?? [],
-      ticksPerSecond: 1000 / tickMs,
-      maxTick: live.cfg.totalTicks,
-      at: (tick) => opensAt + tick * tickMs,
-      value: (i) => this.market.value(i),
-      listed: new Set(ASSETS.flatMap((a, i) => (live.listed.has(a.ticker) ? [i] : []))),
-    };
-    const stories = schedule(Number(live.row.seed), ctx, live.cfg.totalTicks);
-    // Every other company files its quarter quietly during the competition.
-    const storied = new Set(stories.flatMap((e) => (e.report ? [e.effects[0]!.asset] : [])));
-    const quiet = quietReports(Number(live.row.seed), ctx, storied, live.cfg.totalTicks);
-    const events = [...stories, ...quiet.map((e, k) => ({ ...e, ord: stories.length + k + 1 }))];
     const opening = Object.fromEntries(ASSETS.map((a, i) => [a.ticker, this.market.prices[i]!]));
     const closesAt = opensAt + live.cfg.totalTicks * tickMs;
-    const opened = await store.openSession(this.sql, live.row.id, this.market.seq, opening, events, ASSETS, new Date(opensAt), new Date(closesAt));
-    live.startSeq = opened.startSeq;
+    live.startSeq = await store.openSession(this.sql, live.row.id, this.market.seq, opening, new Date(opensAt), new Date(closesAt));
     live.opensAt = opensAt;
     live.closesAt = closesAt;
     live.row.status = 'trading';
     live.open = Array.from(this.market.prices);
-    this.anchor ??= { seq: opened.startSeq, at: opensAt };
-    for (const ev of opened.events) if (ev.status === 'scheduled') this.track(ev);
-    this.log.info({ session: live.row.id, room: live.row.code, startSeq: live.startSeq, events: opened.events.length }, 'bell rung');
+    this.anchor ??= { seq: live.startSeq, at: opensAt };
+    this.log.info({ session: live.row.id, room: live.row.code, startSeq: live.startSeq }, 'bell rung');
   }
 
-  /** The last running competition has closed: the market stops, and stories still waiting never land. */
+  /** The last running competition has closed: the clock stops. Stories still waiting land when it restarts, on the same ticks. */
   private idle() {
     this.anchor = null;
     // The market stopping ends every reaction window still open.
     for (const t of this.tapes.values()) if (!t.after) [t.after, t.endSeq] = [Array.from(this.market.prices), this.market.seq];
-    for (const ev of this.market.cancelPending()) {
-      const stored = this.events.get(ev.id);
-      if (stored) stored.status = 'cancelled';
-      this.buffer.cancelled.push(ev.id);
-    }
     for (const [id, ev] of this.events) if (ev.status !== 'scheduled') this.events.delete(id);
   }
 
   private stepOnce(broadcast: boolean) {
     const next = this.market.seq + 1;
     const running = this.running();
+    for (const ev of this.tape.prepare()) {
+      this.events.set(ev.id, { ...ev, sessionId: null, status: 'scheduled', publishedAt: null });
+      this.buffer.planned.push(ev);
+    }
     let before: number[] | null = null;
     for (const ev of this.events.values()) {
       if (ev.seq !== next || ev.status !== 'scheduled') continue;
@@ -430,24 +430,25 @@ export class Engine {
       if (ev.severity >= 2) for (const live of running) live.windows.push({ endSeq: ev.seq + ev.duration, start: this.values(live) });
     }
 
-    const fired = this.market.step();
+    const { fired, filed } = this.tape.step();
     const seq = this.market.seq;
     const at = this.atOf(seq);
     this.lastAt = at;
-    const sessionId = running[0]?.row.id ?? null;
-    ASSETS.forEach((a, i) => this.buffer.prices.push({ ticker: a.ticker, seq, at, sessionId, price: this.market.prices[i]! }));
+    ASSETS.forEach((a, i) => this.buffer.prices.push({ ticker: a.ticker, seq, at, price: this.market.prices[i]! }));
     metrics.ticks++;
     if (broadcast) this.broadcastAll({ t: 'tick', k: seq, at, p: Array.from(this.market.prices) });
 
-    if (running[0]) for (const note of this.market.notes) this.publishNote(note, at, running[0], broadcast);
-    for (const sim of fired) {
-      const ev = this.events.get(sim.id);
+    for (const note of this.market.notes) this.publishNote(note, at, broadcast);
+    for (const { id } of fired) {
+      const ev = this.events.get(id);
       if (!ev) continue;
       this.publish(ev, at, broadcast);
-      // The window ends a minute on, or at the last tick of the competition that scheduled the story.
-      const owner = this.rooms.get(ev.sessionId);
-      const last = owner?.startSeq != null ? owner.startSeq + owner.cfg.totalTicks : Infinity;
-      if (before) this.tapes.set(ev.id, { seq, endSeq: Math.min(seq + Math.round(REACTION_MS / this.cfg.tickMs), last), before, after: null });
+      if (before) this.tapes.set(ev.id, { seq, endSeq: seq + Math.round(REACTION_MS / this.cfg.tickMs), before, after: null });
+    }
+    for (const { report, eventId, index } of filed) {
+      this.buffer.reports.push({ report, eventId });
+      this.marketJson = null;
+      if (broadcast) this.broadcastAll({ t: 'fund', ticker: report.ticker, fund: this.tape.summaries[index]! });
     }
     for (const t of this.tapes.values()) if (!t.after && seq >= t.endSeq) t.after = Array.from(this.market.prices);
     if (fired.length) for (const id of this.tapes.keys()) if (!this.news.some((n) => n.id === id)) this.tapes.delete(id);
@@ -484,7 +485,7 @@ export class Engine {
     if (seq % CHECKPOINT_EVERY === 0 || froze) void this.checkpoint();
   }
 
-  /** A story lands: it goes out to everyone at once, and an earnings story files its report. */
+  /** A story lands: it goes out to everyone at once. */
   private publish(ev: store.StoredEvent, at: number, broadcast: boolean) {
     ev.status = 'published';
     ev.publishedAt = at;
@@ -493,21 +494,6 @@ export class Engine {
     const quiet = ev.template === QUIET_REPORT;
     const info = eventInfo(ev);
     if (!quiet) this.news = [info, ...this.news.filter((n) => n.id !== ev.id)].slice(0, NEWS_KEPT);
-    if (ev.report) {
-      const i = TICKER_INDEX.get(ev.report.ticker);
-      const list = this.reports.get(ev.report.ticker) ?? [];
-      const dup = list.some((r) => r.fiscalYear === ev.report!.fiscalYear && r.fiscalQuarter === ev.report!.fiscalQuarter);
-      if (i !== undefined && !dup) {
-        list.push(ev.report);
-        this.reports.set(ev.report.ticker, list);
-        this.summaries[i] = summarize(ASSETS[i]!, list);
-        const fair = this.summaries[i]!.fair;
-        if (fair) this.market.setFair(i, fair.cents);
-        this.buffer.reports.push({ report: ev.report, eventId: ev.id });
-        this.marketJson = null;
-        if (broadcast) this.broadcastAll({ t: 'fund', ticker: ev.report.ticker, fund: this.summaries[i]! });
-      }
-    }
     if (broadcast && !quiet) this.broadcastAll({ t: 'event', ev: info });
   }
 
@@ -515,12 +501,12 @@ export class Engine {
    * Something the market itself did (a crash, a panic, the economy or credit turning) becomes news on
    * the tick it happened. Its id comes from the tick, so a replay after a restart stores and shows it once.
    */
-  private publishNote(note: SimNote, at: number, live: Live, broadcast: boolean) {
+  private publishNote(note: SimNote, at: number, broadcast: boolean) {
     const id = noteId(note, note.sector ? SECTORS.indexOf(note.sector) : 0);
     if (this.news.some((n) => n.id === id)) return;
     const story = noteStory(note, this.market.credit);
-    const info: EventInfo = { id, sessionId: live.row.id, seq: note.seq, at, ...story };
-    this.buffer.notes.push({ ...story, id, sessionId: live.row.id, seq: note.seq, at, tick: this.localTick(live) });
+    const info: EventInfo = { id, sessionId: null, seq: note.seq, at, ...story };
+    this.buffer.notes.push({ ...story, id, seq: note.seq, at, tick: note.seq });
     metrics.eventsPublished++;
     this.news = [info, ...this.news].slice(0, NEWS_KEPT);
     if (broadcast) this.broadcastAll({ t: 'event', ev: info });
@@ -532,18 +518,18 @@ export class Engine {
    * database is away. Resolves true once the market is durable up to now.
    */
   private checkpoint(): Promise<boolean> {
-    const c: store.Checkpoint = { prevSeq: 0, state: this.market.state(), ...this.buffer };
+    const c: store.Checkpoint = { prevSeq: 0, state: this.market.state(), assets: ASSETS, ...this.buffer };
     this.buffer = emptyBuffer();
     this.saving = this.saving.then(async () => {
       const f = this.failed;
       const job: store.Checkpoint = f
         ? {
-          ...c, prices: [...f.prices, ...c.prices], published: [...f.published, ...c.published], cancelled: [...f.cancelled, ...c.cancelled],
+          ...c, prices: [...f.prices, ...c.prices], planned: [...f.planned, ...c.planned], published: [...f.published, ...c.published],
           reports: [...f.reports, ...c.reports], notes: [...f.notes, ...c.notes],
         }
         : c;
       job.prevSeq = this.savedSeq;
-      if (job.state.seq === this.savedSeq && !f && !c.prices.length && !c.cancelled.length && !c.notes.length) return true;
+      if (job.state.seq === this.savedSeq && !f && !c.prices.length && !c.planned.length && !c.notes.length) return true;
       try {
         await store.writeCheckpoint(this.sql, job);
         this.failed = null;
@@ -615,6 +601,7 @@ export class Engine {
       resultsSeconds: this.cfg.resultsSeconds,
       maxPlayers: this.cfg.maxPlayers,
       startingCash: STARTING_CASH,
+      engineVersion: ENGINE_VERSION,
     };
     const row = await store.createSession(this.sql, this.cfg.seed ?? randomInt(2 ** 31), opensAt, closesAt, cfg);
     if (this.house) this.rooms.delete(this.house.row.id);
@@ -764,7 +751,7 @@ export class Engine {
       serverNow: Date.now(),
       session: live ? this.sessionInfo(live) : null,
       board: { top: b?.top ?? [], count: b?.count ?? 0 },
-      events: this.news.filter((e) => e.sessionId === live?.row.id).slice(0, 6),
+      events: this.news.filter((e) => live?.startSeq != null && e.seq > live.startSeq).slice(0, 6),
       results: live?.results ? { top: live.results.top, awards: live.results.awards } : null,
     };
   }
@@ -792,6 +779,7 @@ export class Engine {
       reveal: input.reveal,
       publicResults: input.publicResults,
       tickers: input.tickers,
+      engineVersion: ENGINE_VERSION,
     };
     let row: store.SessionRow | null = null;
     for (let attempt = 0; !row; attempt++) {
@@ -846,7 +834,7 @@ export class Engine {
     this.marketJson ??= JSON.stringify({
       assets: ASSETS.map((a, i) => ({
         ticker: a.ticker, name: a.name, exchange: a.exchange, sector: a.sector, industry: a.industry, description: a.description,
-        beta: a.beta, risk: risk(a.vol), core: a.core, fund: this.summaries[i]!,
+        beta: a.beta, risk: risk(a.vol), core: a.core, traits: companyTraits(a), fund: this.tape.summaries[i]!,
       })),
     });
     return this.marketJson;
@@ -859,9 +847,9 @@ export class Engine {
   private async loadTapes() {
     const news = this.news.filter((n) => n.seq > 0);
     if (!news.length) return;
-    const ends = await store.sessionEndSeqs(this.sql, [...new Set(news.map((n) => n.sessionId))]);
+    const ends = await store.sessionEndSeqs(this.sql, [...new Set(news.flatMap((n) => n.sessionId ?? []))]);
     const window = Math.round(REACTION_MS / this.cfg.tickMs);
-    const spans = news.map((n) => ({ id: n.id, seq: n.seq, endSeq: Math.min(n.seq + window, ends.get(n.sessionId) ?? Infinity) }));
+    const spans = news.map((n) => ({ id: n.id, seq: n.seq, endSeq: Math.min(n.seq + window, (n.sessionId ? ends.get(n.sessionId) : undefined) ?? Infinity) }));
     const at = await store.pricesAtSeqs(this.sql, TICKERS, [...new Set(spans.flatMap((s) => [s.seq - 1, ...(Number.isFinite(s.endSeq) ? [s.endSeq] : [])]))]);
     const row = (m: Map<string, number> | undefined) => (m && m.size === TICKERS.length ? TICKERS.map((t) => m.get(t)!) : null);
     for (const s of spans) {
@@ -904,8 +892,14 @@ export class Engine {
     return body;
   }
 
+  /** Every current price, for the host choosing companies against a purse. */
+  quotes(): Record<string, number> {
+    return Object.fromEntries(ASSETS.map((a, i) => [a.ticker, this.market.prices[i]!]));
+  }
+
   companyReports(ticker: string): Report[] | null {
-    return TICKER_INDEX.has(ticker) ? (this.reports.get(ticker) ?? []) : null;
+    const i = TICKER_INDEX.get(ticker);
+    return i === undefined ? null : this.tape.reports[i]!;
   }
 
   roomOf(key: string): Live | null {

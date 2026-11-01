@@ -155,6 +155,10 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
     res.setHeader('Cache-Control', 'no-cache').type('application/json').send(engine.marketJsonBody());
   });
 
+  app.get('/api/quotes', researchLimiter, (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache').json({ quotes: engine.quotes() });
+  });
+
   app.get('/api/companies/:ticker', researchLimiter, (req, res) => {
     const ticker = tickerSchema.safeParse(req.params.ticker);
     const reports = ticker.success ? engine.companyReports(ticker.data) : null;

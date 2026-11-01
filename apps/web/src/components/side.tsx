@@ -73,6 +73,45 @@ function Severity({ level }: { level: 1 | 2 | 3 }) {
   );
 }
 
+const SOURCE_LABEL: Record<NonNullable<EventInfo['source']>, string> = {
+  official: 'Official', earnings: 'Earnings', preliminary: 'Preliminary', analyst: 'Analysts', rumour: 'Rumour', breaking: 'Reported',
+};
+
+/** How solid a story is. An unconfirmed one looks unconfirmed: a dashed outline, never a fill. */
+function SourceTag({ source }: { source: EventInfo['source'] }) {
+  if (!source) return null;
+  const soft = source === 'rumour' || source === 'analyst' || source === 'preliminary';
+  return <span className={`rounded-sm border px-1 text-[11px] font-semibold ${soft ? 'border-dashed border-ink-3 text-ink-2' : 'border-rule text-ink-3'}`}>{SOURCE_LABEL[source]}</span>;
+}
+
+const eps = (x: number) => `€${x.toFixed(2)}`;
+
+/** Expected against actual: the bar runs up to what the company earned and past (or short of) the mark. */
+function EarningsTally({ earnings }: { earnings: NonNullable<EventInfo['earnings']> }) {
+  const { actual, expected, guidance } = earnings;
+  const top = Math.max(Math.abs(actual), Math.abs(expected)) * 1.25 || 1;
+  const beat = actual >= expected;
+  const surprise = expected ? ((actual - expected) / Math.abs(expected)) * 100 : 0;
+  return (
+    <div className="mt-2" role="img" aria-label={`Earnings per share ${eps(actual)} against ${eps(expected)} expected, ${beat ? 'a beat' : 'a miss'}. Guidance ${guidance ?? 'not given'}.`}>
+      <div className="flex items-baseline justify-between text-[12px]">
+        <span className={`font-semibold ${beat ? 'text-up' : 'text-down'}`}>{eps(actual)} earned {beat ? '↗' : '↘'} {surprise >= 0 ? '+' : '−'}{Math.abs(surprise).toFixed(1)}%</span>
+        <span className="text-ink-3">{eps(expected)} expected</span>
+      </div>
+      <div className="relative mt-1 h-2 overflow-hidden rounded-sm bg-night-4">
+        <motion.span
+          className={`absolute inset-y-0 left-0 w-full origin-left ${beat ? 'bg-up' : 'bg-down'}`}
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: Math.abs(actual) / top }}
+          transition={{ type: 'spring', stiffness: 170, damping: 26 }}
+        />
+        <span className="absolute inset-y-0 w-[2px] bg-ink" style={{ left: `${(Math.abs(expected) / top) * 100}%` }} aria-hidden />
+      </div>
+      {guidance && <p className="mt-1 text-[12px] text-ink-2">Guidance {guidance === 'held' ? 'held' : guidance}{guidance === 'held' ? ', the outlook is unchanged' : ''}.</p>}
+    </div>
+  );
+}
+
 const CATEGORY_LABEL: Record<EventInfo['category'], string> = { macro: 'Economy', sector: 'Sector', company: 'Company' };
 
 /** The colour a story is filed under: its sector's awning, or saffron for the whole economy. */
@@ -98,6 +137,7 @@ export function NewsItem({ ev, onSelect, open: startOpen = false }: { ev: EventI
           <span className="awning h-2.5 w-5 shrink-0 rounded-[2px]" aria-hidden />
           <span className="font-semibold uppercase tracking-[0.06em] text-ink-2">{CATEGORY_LABEL[ev.category]}</span>
           {ev.category === 'sector' && ev.target && SECTOR_COLOR[ev.target] && <span>{ev.target}</span>}
+          <SourceTag source={ev.source} />
           <time dateTime={new Date(ev.at).toISOString()}>{when(ev.at)}</time>
           <Severity level={ev.severity} />
           <ChevronRight size={14} className={`ml-auto shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} aria-hidden />
@@ -107,6 +147,7 @@ export function NewsItem({ ev, onSelect, open: startOpen = false }: { ev: EventI
       {open && (
         <div className="px-3 pb-3 text-[13px] text-ink-2">
           <p className="leading-relaxed">{ev.body}</p>
+          {ev.earnings && <EarningsTally earnings={ev.earnings} />}
           {ev.figures.length > 0 && (
             <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
               {ev.figures.map((f) => (
@@ -213,10 +254,10 @@ export function NewsStrip({ onOpen }: { onOpen: () => void }) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
           >
-            <span className={`awning h-full shrink-0 ${breaking ? 'w-3' : 'w-1.5'}`} aria-hidden />
+            <span className={`awning h-full shrink-0 ${breaking ? (breaking.severity === 3 ? 'w-8' : 'w-3') : 'w-1.5'}`} aria-hidden />
             <button type="button" onClick={onOpen} className="flex h-full min-w-0 flex-1 items-center gap-2.5 px-3 text-left hover:bg-night-3">
-              <span className={`shrink-0 text-[11px] font-bold uppercase tracking-[0.1em] ${breaking ? 'text-saffron' : 'text-ink-3'}`}>
-                {breaking ? 'Breaking' : 'Latest'}
+              <span className={`shrink-0 text-[11px] font-bold uppercase tracking-[0.1em] ${!breaking ? 'text-ink-3' : breaking.source === 'rumour' ? 'text-ink-2' : 'text-saffron'}`}>
+                {!breaking ? 'Latest' : breaking.source === 'rumour' ? 'Rumour' : breaking.severity === 3 ? 'Market call' : 'Breaking'}
               </span>
               <span className={`min-w-0 truncate ${breaking ? 'font-display text-[17px] font-extrabold uppercase tracking-[0.01em]' : 'text-[13px] font-semibold'}`}>
                 {ev.headline}

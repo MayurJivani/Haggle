@@ -6,6 +6,8 @@
 import type { Asset, Sector } from './assets.js';
 import { rng } from './rng.js';
 
+export type Guidance = 'raised' | 'held' | 'cut';
+
 export interface Report {
   ticker: string;
   fiscalYear: number;
@@ -20,6 +22,8 @@ export interface Report {
   eps: number;
   /** What the market expected going in; null when there was no consensus. */
   epsEstimate: number | null;
+  /** What management said about the quarters ahead. Missing on quiet filings and older reports. */
+  guidance?: Guidance;
   source: 'simulated';
 }
 
@@ -95,7 +99,9 @@ export function nextReport(a: Asset, reports: Report[], surprise: number, revenu
   const per = nextPeriod(last.fiscalYear, last.fiscalQuarter);
   const yearAgo = reports.find((r) => r.fiscalYear === per.fiscalYear - 1 && r.fiscalQuarter === per.fiscalQuarter) ?? last;
   const shares = sharesOf(a);
-  const growth = trendGrowth(a, reports.length);
+  // Consensus is not naive: it leans a third of the way on the last surprise, so a run of beats raises the bar.
+  const lastSurprise = last.epsEstimate ? clamp((last.eps - last.epsEstimate) / Math.abs(last.epsEstimate || 0.01), -0.4, 0.4) : 0;
+  const growth = trendGrowth(a, reports.length) + lastSurprise / 3;
   const revenue = yearAgo.revenue * (1 + growth) * (1 + revenueSurprise);
   // A loss-maker's consensus is last year's loss, narrowing with growth; a beat means a smaller loss.
   const expected = yearAgo.eps >= 0 ? yearAgo.eps * (1 + growth) : yearAgo.eps * (1 - Math.max(0, growth));

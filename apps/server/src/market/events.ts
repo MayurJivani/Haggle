@@ -7,6 +7,9 @@ export type Category = 'macro' | 'sector' | 'company';
 
 type Vars = Record<string, string>;
 
+/** How solid a story is: what a player can weigh when deciding what to believe. */
+export type Source = 'official' | 'earnings' | 'preliminary' | 'analyst' | 'rumour' | 'breaking';
+
 export interface EventTemplate {
   id: string;
   category: Category;
@@ -28,6 +31,9 @@ export interface EventTemplate {
   report?: { surprise: [number, number]; revenue: [number, number] };
   /** A later development on the same company: one of these templates, some ticks on. */
   followUp?: string[];
+  /** Consequences that may come later, each with its chance and delay as a share of the epoch. Never certain, and some cut the other way. */
+  then?: { id: string; chance: number; after: [number, number] }[];
+  source?: Source;
   headlines: string[];
   bodies: string[];
   /** Extra figures for the story, drawn from the event's own random stream. */
@@ -41,7 +47,7 @@ const bp = (next: () => number, lo: number, hi: number) => String(Math.round(bet
 // Copy reports what happened and leaves the consequences to the player: no story names a winner.
 export const TEMPLATES: EventTemplate[] = [
   // ---------------------------------------------------------------- macro
-  { id: 'rate-hike', category: 'macro', scope: 'factor', factor: 'rates', impact: [-0.021, -0.0105], severity: 2, seconds: [30, 60], jump: 0.5, persistence: 0.85, weight: 3,
+  { id: 'rate-hike', then: [{ id: 'consumer-slump', chance: 0.3, after: [0.1, 0.25] }], category: 'macro', scope: 'factor', factor: 'rates', impact: [-0.021, -0.0105], severity: 2, seconds: [30, 60], jump: 0.5, persistence: 0.85, weight: 3,
     headlines: ['Central bank raises rates by {bp} basis points to {rate}%', 'Surprise hike: policy rate lifted to {rate}%'],
     bodies: ['Policymakers cited sticky services inflation and signalled that further moves remain on the table. Borrowing costs rise for households and companies; lenders reprice loans faster than deposits.'],
     vars: (n) => ({ bp: bp(n, 25, 50), rate: (3 + n() * 1.5).toFixed(2) }) },
@@ -49,7 +55,7 @@ export const TEMPLATES: EventTemplate[] = [
     headlines: ['Central bank cuts rates by {bp} basis points to {rate}%', 'Policy rate lowered to {rate}% as inflation cools'],
     bodies: ['The decision was earlier than most economists expected. Cheaper money lowers the discount on future profits, while banks face thinner lending margins.'],
     vars: (n) => ({ bp: bp(n, 25, 50), rate: (2 + n() * 1.5).toFixed(2) }) },
-  { id: 'inflation-hot', category: 'macro', scope: 'factor', factor: 'rates', impact: [-0.0135, -0.006], severity: 1, seconds: [30, 70], jump: 0.4, persistence: 0.7, weight: 2,
+  { id: 'inflation-hot', then: [{ id: 'rate-hike', chance: 0.25, after: [0.1, 0.25] }], category: 'macro', scope: 'factor', factor: 'rates', impact: [-0.0135, -0.006], severity: 1, seconds: [30, 70], jump: 0.4, persistence: 0.7, weight: 2,
     headlines: ['Inflation runs hotter than expected at {cpi}%'],
     bodies: ['Consensus had pencilled in {exp}%. Traders now see a higher chance that rates stay restrictive for longer.'],
     vars: (n) => { const exp = 2.4 + n() * 1.2; return { exp: exp.toFixed(1), cpi: (exp + 0.3 + n() * 0.6).toFixed(1) }; } },
@@ -57,7 +63,7 @@ export const TEMPLATES: EventTemplate[] = [
     headlines: ['Economists raise this year\'s growth forecast to {g}%'],
     bodies: ['Stronger factory orders and hiring pushed forecasters to revise their outlook up from {was}%. Cyclical businesses tend to feel a turn in the economy first.'],
     vars: (n) => { const was = 0.8 + n(); return { was: was.toFixed(1), g: (was + 0.4 + n() * 0.5).toFixed(1) }; } },
-  { id: 'recession-fears', category: 'macro', scope: 'factor', factor: 'growth', impact: [-0.018, -0.009], severity: 2, seconds: [40, 80], jump: 0.4, persistence: 0.8, weight: 2,
+  { id: 'recession-fears', then: [{ id: 'rate-cut', chance: 0.3, after: [0.1, 0.3] }], category: 'macro', scope: 'factor', factor: 'growth', impact: [-0.018, -0.009], severity: 2, seconds: [40, 80], jump: 0.4, persistence: 0.8, weight: 2,
     headlines: ['Recession fears grow as output contracts for a second quarter'],
     bodies: ['GDP shrank {g}% on the quarter. Purchasing managers report falling new orders; companies tied to industrial demand and credit quality are under scrutiny.'],
     vars: (n) => ({ g: (0.1 + n() * 0.4).toFixed(1) }) },
@@ -81,7 +87,7 @@ export const TEMPLATES: EventTemplate[] = [
     bodies: ['Employers added far more jobs than forecast while wage growth cooled. Risk appetite returns across the board.'] },
 
   // ---------------------------------------------------------------- sector developments
-  { id: 'chip-shortage', category: 'sector', scope: 'factor', factor: 'chips', impact: [-0.09, -0.05], severity: 2, seconds: [40, 90], jump: 0.3, persistence: 0.8, weight: 3,
+  { id: 'chip-shortage', then: [{ id: 'supply-chain', chance: 0.3, after: [0.1, 0.25] }], category: 'sector', scope: 'factor', factor: 'chips', impact: [-0.09, -0.05], severity: 2, seconds: [40, 90], jump: 0.3, persistence: 0.8, weight: 3,
     headlines: ['Fab outage tightens global chip supply'],
     bodies: ['A fire and power cut have halted output at a major foundry for an estimated {w} weeks. Lead times for microcontrollers and power chips stretch further; suppliers report stronger pricing.'],
     vars: (n) => ({ w: String(3 + Math.floor(n() * 6)) }) },
@@ -89,15 +95,15 @@ export const TEMPLATES: EventTemplate[] = [
     headlines: ['Cloud providers lift data-centre spending plans by {pct}'],
     bodies: ['Combined capital expenditure guidance from the largest cloud operators rose sharply, while supply of advanced accelerators remains constrained. Power and cooling equipment orders are also climbing.'],
     vars: (n) => ({ pct: pct1(0.15 + n() * 0.2) }) },
-  { id: 'oil-spike', category: 'sector', scope: 'factor', factor: 'oil', impact: [0.06, 0.12], severity: 2, seconds: [30, 70], jump: 0.5, persistence: 0.7, weight: 3,
+  { id: 'oil-spike', then: [{ id: 'inflation-hot', chance: 0.5, after: [0.08, 0.2] }, { id: 'consumer-slump', chance: 0.3, after: [0.15, 0.3] }], category: 'sector', scope: 'factor', factor: 'oil', impact: [0.06, 0.12], severity: 2, seconds: [30, 70], jump: 0.5, persistence: 0.7, weight: 3,
     headlines: ['Pipeline outage sends Brent above ${brent} a barrel'],
     bodies: ['Crude rose {pct} in a day as a key export route shut. Jet fuel and diesel followed. Producers\' cash flows and transport companies\' fuel bills move in opposite directions.'],
     vars: (n) => ({ brent: String(88 + Math.floor(n() * 15)), pct: pct1(0.05 + n() * 0.05) }) },
-  { id: 'oil-slump', category: 'sector', scope: 'factor', factor: 'oil', impact: [-0.08, -0.04], severity: 2, seconds: [30, 70], jump: 0.5, persistence: 0.7, weight: 2,
+  { id: 'oil-slump', then: [{ id: 'consumer-boom', chance: 0.35, after: [0.1, 0.25] }], category: 'sector', scope: 'factor', factor: 'oil', impact: [-0.08, -0.04], severity: 2, seconds: [30, 70], jump: 0.5, persistence: 0.7, weight: 2,
     headlines: ['Producers agree to raise output; crude falls {pct}'],
     bodies: ['The surprise supply increase pushes Brent toward ${brent}. Lower fuel costs flow through to airlines, shippers and anyone with a large fleet.'],
     vars: (n) => ({ brent: String(62 + Math.floor(n() * 10)), pct: pct1(0.04 + n() * 0.05) }) },
-  { id: 'bank-stress', category: 'sector', scope: 'factor', factor: 'credit', impact: [-0.08, -0.04], severity: 2, seconds: [30, 60], jump: 0.5, persistence: 0.7, weight: 2,
+  { id: 'bank-stress', then: [{ id: 'recession-fears', chance: 0.3, after: [0.08, 0.2] }, { id: 'rate-cut', chance: 0.25, after: [0.1, 0.25] }], category: 'sector', scope: 'factor', factor: 'credit', impact: [-0.08, -0.04], severity: 2, seconds: [30, 60], jump: 0.5, persistence: 0.7, weight: 2,
     headlines: ['Deposit run at a mid-sized lender rattles the banking sector'],
     bodies: ['The lender lost {pct} of deposits in two days before regulators stepped in. Investors are examining funding costs and commercial property exposure across the sector.'],
     vars: (n) => ({ pct: pct1(0.15 + n() * 0.2) }) },
@@ -173,7 +179,7 @@ export const TEMPLATES: EventTemplate[] = [
     headlines: ['{name} announces a {bn} billion euro share buyback'],
     bodies: ['The company will repurchase stock over the next twelve months, funded from surplus cash.'],
     vars: (n) => ({ bn: (1 + n() * 9).toFixed(1) }) },
-  { id: 'takeover-rumour', category: 'company', scope: 'asset', impact: [0.06, 0.12], severity: 2, seconds: [15, 35], jump: 0.7, persistence: 0.4, weight: 2, followUp: ['bid-confirmed', 'talks-collapse'],
+  { id: 'takeover-rumour', source: 'rumour', category: 'company', scope: 'asset', impact: [0.06, 0.12], severity: 2, seconds: [15, 35], jump: 0.7, persistence: 0.4, weight: 2, followUp: ['bid-confirmed', 'talks-collapse'],
     headlines: ['Reports: a rival is preparing a bid for {name}'],
     bodies: ['People familiar with the matter say advisers are working on an offer. Neither company has commented.'] },
   { id: 'bid-confirmed', category: 'company', scope: 'asset', impact: [0.04, 0.09], severity: 2, seconds: [15, 30], jump: 0.7, persistence: 0.9, weight: 0,
@@ -193,6 +199,28 @@ export const TEMPLATES: EventTemplate[] = [
     headlines: ['{name} recalls products over a safety defect'],
     bodies: ['The recall covers about {k} thousand units. The company has set aside an undisclosed sum to cover the cost.'],
     vars: (n) => ({ k: String(50 + Math.floor(n() * 400)) }) },
+  // ---------------------------------------------------------------- less certain information
+  { id: 'analyst-upgrade', category: 'company', scope: 'asset', impact: [0.012, 0.035], severity: 1, seconds: [30, 60], jump: 1, persistence: 0.35, weight: 4, source: 'analyst',
+    headlines: ['Analysts raise their rating on {name} after channel checks', 'A large broker raises its target on {name}'],
+    bodies: ['The note cites better {industry} demand than the last report showed. Brokers are often late, and sometimes wrong.'] },
+  { id: 'analyst-downgrade', category: 'company', scope: 'asset', impact: [-0.035, -0.012], severity: 1, seconds: [30, 60], jump: 1, persistence: 0.35, weight: 4, source: 'analyst',
+    headlines: ['Analysts cut {name} on valuation worries', 'A large broker trims its forecasts for {name}'],
+    bodies: ['The note questions how much of the {industry} story is already in the price. Brokers are often late, and sometimes wrong.'] },
+  { id: 'prelim-strong', category: 'company', scope: 'asset', impact: [0.015, 0.045], severity: 1, seconds: [30, 60], jump: 1, persistence: 0.5, weight: 2, source: 'preliminary',
+    headlines: ['{name} flags preliminary sales ahead of plan'],
+    bodies: ['The figures are unaudited and leave out costs. The full report comes later.'] },
+  { id: 'prelim-weak', category: 'company', scope: 'asset', impact: [-0.045, -0.015], severity: 1, seconds: [30, 60], jump: 1, persistence: 0.5, weight: 2, source: 'preliminary',
+    headlines: ['{name} flags preliminary sales short of plan'],
+    bodies: ['The figures are unaudited and leave out one-off items. The full report comes later.'] },
+  { id: 'supply-rumour', category: 'company', scope: 'asset', impact: [-0.05, 0.05], severity: 1, seconds: [20, 40], jump: 1, persistence: 0.1, weight: 3, source: 'rumour', followUp: ['rumour-denied', 'rumour-true'],
+    headlines: ['Traders whisper about a big order change at {name}'],
+    bodies: ['Nobody has confirmed anything. Nobody agrees which way it cuts either.'] },
+  { id: 'rumour-denied', category: 'company', scope: 'asset', impact: [-0.015, 0.015], severity: 1, seconds: [20, 40], jump: 1, persistence: 0.1, weight: 0, source: 'official',
+    headlines: ['{name} says the order talk is unfounded'],
+    bodies: ['The company issued a short statement and declined further comment.'] },
+  { id: 'rumour-true', category: 'company', scope: 'asset', impact: [-0.04, 0.04], severity: 1, seconds: [20, 40], jump: 1, persistence: 0.7, weight: 0, source: 'official',
+    headlines: ['{name} confirms a change in a major order'],
+    bodies: ['The company gave few numbers. Its {industry} rivals were asked about it within the hour.'] },
 ];
 
 export interface Effect {
@@ -227,6 +255,7 @@ export interface ScheduledEvent {
   persistence: number;
   effects: Effect[];
   report: Report | null;
+  source: Source;
 }
 
 export interface Context {
@@ -259,6 +288,9 @@ const fill = (s: string, v: Vars) => s.replace(/\{(\w+)\}/g, (_, k: string) => v
 
 /** Gameplay-tuned (docs/calibration.md): company and sector stories at 60% of their template strength. */
 export const STORY_SCALE = 0.6;
+
+/** A steady utility hits its numbers; a volatile grower's quarter is much harder to call. */
+const earningsNoise = (a: Asset) => Math.max(0.01, Math.min(0.12, a.vol * 12));
 
 /** Chance a company or sector story is already priced in: the reaction is muted, or even reversed. */
 export const PRICED_IN = 0.15;
@@ -294,6 +326,10 @@ export function instantiate(t: EventTemplate, ctx: Context, next: () => number, 
       report = surprise === undefined
         ? nextReport(a, history, between(next, ...t.report.surprise), between(next, ...t.report.revenue), ctx.at(tick))
         : nextReport(a, history, surprise, surprise * 0.3, ctx.at(tick));
+      // Guidance is its own information: mostly in line with the quarter, not always. A beat with a cut can fall.
+      const lean = (surprise ?? 0) * 2 + between(next, -0.5, 0.5);
+      report.guidance = lean > 0.25 ? 'raised' : lean < -0.25 ? 'cut' : 'held';
+      if (report.guidance !== 'held') impact += (report.guidance === 'raised' ? 1 : -1) * STORY_SCALE * 0.03 * jitter();
       const yearAgo = history.find((r) => r.fiscalYear === report!.fiscalYear - 1 && r.fiscalQuarter === report!.fiscalQuarter);
       const yoy = yearAgo ? report.revenue / yearAgo.revenue - 1 : 0;
       Object.assign(vars, {
@@ -304,6 +340,7 @@ export function instantiate(t: EventTemplate, ctx: Context, next: () => number, 
         { label: 'EPS', value: `${eps(report.eps)} vs ${eps(report.epsEstimate ?? report.eps)} est.` },
         { label: 'Revenue', value: `${eurM(report.revenue)} (${yoy >= 0 ? '+' : '-'}${pct1(Math.abs(yoy))} y/y)` },
         { label: 'Net income', value: eurM(report.netIncome) },
+        { label: 'Guidance', value: report.guidance },
       );
     }
   } else if (t.scope === 'sector') {
@@ -340,6 +377,7 @@ export function instantiate(t: EventTemplate, ctx: Context, next: () => number, 
     persistence: t.persistence,
     effects: effects.map((e) => ({ asset: e.asset, pct: Math.max(-0.45, Math.min(0.6, e.pct)) })),
     report,
+    source: t.source ?? (t.report ? 'earnings' : t.category === 'macro' ? 'official' : 'breaking'),
   };
 }
 
@@ -373,7 +411,7 @@ export function schedule(seed: number, ctx: Context, totalTicks: number): Schedu
     if (ctx.value && (t.id === 'earnings-beat' || t.id === 'earnings-miss')) {
       // The quarter's numbers come from how the business has really been doing; beat or miss follows.
       const asset = ev.effects[0]!.asset;
-      const surprise = readoutSurprise(ctx.assets[asset]!, ctx.reports(asset), ctx.value(asset)) + between(next, -0.02, 0.02);
+      const surprise = readoutSurprise(ctx.assets[asset]!, ctx.reports(asset), ctx.value(asset)) + between(next, -1, 1) * earningsNoise(ctx.assets[asset]!);
       t = byId(surprise >= 0 ? 'earnings-beat' : 'earnings-miss');
       ev = instantiate(t, ctx, next, 0, tick, asset, surprise);
     }
@@ -383,12 +421,33 @@ export function schedule(seed: number, ctx: Context, totalTicks: number): Schedu
     }
     if (ev.report) reported.add(ev.effects[0]!.asset);
     out.push(ev);
+    for (const c of t.then ?? []) {
+      if (next() >= c.chance) continue;
+      const later = tick + Math.round(totalTicks * between(next, ...c.after));
+      if (later < totalTicks * 0.97) out.push(instantiate(byId(c.id), ctx, next, 0, later));
+    }
     if (t.followUp) {
       const later = tick + Math.round(totalTicks * between(next, 0.12, 0.25));
       if (later < totalTicks * 0.95) out.push(instantiate(byId(pick(next, t.followUp)), ctx, next, 0, later, ev.effects[0]!.asset));
     }
   });
   return out.sort((a, b) => a.tick - b.tick).map((e, k) => ({ ...e, ord: k + 1 }));
+}
+
+/**
+ * The whole market's news for one epoch. The core listing gets a full schedule, and the companies only
+ * custom rooms can list get their own company stories on top, so a room's news does not thin out as the
+ * market grows. Nothing here knows which rooms exist.
+ */
+export function planEpoch(seed: number, ctx: Context, totalTicks: number): ScheduledEvent[] {
+  const core = new Set(ctx.assets.flatMap((a, i) => (a.core ? [i] : [])));
+  const extra = new Set(ctx.assets.flatMap((a, i) => (a.core ? [] : [i])));
+  const stories = [
+    ...schedule(seed, { ...ctx, listed: core }, totalTicks),
+    ...(extra.size ? schedule(seed ^ 0x51ed27, { ...ctx, listed: extra }, totalTicks).filter((e) => e.scope === 'asset') : []),
+  ];
+  const storied = new Set(stories.flatMap((e) => (e.report ? [e.effects[0]!.asset] : [])));
+  return [...stories, ...quietReports(seed, ctx, storied, totalTicks)].sort((a, b) => a.tick - b.tick).map((e, k) => ({ ...e, ord: k + 1 }));
 }
 
 /**
@@ -402,7 +461,7 @@ export function quietReports(seed: number, ctx: Context, storied: Set<number>, t
   if (!ctx.value) return [];
   const next = rng(seed ^ 0x9e9047);
   return ctx.assets.flatMap((a, i) => {
-    const noise = between(next, -0.02, 0.02);
+    const noise = between(next, -1, 1) * earningsNoise(a);
     const tick = 1 + Math.floor(next() * totalTicks * 0.9);
     if (storied.has(i)) return [];
     const surprise = readoutSurprise(a, ctx.reports(i), ctx.value!(i)) + noise;
@@ -411,7 +470,7 @@ export function quietReports(seed: number, ctx: Context, storied: Set<number>, t
       ord: 0, tick, template: QUIET_REPORT, category: 'company' as const, scope: 'asset' as const, target: a.ticker, related: [a.ticker],
       headline: `${a.name} files Q${report.fiscalQuarter} FY${report.fiscalYear} results`,
       body: `EPS ${eps(report.eps)} against ${eps(report.epsEstimate ?? report.eps)} expected, revenue ${eurM(report.revenue)}.`,
-      figures: [], severity: 1 as const, duration: 1, jump: 0, persistence: 0, effects: [], report,
+      figures: [], severity: 1 as const, duration: 1, jump: 0, persistence: 0, effects: [], report, source: 'earnings' as const,
     }];
   });
 }

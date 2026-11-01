@@ -22,6 +22,7 @@ const engine = new Engine(
     maxRooms: env.MAX_ROOMS,
     seed: env.MARKET_SEED,
     marketSeed: env.MARKET_SEED,
+    tickRetentionDays: env.TICK_RETENTION_DAYS,
   },
   logger,
 );

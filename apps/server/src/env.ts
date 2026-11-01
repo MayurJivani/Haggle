@@ -34,6 +34,7 @@ const envSchema = z
     JOIN_RATE_LIMIT: z.coerce.number().int().min(1).default(120),
     // Fixed market seed for reproducible demos; unset = random per session.
     MARKET_SEED: z.coerce.number().int().optional(),
+    TICK_RETENTION_DAYS: z.coerce.number().min(1).max(3650).default(30),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   })
   .refine((e) => e.CLOSING_SECONDS < e.TRADING_SECONDS, {

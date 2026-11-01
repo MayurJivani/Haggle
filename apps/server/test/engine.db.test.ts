@@ -10,10 +10,12 @@ import { Engine, HOUSE, type Client } from '../src/session/engine.js';
 import { STARTING_CASH } from '../src/trading/portfolio.js';
 import { ASSETS, CORE_TICKERS } from '../src/market/assets.js';
 import { seedReports, summarize } from '../src/market/fundamentals.js';
-import { MarketSim, type MarketState } from '../src/market/sim.js';
-import { liveEvents } from '../src/session/store.js';
+import { initialState, type MarketState } from '../src/market/sim.js';
+import { ENGINE_VERSION, Tape } from '../src/market/tape.js';
+import { liveEvents, loadReports } from '../src/session/store.js';
 
 const ADMIN_URL = process.env.TEST_DATABASE_URL;
+const SEED = 4242;
 const log = pino({ level: 'silent' });
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -23,7 +25,7 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
   let sql: Sql;
   const engines: Engine[] = [];
 
-  const config = { lobbySeconds: 600, tradingSeconds: 4, closingSeconds: 1, resultsSeconds: 600, tickMs: 250, maxPlayers: 3, maxRooms: 5, seed: 777 };
+  const config = { lobbySeconds: 600, tradingSeconds: 4, closingSeconds: 1, resultsSeconds: 600, tickMs: 250, maxPlayers: 3, maxRooms: 5, marketSeed: SEED, tickRetentionDays: 30 };
 
   const makeClient = async (nickname: string, room = HOUSE) => {
     const [u] = await sql<{ id: string }[]>`INSERT INTO users (nickname, token_hash) VALUES (${nickname}, ${Buffer.from(randomUUID())}) RETURNING id`;
@@ -144,10 +146,11 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
     const stoppedPrices = Array.from(engine.market.prices);
     const [cp] = await sql<{ state: MarketState }[]>`SELECT state FROM market_checkpoints WHERE seq <= ${stoppedSeq} ORDER BY seq DESC LIMIT 1`;
     const fairs = ASSETS.map((a) => summarize(a, seedReports(a)).fair!.cents);
-    const rebuilt = new MarketSim(ASSETS, cp!.state, fairs);
-    rebuilt.load((await liveEvents(sql, cp!.state.seq, ASSETS)).map((e) => ({ ...e, effects: e.effects })));
-    rebuilt.advanceTo(stoppedSeq);
-    expect(Array.from(rebuilt.prices)).toEqual(stoppedPrices);
+    const stored = await loadReports(sql);
+    const rebuilt = new Tape(ASSETS, cp!.state, fairs, ASSETS.map((a) => stored.filter((x) => x.ticker === a.ticker)), SEED);
+    rebuilt.load(await liveEvents(sql, cp!.state.seq, ASSETS));
+    while (rebuilt.sim.seq < stoppedSeq) { rebuilt.prepare(); rebuilt.step(); }
+    expect(Array.from(rebuilt.sim.prices)).toEqual(stoppedPrices);
 
     const restarted = new Engine(sql, config, log);
     engines.push(restarted);
@@ -172,18 +175,18 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
     // Every tick of the competition is stored once per company: no gaps, no invented points.
     const ticks = Math.floor((config.tradingSeconds * 1000) / config.tickMs);
     const [span] = await sql<{ n: number; lo: number; hi: number }[]>`
-      SELECT count(*)::int AS n, min(seq) AS lo, max(seq) AS hi FROM market_prices WHERE session_id = ${session!.id} AND ticker = 'KO'`;
+      SELECT count(*)::int AS n, min(seq) AS lo, max(seq) AS hi FROM market_prices WHERE seq > ${session!.start_seq} AND seq <= ${session!.start_seq + ticks} AND ticker = 'KO'`;
     expect([span!.n, span!.hi - span!.lo + 1, span!.lo]).toEqual([ticks, ticks, session!.start_seq + 1]);
     // News landed on schedule and nothing was left waiting.
-    const statuses = await sql<{ status: string; published_at: Date | null }[]>`SELECT status, published_at FROM market_events WHERE session_id = ${session!.id}`;
+    const statuses = await sql<{ status: string; published_at: Date | null }[]>`SELECT status, published_at FROM market_events WHERE market_seq > ${session!.start_seq} AND market_seq <= ${session!.start_seq + ticks}`;
     expect(statuses.length).toBeGreaterThan(0);
     expect(statuses.every((e) => e.status === 'published' && e.published_at)).toBe(true);
     // Every company without an earnings story filed its quarter quietly: stored as a report, never as news.
     const [quiet] = await sql<{ n: number; filed: number }[]>`
       SELECT count(*)::int AS n, (SELECT count(*)::int FROM financial_reports f JOIN market_events e ON e.id = f.event_id
-        WHERE e.session_id = ${session!.id} AND e.template = 'quiet-report') AS filed
-      FROM market_events WHERE session_id = ${session!.id} AND template = 'quiet-report' AND status = 'published'`;
-    expect(quiet!.n).toBeGreaterThan(ASSETS.length / 2);
+        WHERE e.template = 'quiet-report') AS filed
+      FROM market_events WHERE template = 'quiet-report' AND status = 'published'`;
+    expect(quiet!.n).toBeGreaterThan(0);
     expect(quiet!.filed).toBe(quiet!.n);
     const news = (alice.inbox.filter((m) => m.t === 'hello').at(-1) as Extract<ServerMsg, { t: 'hello' }>).events;
     expect(news.some((e) => / files Q\d FY\d+ results$/.test(e.headline))).toBe(false);
@@ -233,9 +236,9 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
     expect(row!.closing_prices.SAP).toBe(bellPrices[ASSETS.findIndex((a) => a.ticker === 'SAP')]);
     const [head] = await sql<{ seq: number }[]>`SELECT max(seq) AS seq FROM market_checkpoints`;
     expect(head!.seq).toBe(bellSeq);
-    // Stories that had not landed by the early bell are cancelled, never carried over.
-    const left = await sql`SELECT 1 FROM market_events WHERE session_id = ${id} AND status = 'scheduled'`;
-    expect(left).toHaveLength(0);
+    // Stories that had not landed by the early bell stay on the tape: a room closing never changes the market.
+    const left = await sql`SELECT 1 FROM market_events WHERE market_seq > ${bellSeq} AND status = 'scheduled'`;
+    expect(left.length).toBeGreaterThan(0);
     expect(await engine.closeNow()).toBe(false);
     // Skipping the results screen deals carol into a fresh lobby.
     expect(engine.nextNow()).toBe(true);
@@ -353,5 +356,31 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
     await engine.attach(nosy.client);
     expect(nosy.inbox[0]).toMatchObject({ t: 'hello', results: { restricted: true, top: [] } });
     await engine.stop();
+  });
+
+  it('rooms never touched the tape: everything stored is what a market with no rooms plays', async () => {
+    // Competitions opened, closed early, overlapped and survived a restart above. None of it may show here.
+    const stored = await sql<{ seq: number; ticker: string; price_cents: number }[]>`SELECT seq, ticker, price_cents FROM market_prices ORDER BY seq`;
+    const fairs = ASSETS.map((a) => summarize(a, seedReports(a)).fair!.cents);
+    const pure = new Tape(ASSETS, initialState(ASSETS, SEED, fairs), fairs, ASSETS.map((a) => seedReports(a)), SEED);
+    const bySeq = new Map<number, Map<string, number>>();
+    for (const r of stored) {
+      const seq = Number(r.seq);
+      if (!bySeq.has(seq)) bySeq.set(seq, new Map());
+      bySeq.get(seq)!.set(r.ticker, r.price_cents);
+    }
+    expect(bySeq.size).toBeGreaterThan(30);
+    const last = Math.max(...bySeq.keys());
+    const planned = [];
+    while (pure.sim.seq < last) {
+      planned.push(...pure.prepare());
+      pure.step();
+      const row = bySeq.get(pure.sim.seq);
+      if (row) expect(ASSETS.map((a) => row.get(a.ticker))).toEqual(Array.from(pure.sim.prices));
+    }
+    const events = await sql<{ id: string; headline: string; engine_version: string }[]>`SELECT id, headline, engine_version FROM market_events WHERE market_seq <= ${last} AND id > 0 ORDER BY id`;
+    expect(events.map((e) => [Number(e.id), e.headline])).toEqual(planned.map((e) => [e.id, e.headline]).sort((a, b) => (a[0] as number) - (b[0] as number)).filter(([id]) => events.some((e) => Number(e.id) === id)));
+    expect(events.every((e) => e.engine_version === ENGINE_VERSION)).toBe(true);
+    expect(events.length).toBeGreaterThan(0);
   });
 });

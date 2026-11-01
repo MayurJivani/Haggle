@@ -2,10 +2,10 @@
 // Nothing here carries an event's price impact, a company's event sensitivities or an unpublished
 // story: clients see what happened, never what the market will do about it.
 
-import type { Category, Figure, Scope } from './market/events.js';
+import type { Category, Figure, Scope, Source } from './market/events.js';
 import type { Report, Summary } from './market/fundamentals.js';
 
-export type { Category, Figure, Report, Scope, Summary };
+export type { Category, Figure, Report, Scope, Source, Summary };
 
 export type Phase = 'lobby' | 'trading' | 'closing' | 'results';
 
@@ -81,6 +81,8 @@ export interface AssetInfo {
   risk: 'low' | 'medium' | 'high';
   /** In the house listing; the others are only offered to custom rooms. */
   core: boolean;
+  /** What kind of company it is, in the units the price model uses. */
+  traits: { growth: number; cyclical: number; speculation: number; debt: number; oil: number; defensive: boolean };
   fund: Summary;
 }
 
@@ -92,7 +94,8 @@ export interface MarketInfo {
 /** One published story. */
 export interface EventInfo {
   id: number;
-  sessionId: string;
+  /** The competition that scheduled it, on stories from before the shared schedule. */
+  sessionId: string | null;
   /** Market sequence number it landed on, and when. */
   seq: number;
   at: number;
@@ -105,6 +108,10 @@ export interface EventInfo {
   body: string;
   figures: Figure[];
   severity: 1 | 2 | 3;
+  /** How solid the story is. Missing on stories from before reliability was recorded. */
+  source?: Source;
+  /** On an earnings story: EPS against what was expected, and what management said next. */
+  earnings?: { actual: number; expected: number; guidance?: 'raised' | 'held' | 'cut' };
 }
 
 export interface TradeInfo {

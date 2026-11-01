@@ -2,12 +2,12 @@
 // news every 600 ticks, reports filed by earnings stories) and records what the history script
 // measures, so the two can be compared. Used by run-sim.ts and by test/calibration.test.ts.
 import { ASSETS, SECTORS } from '../../src/market/assets.js';
-import { QUIET_REPORT, quietReports, schedule, type Context } from '../../src/market/events.js';
-import { seedReports, sharesOf, summarize, type Report } from '../../src/market/fundamentals.js';
-import { DAYS_PER_TICK, initialState, MarketSim, type SimNote } from '../../src/market/sim.js';
+import { QUIET_REPORT } from '../../src/market/events.js';
+import { seedReports, sharesOf, summarize } from '../../src/market/fundamentals.js';
+import { DAYS_PER_TICK, initialState, type SimNote } from '../../src/market/sim.js';
+import { Tape } from '../../src/market/tape.js';
 import { acf, corr, drawdowns, kurtosis, mean, sd, skew } from './stats.js';
 
-const CORE = new Set(ASSETS.flatMap((a, i) => (a.core ? [i] : [])));
 const TICKS_PER_DAY = Math.round(1 / DAYS_PER_TICK);
 const COMPETITION = 600;
 
@@ -32,15 +32,15 @@ export interface Run {
 
 export function simulate(seed: number, years: number, news = true): Run {
   const fairs = ASSETS.map((a) => summarize(a, seedReports(a)).fair?.cents ?? a.base);
-  const sim = new MarketSim(ASSETS, initialState(ASSETS, seed, fairs), fairs);
   const reports = ASSETS.map((a) => seedReports(a));
+  const tape = new Tape(ASSETS, initialState(ASSETS, seed, fairs), fairs, reports, seed);
+  const sim = tape.sim;
   const shares = ASSETS.map((a) => sharesOf(a));
   const days = Math.floor((years * 252) / 1);
   const run: Run = {
     days, market: new Float64Array(days), capWeighted: new Float64Array(days), sectors: SECTORS.map(() => new Float64Array(days)), logP: ASSETS.map(() => new Float32Array(days)),
     variance: new Float64Array(days), recession: new Uint8Array(days), credit: new Float64Array(days), notes: [], stories: [], news: [], rounds: [],
   };
-  let id = 1;
   let prev = Array.from(sim.prices, (p) => Math.log(p));
   for (let d = 0; d < days; d++) {
     const mk = new Float64Array(1);
@@ -55,33 +55,13 @@ export function simulate(seed: number, years: number, news = true): Run {
           gap: Float32Array.from(ASSETS, (a) => { const x = st.assets[a.ticker]!; return x.fairLog + x.sentiment + x.transient + (x.froth ?? 0) - x.logP; }),
         });
       }
-      if (news && sim.seq % COMPETITION === 0) {
-        const ctx: Context = {
-          assets: ASSETS, reports: (i) => reports[i]!, ticksPerSecond: 1, maxTick: COMPETITION, at: (t) => t * 1000,
-          value: (i) => sim.value(i), listed: CORE,
-        };
-        const stories = schedule((seed * 7919 + sim.seq) >>> 0, ctx, COMPETITION);
-        // Every other company files its quarter quietly during the competition, as the engine does.
-        const storied = new Set(stories.flatMap((e) => (e.report ? [e.effects[0]!.asset] : [])));
-        const evs = [...stories, ...quietReports((seed * 31 + sim.seq) >>> 0, ctx, storied, COMPETITION)];
-        sim.load(evs.map((e) => ({
-          id: id++, seq: sim.seq + e.tick, duration: e.duration, jump: e.jump, persistence: e.persistence, severity: e.severity, effects: e.effects,
-          report: e.report, meta: { scope: e.scope, category: e.category, target: e.target, template: e.template },
-        })));
-      }
-      const fired = sim.step() as (ReturnType<MarketSim['step']>[number] & { report?: Report; meta: { scope: string; category: string; target: string | null; template: string } })[];
+      if (news) tape.prepare();
+      const { fired } = tape.step();
       for (const ev of fired) {
-        if (ev.meta.template !== QUIET_REPORT) {
-          const net = ev.effects.reduce((t, e) => t + e.pct, 0);
-          run.news.push({ day: d, tick: sim.seq, ...ev.meta, severity: ev.severity, assets: ev.effects.map((e) => e.asset), sign: Math.sign(net) });
+        if (ev.template !== QUIET_REPORT) {
+          run.news.push({ day: d, tick: sim.seq, scope: ev.scope, category: ev.category, target: ev.target, template: ev.template, severity: ev.severity, assets: ev.effects.map((e) => e.asset), sign: Math.sign(ev.effects.reduce((t, e) => t + e.pct, 0)) });
         }
         if (ev.effects.length === 1) run.stories.push({ day: d, asset: ev.effects[0]!.asset, sign: Math.sign(ev.effects[0]!.pct) });
-        if (ev.report) {
-          const i = ASSETS.findIndex((a) => a.ticker === ev.report!.ticker);
-          reports[i]!.push(ev.report);
-          const fair = summarize(ASSETS[i]!, reports[i]!).fair;
-          if (fair) sim.setFair(i, fair.cents);
-        }
       }
       run.notes.push(...sim.notes);
       // Cap-weighted market and sector returns at the caps of the tick before.

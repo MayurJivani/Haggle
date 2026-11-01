@@ -110,7 +110,7 @@ describe('market simulation', () => {
     expect(beat.report!.eps).toBeGreaterThan(beat.report!.epsEstimate!);
     expect(miss.report!.eps).toBeLessThan(miss.report!.epsEstimate!);
     expect(beat.report!.fiscalYear * 4 + beat.report!.fiscalQuarter).toBe(2026 * 4 + 3);
-    expect(beat.figures.map((f) => f.label)).toEqual(['EPS', 'Revenue', 'Net income']);
+    expect(beat.figures.map((f) => f.label)).toEqual(['EPS', 'Revenue', 'Net income', 'Guidance']);
   });
 
   it('an asset event moves only its company, in the stated direction', () => {

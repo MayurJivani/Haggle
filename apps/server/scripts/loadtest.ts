@@ -4,6 +4,7 @@
 // same book after a reconnect, and every story reaching every player. See HOW-IT-WORKS.md.
 //
 //   TARGET=http://localhost:4371 CLIENTS=500 DURATION=120 ADMIN_TOKEN=... npm run loadtest
+//   ROOMS=10 splits the clients across that many custom rooms; RECOVER=1 reconnects through a server restart.
 import WebSocket from 'ws';
 import { randomUUID } from 'node:crypto';
 import type { BookInfo, ServerMsg } from '../src/protocol.js';
@@ -17,6 +18,8 @@ const RECONNECT_FRACTION = Number(process.env.RECONNECT_FRACTION ?? 0.1);
 const RESEARCH_EVERY_MS = Number(process.env.RESEARCH_EVERY_MS ?? 15000);
 const RANGES = ['1m', '5m', '15m', '1h', 'all'];
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+const ROOMS = Number(process.env.ROOMS ?? 0);
+const RECOVER = process.env.RECOVER === '1';
 const run = Date.now().toString(36).slice(-5);
 const origin = new URL(TARGET).origin;
 const wsUrl = TARGET.replace(/^http/, 'ws') + '/ws';
@@ -41,6 +44,12 @@ const stats = {
   eventArrivals: new Map<number, Set<number>>(),
   researchMs: [] as number[],
   researchErrors: 0,
+  /** Every socket's prices per tick: rooms share one tape, so any disagreement is a bug. */
+  tickPrices: new Map<number, string>(),
+  inconsistentTicks: 0,
+  /** A fill in a ticker the bot's room does not list, or for an order it never sent. */
+  crossRoom: 0,
+  outages: 0,
 };
 
 interface Bot {
@@ -53,6 +62,8 @@ interface Bot {
   sent: Map<string, number>;
   filledIds: Set<string>;
   open: boolean;
+  room: string | null;
+  picks: number[];
 }
 
 async function join(i: number): Promise<Bot> {
@@ -64,25 +75,30 @@ async function join(i: number): Promise<Bot> {
   if (!res.ok) throw new Error(`join ${i}: ${res.status} ${await res.text()}`);
   const cookie = res.headers.get('set-cookie')!.split(';')[0]!;
   stats.joined++;
-  return { i, cookie, ws: null, book: null, tickers: [], prices: [], sent: new Map(), filledIds: new Set(), open: false };
+  return { i, cookie, ws: null, book: null, tickers: [], prices: [], sent: new Map(), filledIds: new Set(), open: false, room: null, picks: [] };
 }
 
 function connect(bot: Bot): Promise<void> {
   return new Promise((resolve, reject) => {
     const started = Date.now();
-    const ws = new WebSocket(wsUrl, { headers: { cookie: bot.cookie, origin } });
+    const ws = new WebSocket(bot.room ? `${wsUrl}?room=${bot.room}` : wsUrl, { headers: { cookie: bot.cookie, origin } });
     bot.ws = ws;
     ws.on('message', (raw) => {
       const m = JSON.parse(raw.toString()) as ServerMsg;
       if (m.t === 'hello') {
         stats.helloMs.push(Date.now() - started);
-        bot.tickers = m.tickers;
-        bot.prices = m.prices;
+        bot.tickers = m.listed;
+        bot.picks = m.listed.map((t) => m.tickers.indexOf(t));
+        bot.prices = bot.picks.map((i) => m.prices[i]!);
         bot.book = m.book;
         bot.open = m.session?.phase === 'trading' || m.session?.phase === 'closing';
         resolve();
       } else if (m.t === 'tick') {
-        bot.prices = m.p;
+        bot.prices = bot.picks.map((i) => m.p[i]!);
+        const fp = m.p.join();
+        const seen = stats.tickPrices.get(m.k);
+        if (seen === undefined) stats.tickPrices.set(m.k, fp);
+        else if (seen !== fp) stats.inconsistentTicks++;
         const arr = stats.tickArrivals.get(m.k) ?? [];
         arr.push(Date.now());
         stats.tickArrivals.set(m.k, arr);
@@ -94,6 +110,7 @@ function connect(bot: Bot): Promise<void> {
         bot.open = m.session.phase === 'trading' || m.session.phase === 'closing';
       } else if (m.t === 'fill') {
         if (bot.filledIds.has(m.id)) stats.dupesExecutedTwice++;
+        if (!bot.tickers.includes(m.ticker) || !bot.sent.has(m.id)) stats.crossRoom++;
         bot.filledIds.add(m.id);
         const t = bot.sent.get(m.id);
         if (t) stats.orderMs.push(Date.now() - t);
@@ -108,12 +125,24 @@ function connect(bot: Bot): Promise<void> {
       }
     });
     ws.on('open', () => stats.connected++);
-    ws.on('close', () => stats.connected--);
+    ws.on('close', () => {
+      stats.connected--;
+      // Through a restart: keep trying with the same cookie, and the book must come back.
+      if (RECOVER && bot.ws === ws) { stats.outages++; bot.open = false; void reconnectLoop(bot); }
+    });
     ws.on('error', (err) => {
-      stats.errors++;
+      if (!RECOVER) stats.errors++;
       reject(err);
     });
   });
+}
+
+async function reconnectLoop(bot: Bot) {
+  for (let k = 0; k < 120; k++) {
+    await sleep(1000 + Math.random() * 1000);
+    try { await connect(bot); return; } catch { /* still down */ }
+  }
+  stats.errors++;
 }
 
 function trade(bot: Bot) {
@@ -163,10 +192,26 @@ async function main() {
     bots.push(...(await Promise.all(Array.from({ length: Math.min(25, CLIENTS - i) }, (_, k) => join(i + k)))));
   }
   console.log(`joined ${stats.joined}`);
+  const hosts: { code: string; cookie: string }[] = [];
+  for (let k = 0; k < ROOMS; k++) {
+    const host = bots[Math.floor((k * bots.length) / ROOMS)]!;
+    const r = await fetch(`${TARGET}/api/rooms`, {
+      method: 'POST', headers: { 'content-type': 'application/json', origin, cookie: host.cookie },
+      body: JSON.stringify({ name: `Load ${k}`, maxPlayers: Math.ceil(CLIENTS / ROOMS) + 1, durationMinutes: Math.ceil(DURATION / 60000) + 2 }),
+    });
+    if (!r.ok) throw new Error(`room ${k}: ${r.status} ${await r.text()}`);
+    hosts.push({ code: ((await r.json()) as { code: string }).code, cookie: host.cookie });
+  }
+  if (ROOMS) bots.forEach((b, i) => (b.room = hosts[i % ROOMS]!.code));
   for (let i = 0; i < bots.length; i += 50) await Promise.all(bots.slice(i, i + 50).map(connect));
   console.log(`connected ${stats.connected}, hello p95 ${pct(stats.helloMs, 95)}ms`);
 
-  if (ADMIN_TOKEN) {
+  for (const h of hosts) {
+    const r = await fetch(`${TARGET}/api/rooms/${h.code}/start`, { method: 'POST', headers: { origin, cookie: h.cookie } });
+    if (!r.ok) throw new Error(`start ${h.code}: ${r.status}`);
+  }
+  if (hosts.length) console.log(`${hosts.length} rooms opened`);
+  if (ADMIN_TOKEN && !ROOMS) {
     const r = await fetch(`${TARGET}/api/admin/start`, { method: 'POST', headers: { authorization: `Bearer ${ADMIN_TOKEN}` } });
     console.log(`admin start: ${r.status}`);
   }
@@ -188,14 +233,14 @@ async function main() {
       await connect(b);
       stats.reconnects++;
       const after = b.book ? JSON.stringify({ cash: b.book.cash, positions: b.book.positions }) : null;
-      if (before !== after && b.sent.size === 0) stats.reconnectMismatch++;
+      if (before !== after && b.sent.size === 0 && !RECOVER) stats.reconnectMismatch++;
     }),
   );
 
   await sleep(DURATION / 2);
   timers.forEach(clearInterval);
   await sleep(1500);
-  bots.forEach((b) => b.ws?.close());
+  bots.forEach((b) => { const ws = b.ws; b.ws = null; ws?.close(); });
 
   // Reconnecting bots miss what was published while they were away (they get it in hello instead).
   const missed = [...stats.eventArrivals.values()].filter((seen) => seen.size < CLIENTS - Math.floor(CLIENTS * RECONNECT_FRACTION)).length;
@@ -213,10 +258,11 @@ async function main() {
     news: { stories: stats.eventArrivals.size, storiesSomeoneMissed: missed },
     research: { requests: stats.researchMs.length, errors: stats.researchErrors, p50: pct(stats.researchMs, 50), p95: pct(stats.researchMs, 95), p99: pct(stats.researchMs, 99) },
     socketErrors: stats.errors,
+    rooms: ROOMS, inconsistentTicks: stats.inconsistentTicks, crossRoomFills: stats.crossRoom, outages: stats.outages, ticksCompared: stats.tickPrices.size,
   };
   console.log(JSON.stringify(report, null, 2));
-  const ok = stats.dupesExecutedTwice === 0 && stats.reconnectMismatch === 0 && stats.joined === CLIENTS && !stats.rejects.server_error
-    && missed === 0 && stats.researchErrors === 0;
+  const ok = stats.dupesExecutedTwice === 0 && stats.reconnectMismatch === 0 && stats.joined === CLIENTS && (RECOVER || !stats.rejects.server_error)
+    && stats.inconsistentTicks === 0 && stats.crossRoom === 0 && (RECOVER || missed === 0) && stats.researchErrors === 0;
   console.log(ok ? 'PASS' : 'FAIL');
   process.exit(ok ? 0 : 1);
 }
