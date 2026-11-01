@@ -2,11 +2,12 @@
 // news every 600 ticks, reports filed by earnings stories) and records what the history script
 // measures, so the two can be compared. Used by run-sim.ts and by test/calibration.test.ts.
 import { ASSETS, SECTORS } from '../../src/market/assets.js';
-import { quietReports, schedule, type Context } from '../../src/market/events.js';
+import { QUIET_REPORT, quietReports, schedule, type Context } from '../../src/market/events.js';
 import { seedReports, sharesOf, summarize, type Report } from '../../src/market/fundamentals.js';
 import { DAYS_PER_TICK, initialState, MarketSim, type SimNote } from '../../src/market/sim.js';
 import { acf, corr, drawdowns, kurtosis, mean, sd, skew } from './stats.js';
 
+const CORE = new Set(ASSETS.flatMap((a, i) => (a.core ? [i] : [])));
 const TICKS_PER_DAY = Math.round(1 / DAYS_PER_TICK);
 const COMPETITION = 600;
 
@@ -23,6 +24,10 @@ export interface Run {
   notes: SimNote[];
   /** Scheduled stories: the day they landed, their target company (or -1), and the sign of their move. */
   stories: { day: number; asset: number; sign: number }[];
+  /** Every story that landed, as a player would see it (quiet filings excluded). */
+  news: { day: number; tick: number; scope: string; category: string; severity: number; target: string | null; assets: number[]; sign: number; template: string }[];
+  /** At each round's start: public fair value (log cents, NaN when none), earnings growth, and the log gap of price below its hidden anchor. */
+  rounds: { day: number; fair: Float32Array; growth: Float32Array; gap: Float32Array }[];
 }
 
 export function simulate(seed: number, years: number, news = true): Run {
@@ -33,7 +38,7 @@ export function simulate(seed: number, years: number, news = true): Run {
   const days = Math.floor((years * 252) / 1);
   const run: Run = {
     days, market: new Float64Array(days), capWeighted: new Float64Array(days), sectors: SECTORS.map(() => new Float64Array(days)), logP: ASSETS.map(() => new Float32Array(days)),
-    variance: new Float64Array(days), recession: new Uint8Array(days), credit: new Float64Array(days), notes: [], stories: [],
+    variance: new Float64Array(days), recession: new Uint8Array(days), credit: new Float64Array(days), notes: [], stories: [], news: [], rounds: [],
   };
   let id = 1;
   let prev = Array.from(sim.prices, (p) => Math.log(p));
@@ -41,10 +46,19 @@ export function simulate(seed: number, years: number, news = true): Run {
     const mk = new Float64Array(1);
     let broad = 0;
     for (let k = 0; k < TICKS_PER_DAY; k++) {
+      if (sim.seq % COMPETITION === 0) {
+        const st = sim.state();
+        run.rounds.push({
+          day: d,
+          fair: Float32Array.from(ASSETS, (_, i) => { const f = summarize(ASSETS[i]!, reports[i]!).fair; return f ? Math.log(f.cents) : NaN; }),
+          growth: Float32Array.from(ASSETS, (_, i) => summarize(ASSETS[i]!, reports[i]!).epsGrowth ?? NaN),
+          gap: Float32Array.from(ASSETS, (a) => { const x = st.assets[a.ticker]!; return x.fairLog + x.sentiment + x.transient + (x.froth ?? 0) - x.logP; }),
+        });
+      }
       if (news && sim.seq % COMPETITION === 0) {
         const ctx: Context = {
           assets: ASSETS, reports: (i) => reports[i]!, ticksPerSecond: 1, maxTick: COMPETITION, at: (t) => t * 1000,
-          value: (i) => sim.value(i),
+          value: (i) => sim.value(i), listed: CORE,
         };
         const stories = schedule((seed * 7919 + sim.seq) >>> 0, ctx, COMPETITION);
         // Every other company files its quarter quietly during the competition, as the engine does.
@@ -52,11 +66,15 @@ export function simulate(seed: number, years: number, news = true): Run {
         const evs = [...stories, ...quietReports((seed * 31 + sim.seq) >>> 0, ctx, storied, COMPETITION)];
         sim.load(evs.map((e) => ({
           id: id++, seq: sim.seq + e.tick, duration: e.duration, jump: e.jump, persistence: e.persistence, severity: e.severity, effects: e.effects,
-          report: e.report,
+          report: e.report, meta: { scope: e.scope, category: e.category, target: e.target, template: e.template },
         })));
       }
-      const fired = sim.step() as (ReturnType<MarketSim['step']>[number] & { report?: Report })[];
+      const fired = sim.step() as (ReturnType<MarketSim['step']>[number] & { report?: Report; meta: { scope: string; category: string; target: string | null; template: string } })[];
       for (const ev of fired) {
+        if (ev.meta.template !== QUIET_REPORT) {
+          const net = ev.effects.reduce((t, e) => t + e.pct, 0);
+          run.news.push({ day: d, tick: sim.seq, ...ev.meta, severity: ev.severity, assets: ev.effects.map((e) => e.asset), sign: Math.sign(net) });
+        }
         if (ev.effects.length === 1) run.stories.push({ day: d, asset: ev.effects[0]!.asset, sign: Math.sign(ev.effects[0]!.pct) });
         if (ev.report) {
           const i = ASSETS.findIndex((a) => a.ticker === ev.report!.ticker);
@@ -144,6 +162,8 @@ export function simulateEpisodes(firstSeed: number, episodes: number, years: num
     recession: cat(runs.map((r) => r.recession)),
     credit: cat(runs.map((r) => r.credit)),
     notes,
+    news: [],
+    rounds: [],
     stories: runs.flatMap((r) => r.stories),
   };
 }
