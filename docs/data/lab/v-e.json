@@ -1,0 +1,10098 @@
+{
+ "label": "v-e",
+ "generated": "2026-11-01T23:33:57.415Z",
+ "engine": "v-e",
+ "seeds": {
+  "prices": {
+   "first": 10000,
+   "count": 8,
+   "years": 160
+  },
+  "strategy": {
+   "first": 20000,
+   "count": 20,
+   "years": 10
+  },
+  "gameplay": {
+   "first": 30000,
+   "count": 200,
+   "years": 2
+  }
+ },
+ "prices": [
+  {
+   "years": 10,
+   "runs": 8,
+   "eur": {
+    "min": 0.6497,
+    "p1": 1.28,
+    "p5": 8.4387,
+    "median": 134.1327,
+    "mean": 328.6004,
+    "p95": 1127.5809,
+    "p99": 3900.3821,
+    "max": 8207.7147
+   },
+   "vsSeed": {
+    "min": 0.1847,
+    "p1": 0.2458,
+    "p5": 0.3714,
+    "median": 1.423,
+    "mean": 1.6415,
+    "p95": 3.4916,
+    "p99": 4.6033,
+    "max": 6.4748
+   },
+   "lowestEverEur": 0.5,
+   "highestEverEur": 9718.9203,
+   "pctHitFloor": 0.0833,
+   "pctHitCeil": 0,
+   "pctLeftBand": 34.8333,
+   "pctDrawdown50": 58.3333,
+   "pctDrawdown80": 6.1667,
+   "lowestCompanies": [
+    {
+     "t": "RACE",
+     "m": 0.501,
+     "hi": 1.611,
+     "lo": 0.4041
+    },
+    {
+     "t": "TTWO",
+     "m": 0.5573,
+     "hi": 0.9336,
+     "lo": 0.2812
+    },
+    {
+     "t": "ORSTED",
+     "m": 0.5874,
+     "hi": 1.6536,
+     "lo": 0.1922
+    },
+    {
+     "t": "BA",
+     "m": 0.6851,
+     "hi": 1.4752,
+     "lo": 0.2856
+    },
+    {
+     "t": "UPS",
+     "m": 0.7073,
+     "hi": 2.554,
+     "lo": 0.1906
+    }
+   ],
+   "highestCompanies": [
+    {
+     "t": "NOVN",
+     "m": 2.7896,
+     "hi": 3.2024,
+     "lo": 1.0522
+    },
+    {
+     "t": "DAL",
+     "m": 2.8033,
+     "hi": 4.1446,
+     "lo": 0.1847
+    },
+    {
+     "t": "VALE",
+     "m": 3.224,
+     "hi": 4.1439,
+     "lo": 1.0178
+    },
+    {
+     "t": "NVDA",
+     "m": 3.2438,
+     "hi": 5.4398,
+     "lo": 0.8153
+    },
+    {
+     "t": "MU",
+     "m": 3.4651,
+     "hi": 5.1642,
+     "lo": 0.9849
+    }
+   ],
+   "bySector": {
+    "Technology": {
+     "p5": 0.3714,
+     "median": 1.4294,
+     "p95": 3.2368
+    },
+    "Semiconductors": {
+     "p5": 0.5128,
+     "median": 2.0735,
+     "p95": 4.6404
+    },
+    "Healthcare": {
+     "p5": 0.6145,
+     "median": 1.6296,
+     "p95": 3.6822
+    },
+    "Finance": {
+     "p5": 0.3138,
+     "median": 1.4619,
+     "p95": 2.9124
+    },
+    "Energy": {
+     "p5": 0.3783,
+     "median": 1.4844,
+     "p95": 3.6818
+    },
+    "Automotive": {
+     "p5": 0.4,
+     "median": 1.1108,
+     "p95": 3.4653
+    },
+    "Consumer": {
+     "p5": 0.5495,
+     "median": 1.3471,
+     "p95": 3.3277
+    },
+    "E-commerce": {
+     "p5": 0.5999,
+     "median": 1.855,
+     "p95": 4.0962
+    },
+    "Telecom": {
+     "p5": 0.5365,
+     "median": 1.4938,
+     "p95": 3.4817
+    },
+    "Aerospace & Defence": {
+     "p5": 0.3874,
+     "median": 1.381,
+     "p95": 3.3522
+    },
+    "Industrials": {
+     "p5": 0.3506,
+     "median": 1.5635,
+     "p95": 3.2089
+    },
+    "Materials": {
+     "p5": 0.3132,
+     "median": 1.3854,
+     "p95": 3.963
+    },
+    "Food & Beverage": {
+     "p5": 0.3017,
+     "median": 1.2897,
+     "p95": 3.0354
+    },
+    "Media": {
+     "p5": 0.4512,
+     "median": 1.3136,
+     "p95": 3.0125
+    },
+    "Logistics": {
+     "p5": 0.3097,
+     "median": 1.5814,
+     "p95": 4.1446
+    }
+   },
+   "bySize": {
+    "large": {
+     "p5": 0.4983,
+     "median": 1.4151,
+     "p95": 3.3232
+    },
+    "mid": {
+     "p5": 0.3917,
+     "median": 1.4857,
+     "p95": 3.4414
+    },
+    "small": {
+     "p5": 0.3119,
+     "median": 1.3616,
+     "p95": 3.748
+    }
+   }
+  },
+  {
+   "years": 25,
+   "runs": 8,
+   "eur": {
+    "min": 0.74,
+    "p1": 2.4396,
+    "p5": 11.6328,
+    "median": 202.7208,
+    "mean": 485.5059,
+    "p95": 1658.767,
+    "p99": 5490.8031,
+    "max": 10340.5653
+   },
+   "vsSeed": {
+    "min": 0.2367,
+    "p1": 0.3189,
+    "p5": 0.5153,
+    "median": 2.4226,
+    "mean": 2.4438,
+    "p95": 4.4583,
+    "p99": 5.5973,
+    "max": 8.8483
+   },
+   "lowestEverEur": 0.5,
+   "highestEverEur": 13397.5859,
+   "pctHitFloor": 0.4167,
+   "pctHitCeil": 0,
+   "pctLeftBand": 81.5833,
+   "pctDrawdown50": 90.75,
+   "pctDrawdown80": 25.75,
+   "lowestCompanies": [
+    {
+     "t": "BKNG",
+     "m": 1.1039,
+     "hi": 2.519,
+     "lo": 0.3828
+    },
+    {
+     "t": "TSLA",
+     "m": 1.1177,
+     "hi": 4.8126,
+     "lo": 0.2616
+    },
+    {
+     "t": "LDO",
+     "m": 1.1745,
+     "hi": 3.6614,
+     "lo": 0.6162
+    },
+    {
+     "t": "ORSTED",
+     "m": 1.2238,
+     "hi": 4.137,
+     "lo": 0.7672
+    },
+    {
+     "t": "TM",
+     "m": 1.2658,
+     "hi": 3.6976,
+     "lo": 0.4624
+    }
+   ],
+   "highestCompanies": [
+    {
+     "t": "ABB",
+     "m": 3.6324,
+     "hi": 4.2798,
+     "lo": 0.4338
+    },
+    {
+     "t": "ASML",
+     "m": 3.6576,
+     "hi": 4.2623,
+     "lo": 0.7818
+    },
+    {
+     "t": "IFX",
+     "m": 3.7107,
+     "hi": 6.0995,
+     "lo": 0.3589
+    },
+    {
+     "t": "MU",
+     "m": 3.7313,
+     "hi": 8.4888,
+     "lo": 1.0058
+    },
+    {
+     "t": "TSM",
+     "m": 4.1993,
+     "hi": 5.8119,
+     "lo": 1.3323
+    }
+   ],
+   "bySector": {
+    "Technology": {
+     "p5": 0.9217,
+     "median": 2.5641,
+     "p95": 4.2264
+    },
+    "Semiconductors": {
+     "p5": 0.592,
+     "median": 3.1766,
+     "p95": 6.0995
+    },
+    "Healthcare": {
+     "p5": 1.0357,
+     "median": 2.6298,
+     "p95": 4.5465
+    },
+    "Finance": {
+     "p5": 0.3828,
+     "median": 2.5947,
+     "p95": 4.3361
+    },
+    "Energy": {
+     "p5": 0.5404,
+     "median": 2.6127,
+     "p95": 4.4087
+    },
+    "Automotive": {
+     "p5": 0.3954,
+     "median": 1.5763,
+     "p95": 3.6976
+    },
+    "Consumer": {
+     "p5": 0.8336,
+     "median": 2.5657,
+     "p95": 4.6789
+    },
+    "E-commerce": {
+     "p5": 0.5643,
+     "median": 2.3941,
+     "p95": 4.3537
+    },
+    "Telecom": {
+     "p5": 0.922,
+     "median": 2.2035,
+     "p95": 4.1677
+    },
+    "Aerospace & Defence": {
+     "p5": 0.6162,
+     "median": 2.2048,
+     "p95": 4.1451
+    },
+    "Industrials": {
+     "p5": 0.4338,
+     "median": 2.394,
+     "p95": 4.8685
+    },
+    "Materials": {
+     "p5": 0.4245,
+     "median": 2.5068,
+     "p95": 4.8705
+    },
+    "Food & Beverage": {
+     "p5": 0.6522,
+     "median": 2.2333,
+     "p95": 3.4221
+    },
+    "Media": {
+     "p5": 0.5531,
+     "median": 2.2407,
+     "p95": 4.7129
+    },
+    "Logistics": {
+     "p5": 0.4697,
+     "median": 2.4686,
+     "p95": 4.6564
+    }
+   },
+   "bySize": {
+    "large": {
+     "p5": 0.6416,
+     "median": 2.5631,
+     "p95": 4.5403
+    },
+    "mid": {
+     "p5": 0.5072,
+     "median": 2.4303,
+     "p95": 4.5447
+    },
+    "small": {
+     "p5": 0.4061,
+     "median": 2.3066,
+     "p95": 4.342
+    }
+   }
+  },
+  {
+   "years": 50,
+   "runs": 8,
+   "eur": {
+    "min": 0.7602,
+    "p1": 1.9994,
+    "p5": 8.3297,
+    "median": 174.658,
+    "mean": 411.671,
+    "p95": 1546.6241,
+    "p99": 4323.5401,
+    "max": 9125.5168
+   },
+   "vsSeed": {
+    "min": 0.1741,
+    "p1": 0.2554,
+    "p5": 0.4556,
+    "median": 1.9317,
+    "mean": 2.0562,
+    "p95": 3.9964,
+    "p99": 5.0743,
+    "max": 7.5122
+   },
+   "lowestEverEur": 0.5,
+   "highestEverEur": 15211.847,
+   "pctHitFloor": 0.5,
+   "pctHitCeil": 0,
+   "pctLeftBand": 98.75,
+   "pctDrawdown50": 99.5833,
+   "pctDrawdown80": 63.1667,
+   "lowestCompanies": [
+    {
+     "t": "VOW3",
+     "m": 0.9693,
+     "hi": 2.9411,
+     "lo": 0.5137
+    },
+    {
+     "t": "BKNG",
+     "m": 0.9811,
+     "hi": 2.1295,
+     "lo": 0.3308
+    },
+    {
+     "t": "BMW",
+     "m": 1.1827,
+     "hi": 2.0335,
+     "lo": 0.3696
+    },
+    {
+     "t": "IFX",
+     "m": 1.2156,
+     "hi": 3.5938,
+     "lo": 0.3225
+    },
+    {
+     "t": "GM",
+     "m": 1.2437,
+     "hi": 3.3304,
+     "lo": 0.3617
+    }
+   ],
+   "highestCompanies": [
+    {
+     "t": "ORSTED",
+     "m": 3.0647,
+     "hi": 3.7847,
+     "lo": 0.6144
+    },
+    {
+     "t": "IBM",
+     "m": 3.0882,
+     "hi": 3.7307,
+     "lo": 0.5767
+    },
+    {
+     "t": "ABBV",
+     "m": 3.0911,
+     "hi": 3.8096,
+     "lo": 1.1046
+    },
+    {
+     "t": "PG",
+     "m": 3.1965,
+     "hi": 4.3538,
+     "lo": 1.5497
+    },
+    {
+     "t": "NFLX",
+     "m": 3.5924,
+     "hi": 4.3051,
+     "lo": 0.362
+    }
+   ],
+   "bySector": {
+    "Technology": {
+     "p5": 0.5767,
+     "median": 2.1103,
+     "p95": 3.9368
+    },
+    "Semiconductors": {
+     "p5": 0.2554,
+     "median": 1.8408,
+     "p95": 4.6549
+    },
+    "Healthcare": {
+     "p5": 1.1046,
+     "median": 2.3781,
+     "p95": 3.7132
+    },
+    "Finance": {
+     "p5": 0.7694,
+     "median": 1.9501,
+     "p95": 3.853
+    },
+    "Energy": {
+     "p5": 0.6144,
+     "median": 2.1199,
+     "p95": 4.9804
+    },
+    "Automotive": {
+     "p5": 0.3585,
+     "median": 1.2437,
+     "p95": 3.3304
+    },
+    "Consumer": {
+     "p5": 0.4001,
+     "median": 2.3209,
+     "p95": 4.1922
+    },
+    "E-commerce": {
+     "p5": 0.3221,
+     "median": 1.518,
+     "p95": 4.7972
+    },
+    "Telecom": {
+     "p5": 0.8563,
+     "median": 2.1362,
+     "p95": 4.1594
+    },
+    "Aerospace & Defence": {
+     "p5": 0.6668,
+     "median": 1.7982,
+     "p95": 3.6103
+    },
+    "Industrials": {
+     "p5": 0.5419,
+     "median": 1.6785,
+     "p95": 4.3188
+    },
+    "Materials": {
+     "p5": 0.5396,
+     "median": 1.9926,
+     "p95": 3.9472
+    },
+    "Food & Beverage": {
+     "p5": 0.7484,
+     "median": 2.2307,
+     "p95": 3.4164
+    },
+    "Media": {
+     "p5": 0.4556,
+     "median": 2.2073,
+     "p95": 4.8175
+    },
+    "Logistics": {
+     "p5": 0.3949,
+     "median": 1.5389,
+     "p95": 3.8076
+    }
+   },
+   "bySize": {
+    "large": {
+     "p5": 0.6772,
+     "median": 2.1999,
+     "p95": 4.0655
+    },
+    "mid": {
+     "p5": 0.5396,
+     "median": 1.8795,
+     "p95": 3.9957
+    },
+    "small": {
+     "p5": 0.3696,
+     "median": 1.7161,
+     "p95": 3.9534
+    }
+   }
+  },
+  {
+   "years": 100,
+   "runs": 8,
+   "eur": {
+    "min": 1.0595,
+    "p1": 2.7205,
+    "p5": 13.7059,
+    "median": 258.2246,
+    "mean": 563.2843,
+    "p95": 1956.3383,
+    "p99": 6527.8297,
+    "max": 9107.284
+   },
+   "vsSeed": {
+    "min": 0.3723,
+    "p1": 0.7548,
+    "p5": 1.1556,
+    "median": 2.9104,
+    "mean": 2.8182,
+    "p95": 4.3595,
+    "p99": 5.0169,
+    "max": 8.185
+   },
+   "lowestEverEur": 0.5,
+   "highestEverEur": 15211.847,
+   "pctHitFloor": 1.0833,
+   "pctHitCeil": 0,
+   "pctLeftBand": 100,
+   "pctDrawdown50": 100,
+   "pctDrawdown80": 83.5,
+   "lowestCompanies": [
+    {
+     "t": "BKNG",
+     "m": 1.4724,
+     "hi": 2.1595,
+     "lo": 0.3723
+    },
+    {
+     "t": "FDX",
+     "m": 1.8856,
+     "hi": 4.2429,
+     "lo": 1.3235
+    },
+    {
+     "t": "IFX",
+     "m": 2.0041,
+     "hi": 4.2555,
+     "lo": 0.6214
+    },
+    {
+     "t": "BYD",
+     "m": 2.0406,
+     "hi": 4.0848,
+     "lo": 0.8997
+    },
+    {
+     "t": "NVDA",
+     "m": 2.1038,
+     "hi": 4.9518,
+     "lo": 0.7817
+    }
+   ],
+   "highestCompanies": [
+    {
+     "t": "XOM",
+     "m": 3.7659,
+     "hi": 4.4371,
+     "lo": 2.6195
+    },
+    {
+     "t": "MAERSK",
+     "m": 3.8004,
+     "hi": 5.1608,
+     "lo": 0.8058
+    },
+    {
+     "t": "ENI",
+     "m": 3.806,
+     "hi": 4.5475,
+     "lo": 2.8593
+    },
+    {
+     "t": "VALE",
+     "m": 3.9694,
+     "hi": 4.2743,
+     "lo": 0.9595
+    },
+    {
+     "t": "ADS",
+     "m": 3.9747,
+     "hi": 4.31,
+     "lo": 0.7945
+    }
+   ],
+   "bySector": {
+    "Technology": {
+     "p5": 1.686,
+     "median": 2.8088,
+     "p95": 4.8443
+    },
+    "Semiconductors": {
+     "p5": 1.0073,
+     "median": 2.8861,
+     "p95": 4.8489
+    },
+    "Healthcare": {
+     "p5": 1.7059,
+     "median": 3.166,
+     "p95": 4.1202
+    },
+    "Finance": {
+     "p5": 1.0366,
+     "median": 2.802,
+     "p95": 3.9414
+    },
+    "Energy": {
+     "p5": 1.763,
+     "median": 3.3221,
+     "p95": 4.4371
+    },
+    "Automotive": {
+     "p5": 0.9734,
+     "median": 2.4985,
+     "p95": 3.899
+    },
+    "Consumer": {
+     "p5": 1.1984,
+     "median": 3.0045,
+     "p95": 4.2011
+    },
+    "E-commerce": {
+     "p5": 1.0216,
+     "median": 2.6517,
+     "p95": 4.9683
+    },
+    "Telecom": {
+     "p5": 1.5911,
+     "median": 2.804,
+     "p95": 4.0922
+    },
+    "Aerospace & Defence": {
+     "p5": 1.358,
+     "median": 3.0277,
+     "p95": 4.4279
+    },
+    "Industrials": {
+     "p5": 1.2533,
+     "median": 2.988,
+     "p95": 4.2198
+    },
+    "Materials": {
+     "p5": 1.1968,
+     "median": 3.2363,
+     "p95": 4.3747
+    },
+    "Food & Beverage": {
+     "p5": 1.7814,
+     "median": 2.8083,
+     "p95": 4.3522
+    },
+    "Media": {
+     "p5": 1.1222,
+     "median": 2.8887,
+     "p95": 4.453
+    },
+    "Logistics": {
+     "p5": 0.6634,
+     "median": 2.4963,
+     "p95": 4.609
+    }
+   },
+   "bySize": {
+    "large": {
+     "p5": 1.3314,
+     "median": 2.8088,
+     "p95": 4.3318
+    },
+    "mid": {
+     "p5": 1.2123,
+     "median": 2.9499,
+     "p95": 4.3051
+    },
+    "small": {
+     "p5": 0.904,
+     "median": 2.93,
+     "p95": 4.4374
+    }
+   }
+  },
+  {
+   "years": 160,
+   "runs": 8,
+   "eur": {
+    "min": 0.5998,
+    "p1": 2.5698,
+    "p5": 12.4265,
+    "median": 224.9391,
+    "mean": 469.6098,
+    "p95": 1565.2954,
+    "p99": 5023.2369,
+    "max": 7178.3858
+   },
+   "vsSeed": {
+    "min": 0.0524,
+    "p1": 0.2377,
+    "p5": 0.554,
+    "median": 2.708,
+    "mean": 2.5499,
+    "p95": 4.1032,
+    "p99": 4.7598,
+    "max": 5.3732
+   },
+   "lowestEverEur": 0.5,
+   "highestEverEur": 15211.847,
+   "pctHitFloor": 1.1667,
+   "pctHitCeil": 0,
+   "pctLeftBand": 100,
+   "pctDrawdown50": 100,
+   "pctDrawdown80": 90.1667,
+   "lowestCompanies": [
+    {
+     "t": "BKNG",
+     "m": 1.0756,
+     "hi": 1.4432,
+     "lo": 0.3844
+    },
+    {
+     "t": "GOOGL",
+     "m": 1.6076,
+     "hi": 3.7053,
+     "lo": 0.4412
+    },
+    {
+     "t": "TSLA",
+     "m": 1.6246,
+     "hi": 3.1748,
+     "lo": 0.4397
+    },
+    {
+     "t": "BABA",
+     "m": 1.6708,
+     "hi": 3.3412,
+     "lo": 0.4526
+    },
+    {
+     "t": "PDD",
+     "m": 1.8083,
+     "hi": 5.235,
+     "lo": 1.521
+    }
+   ],
+   "highestCompanies": [
+    {
+     "t": "ARM",
+     "m": 3.6406,
+     "hi": 4.6653,
+     "lo": 0.0845
+    },
+    {
+     "t": "FCX",
+     "m": 3.6473,
+     "hi": 4.2291,
+     "lo": 0.407
+    },
+    {
+     "t": "AAL",
+     "m": 3.6599,
+     "hi": 4.2522,
+     "lo": 0.2798
+    },
+    {
+     "t": "ZAL",
+     "m": 3.6856,
+     "hi": 5.3732,
+     "lo": 0.2951
+    },
+    {
+     "t": "GLEN",
+     "m": 3.7466,
+     "hi": 4.4231,
+     "lo": 0.456
+    }
+   ],
+   "bySector": {
+    "Technology": {
+     "p5": 0.5225,
+     "median": 2.2736,
+     "p95": 3.3913
+    },
+    "Semiconductors": {
+     "p5": 0.1062,
+     "median": 3.2451,
+     "p95": 4.8233
+    },
+    "Healthcare": {
+     "p5": 0.8486,
+     "median": 2.8317,
+     "p95": 3.8856
+    },
+    "Finance": {
+     "p5": 0.6457,
+     "median": 2.5243,
+     "p95": 4.1032
+    },
+    "Energy": {
+     "p5": 0.7968,
+     "median": 2.979,
+     "p95": 4.6088
+    },
+    "Automotive": {
+     "p5": 0.3832,
+     "median": 2.3159,
+     "p95": 3.8724
+    },
+    "Consumer": {
+     "p5": 0.7679,
+     "median": 2.5303,
+     "p95": 3.7522
+    },
+    "E-commerce": {
+     "p5": 0.5629,
+     "median": 2.3923,
+     "p95": 4.473
+    },
+    "Telecom": {
+     "p5": 1.3153,
+     "median": 2.5867,
+     "p95": 3.991
+    },
+    "Aerospace & Defence": {
+     "p5": 0.732,
+     "median": 2.9107,
+     "p95": 4.1538
+    },
+    "Industrials": {
+     "p5": 0.7625,
+     "median": 2.9179,
+     "p95": 4.0415
+    },
+    "Materials": {
+     "p5": 0.6292,
+     "median": 3.0243,
+     "p95": 4.2522
+    },
+    "Food & Beverage": {
+     "p5": 1.1647,
+     "median": 2.7249,
+     "p95": 3.6188
+    },
+    "Media": {
+     "p5": 0.4811,
+     "median": 2.6705,
+     "p95": 4.518
+    },
+    "Logistics": {
+     "p5": 0.3771,
+     "median": 2.7092,
+     "p95": 4.1315
+    }
+   },
+   "bySize": {
+    "large": {
+     "p5": 0.6457,
+     "median": 2.4774,
+     "p95": 3.9228
+    },
+    "mid": {
+     "p5": 0.6139,
+     "median": 2.7343,
+     "p95": 4.087
+    },
+    "small": {
+     "p5": 0.4733,
+     "median": 2.8908,
+     "p95": 4.1948
+    }
+   }
+  }
+ ],
+ "strategies": [
+  {
+   "strategy": "after market crash",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 51,
+   "meanExcess": 0.0249,
+   "medianExcess": 0.0146,
+   "winVsMarket": 0.549,
+   "meanReturn": 0.0597,
+   "medianReturn": 0.0472,
+   "winAbsolute": 0.5882,
+   "worst5": -0.2004,
+   "best5": 0.3678,
+   "meanDrawdown": -0.0842,
+   "sharpe": 0.286,
+   "excessT": 2.0174,
+   "regimes": {
+    "bull": {
+     "n": 0,
+     "mean": 0,
+     "win": 0
+    },
+    "bear": {
+     "n": 13,
+     "mean": 0.0433,
+     "win": 0.6154
+    },
+    "recession": {
+     "n": 7,
+     "mean": -0.0138,
+     "win": 0.5714
+    },
+    "crisis": {
+     "n": 31,
+     "mean": 0.0259,
+     "win": 0.5161
+    }
+   }
+  },
+  {
+   "strategy": "deep discount (>40%)",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 650,
+   "meanExcess": 0.0207,
+   "medianExcess": 0.0129,
+   "winVsMarket": 0.5785,
+   "meanReturn": 0.0395,
+   "medianReturn": 0.039,
+   "winAbsolute": 0.6308,
+   "worst5": -0.1768,
+   "best5": 0.2533,
+   "meanDrawdown": -0.0555,
+   "sharpe": 0.2892,
+   "excessT": 5.9586,
+   "regimes": {
+    "bull": {
+     "n": 326,
+     "mean": 0.0233,
+     "win": 0.592
+    },
+    "bear": {
+     "n": 160,
+     "mean": 0.0118,
+     "win": 0.5313
+    },
+    "recession": {
+     "n": 86,
+     "mean": 0.024,
+     "win": 0.5814
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0244,
+     "win": 0.6154
+    }
+   }
+  },
+  {
+   "strategy": "below fair value",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.0171,
+   "medianExcess": 0.0148,
+   "winVsMarket": 0.6203,
+   "meanReturn": 0.0336,
+   "medianReturn": 0.034,
+   "winAbsolute": 0.6527,
+   "worst5": -0.1573,
+   "best5": 0.2223,
+   "meanDrawdown": -0.0471,
+   "sharpe": 0.2826,
+   "excessT": 6.6861,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0162,
+     "win": 0.6195
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.0133,
+     "win": 0.6228
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.02,
+     "win": 0.61
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.0255,
+     "win": 0.631
+    }
+   }
+  },
+  {
+   "strategy": "after market crash",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 58,
+   "meanExcess": 0.0163,
+   "medianExcess": -0.0017,
+   "winVsMarket": 0.4655,
+   "meanReturn": 0.0456,
+   "medianReturn": -0.0011,
+   "winAbsolute": 0.4828,
+   "worst5": -0.2076,
+   "best5": 0.4548,
+   "meanDrawdown": -0.0932,
+   "sharpe": 0.2149,
+   "excessT": 1.3351,
+   "regimes": {
+    "bull": {
+     "n": 1,
+     "mean": 0.0341,
+     "win": 1
+    },
+    "bear": {
+     "n": 17,
+     "mean": 0.0125,
+     "win": 0.3529
+    },
+    "recession": {
+     "n": 7,
+     "mean": -0.0113,
+     "win": 0.4286
+    },
+    "crisis": {
+     "n": 33,
+     "mean": 0.0235,
+     "win": 0.5152
+    }
+   }
+  },
+  {
+   "strategy": "after market crash",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 51,
+   "meanExcess": 0.016,
+   "medianExcess": 0.0034,
+   "winVsMarket": 0.5098,
+   "meanReturn": 0.0508,
+   "medianReturn": 0.025,
+   "winAbsolute": 0.549,
+   "worst5": -0.178,
+   "best5": 0.3499,
+   "meanDrawdown": -0.069,
+   "sharpe": 0.274,
+   "excessT": 1.6322,
+   "regimes": {
+    "bull": {
+     "n": 0,
+     "mean": 0,
+     "win": 0
+    },
+    "bear": {
+     "n": 13,
+     "mean": 0.0335,
+     "win": 0.6154
+    },
+    "recession": {
+     "n": 7,
+     "mean": -0.0143,
+     "win": 0.4286
+    },
+    "crisis": {
+     "n": 31,
+     "mean": 0.0155,
+     "win": 0.4839
+    }
+   }
+  },
+  {
+   "strategy": "after market crash",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 53,
+   "meanExcess": 0.0156,
+   "medianExcess": 0.0142,
+   "winVsMarket": 0.5849,
+   "meanReturn": 0.048,
+   "medianReturn": 0.0196,
+   "winAbsolute": 0.566,
+   "worst5": -0.2352,
+   "best5": 0.3838,
+   "meanDrawdown": -0.0867,
+   "sharpe": 0.2469,
+   "excessT": 1.5445,
+   "regimes": {
+    "bull": {
+     "n": 1,
+     "mean": 0.0666,
+     "win": 1
+    },
+    "bear": {
+     "n": 14,
+     "mean": 0.0219,
+     "win": 0.6429
+    },
+    "recession": {
+     "n": 6,
+     "mean": -0.0041,
+     "win": 0.6667
+    },
+    "crisis": {
+     "n": 32,
+     "mean": 0.015,
+     "win": 0.5313
+    }
+   }
+  },
+  {
+   "strategy": "biggest losers",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.014,
+   "medianExcess": 0.0133,
+   "winVsMarket": 0.5851,
+   "meanReturn": 0.0305,
+   "medianReturn": 0.028,
+   "winAbsolute": 0.6162,
+   "worst5": -0.1478,
+   "best5": 0.2178,
+   "meanDrawdown": -0.0475,
+   "sharpe": 0.2573,
+   "excessT": 5.5211,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0087,
+     "win": 0.5733
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.0167,
+     "win": 0.5988
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0095,
+     "win": 0.56
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.0384,
+     "win": 0.6429
+    }
+   }
+  },
+  {
+   "strategy": "below fair value",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.012,
+   "medianExcess": 0.008,
+   "winVsMarket": 0.5797,
+   "meanReturn": 0.0274,
+   "medianReturn": 0.0283,
+   "winAbsolute": 0.6419,
+   "worst5": -0.1459,
+   "best5": 0.1874,
+   "meanDrawdown": -0.0457,
+   "sharpe": 0.2515,
+   "excessT": 5.0687,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0114,
+     "win": 0.6067
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.0088,
+     "win": 0.5389
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0182,
+     "win": 0.54
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.0136,
+     "win": 0.5833
+    }
+   }
+  },
+  {
+   "strategy": "momentum + reversal",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.0109,
+   "medianExcess": 0.0069,
+   "winVsMarket": 0.5581,
+   "meanReturn": 0.0273,
+   "medianReturn": 0.0281,
+   "winAbsolute": 0.6162,
+   "worst5": -0.131,
+   "best5": 0.1857,
+   "meanDrawdown": -0.0486,
+   "sharpe": 0.2495,
+   "excessT": 4.3046,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0109,
+     "win": 0.5656
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.0052,
+     "win": 0.515
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.028,
+     "win": 0.65
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.0016,
+     "win": 0.5
+    }
+   }
+  },
+  {
+   "strategy": "deep discount (>40%)",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 578,
+   "meanExcess": 0.0105,
+   "medianExcess": 0.0062,
+   "winVsMarket": 0.5398,
+   "meanReturn": 0.0282,
+   "medianReturn": 0.03,
+   "winAbsolute": 0.6194,
+   "worst5": -0.189,
+   "best5": 0.2251,
+   "meanDrawdown": -0.0595,
+   "sharpe": 0.2127,
+   "excessT": 2.8597,
+   "regimes": {
+    "bull": {
+     "n": 273,
+     "mean": 0.0134,
+     "win": 0.5495
+    },
+    "bear": {
+     "n": 147,
+     "mean": 0.0043,
+     "win": 0.5306
+    },
+    "recession": {
+     "n": 83,
+     "mean": 0.0158,
+     "win": 0.494
+    },
+    "crisis": {
+     "n": 75,
+     "mean": 0.0063,
+     "win": 0.5733
+    }
+   }
+  },
+  {
+   "strategy": "after sector decline",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 494,
+   "meanExcess": 0.0099,
+   "medianExcess": 0.0047,
+   "winVsMarket": 0.5202,
+   "meanReturn": 0.0278,
+   "medianReturn": 0.0167,
+   "winAbsolute": 0.5547,
+   "worst5": -0.2105,
+   "best5": 0.3062,
+   "meanDrawdown": -0.0747,
+   "sharpe": 0.1787,
+   "excessT": 1.954,
+   "regimes": {
+    "bull": {
+     "n": 217,
+     "mean": 0.0017,
+     "win": 0.5069
+    },
+    "bear": {
+     "n": 130,
+     "mean": 0.0156,
+     "win": 0.5308
+    },
+    "recession": {
+     "n": 76,
+     "mean": 0.0032,
+     "win": 0.4737
+    },
+    "crisis": {
+     "n": 71,
+     "mean": 0.0316,
+     "win": 0.5915
+    }
+   }
+  },
+  {
+   "strategy": "momentum + reversal",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.008,
+   "medianExcess": 0.005,
+   "winVsMarket": 0.5351,
+   "meanReturn": 0.0235,
+   "medianReturn": 0.0212,
+   "winAbsolute": 0.6189,
+   "worst5": -0.1248,
+   "best5": 0.1702,
+   "meanDrawdown": -0.0433,
+   "sharpe": 0.2406,
+   "excessT": 3.7049,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0085,
+     "win": 0.545
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.0041,
+     "win": 0.515
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0198,
+     "win": 0.54
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0004,
+     "win": 0.5238
+    }
+   }
+  },
+  {
+   "strategy": "improving earnings",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.0077,
+   "medianExcess": 0.0063,
+   "winVsMarket": 0.5338,
+   "meanReturn": 0.0231,
+   "medianReturn": 0.019,
+   "winAbsolute": 0.5986,
+   "worst5": -0.12,
+   "best5": 0.1839,
+   "meanDrawdown": -0.0468,
+   "sharpe": 0.2421,
+   "excessT": 4.0185,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0073,
+     "win": 0.545
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.0082,
+     "win": 0.5269
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0104,
+     "win": 0.52
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.0048,
+     "win": 0.5119
+    }
+   }
+  },
+  {
+   "strategy": "below fair value",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.007,
+   "medianExcess": 0.005,
+   "winVsMarket": 0.55,
+   "meanReturn": 0.0249,
+   "medianReturn": 0.0237,
+   "winAbsolute": 0.6378,
+   "worst5": -0.104,
+   "best5": 0.1607,
+   "meanDrawdown": -0.0367,
+   "sharpe": 0.2793,
+   "excessT": 4.6446,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0033,
+     "win": 0.5244
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.0101,
+     "win": 0.5689
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0129,
+     "win": 0.57
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.011,
+     "win": 0.6071
+    }
+   }
+  },
+  {
+   "strategy": "high growth",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.0065,
+   "medianExcess": 0.0042,
+   "winVsMarket": 0.5365,
+   "meanReturn": 0.0219,
+   "medianReturn": 0.0202,
+   "winAbsolute": 0.6,
+   "worst5": -0.13,
+   "best5": 0.1818,
+   "meanDrawdown": -0.0484,
+   "sharpe": 0.2239,
+   "excessT": 3.1062,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0079,
+     "win": 0.563
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.005,
+     "win": 0.503
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0078,
+     "win": 0.49
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.0011,
+     "win": 0.5357
+    }
+   }
+  },
+  {
+   "strategy": "deep discount (>40%)",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 316,
+   "meanExcess": 0.0061,
+   "medianExcess": 0.0033,
+   "winVsMarket": 0.5285,
+   "meanReturn": 0.0308,
+   "medianReturn": 0.0247,
+   "winAbsolute": 0.5601,
+   "worst5": -0.1751,
+   "best5": 0.256,
+   "meanDrawdown": -0.0614,
+   "sharpe": 0.227,
+   "excessT": 1.242,
+   "regimes": {
+    "bull": {
+     "n": 126,
+     "mean": -0.0069,
+     "win": 0.4286
+    },
+    "bear": {
+     "n": 77,
+     "mean": 0.018,
+     "win": 0.5844
+    },
+    "recession": {
+     "n": 56,
+     "mean": 0.014,
+     "win": 0.625
+    },
+    "crisis": {
+     "n": 57,
+     "mean": 0.011,
+     "win": 0.5789
+    }
+   }
+  },
+  {
+   "strategy": "biggest losers",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.0058,
+   "medianExcess": 0.0052,
+   "winVsMarket": 0.5392,
+   "meanReturn": 0.0212,
+   "medianReturn": 0.0189,
+   "winAbsolute": 0.5932,
+   "worst5": -0.1444,
+   "best5": 0.1871,
+   "meanDrawdown": -0.0458,
+   "sharpe": 0.2018,
+   "excessT": 2.5962,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0014,
+     "win": 0.5296
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.0079,
+     "win": 0.521
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0005,
+     "win": 0.48
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.028,
+     "win": 0.6905
+    }
+   }
+  },
+  {
+   "strategy": "high growth",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.0054,
+   "medianExcess": 0.0046,
+   "winVsMarket": 0.5351,
+   "meanReturn": 0.0219,
+   "medianReturn": 0.0202,
+   "winAbsolute": 0.6,
+   "worst5": -0.13,
+   "best5": 0.1818,
+   "meanDrawdown": -0.0484,
+   "sharpe": 0.2239,
+   "excessT": 2.3592,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0061,
+     "win": 0.5501
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.0045,
+     "win": 0.479
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0094,
+     "win": 0.58
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0005,
+     "win": 0.5238
+    }
+   }
+  },
+  {
+   "strategy": "improving earnings",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.0054,
+   "medianExcess": 0.0039,
+   "winVsMarket": 0.5297,
+   "meanReturn": 0.0233,
+   "medianReturn": 0.0225,
+   "winAbsolute": 0.6068,
+   "worst5": -0.1151,
+   "best5": 0.166,
+   "meanDrawdown": -0.0431,
+   "sharpe": 0.2579,
+   "excessT": 3.5224,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0062,
+     "win": 0.545
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.0039,
+     "win": 0.485
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0073,
+     "win": 0.55
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.0024,
+     "win": 0.5238
+    }
+   }
+  },
+  {
+   "strategy": "sector rotation",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.005,
+   "medianExcess": 0.0024,
+   "winVsMarket": 0.5135,
+   "meanReturn": 0.0205,
+   "medianReturn": 0.0193,
+   "winAbsolute": 0.5946,
+   "worst5": -0.1295,
+   "best5": 0.1861,
+   "meanDrawdown": -0.0471,
+   "sharpe": 0.1988,
+   "excessT": 1.8408,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0087,
+     "win": 0.5347
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0042,
+     "win": 0.479
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0152,
+     "win": 0.52
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0056,
+     "win": 0.4762
+    }
+   }
+  },
+  {
+   "strategy": "improving earnings",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.005,
+   "medianExcess": 0.0009,
+   "winVsMarket": 0.5135,
+   "meanReturn": 0.0215,
+   "medianReturn": 0.0186,
+   "winAbsolute": 0.5905,
+   "worst5": -0.1399,
+   "best5": 0.1938,
+   "meanDrawdown": -0.0517,
+   "sharpe": 0.2045,
+   "excessT": 2.324,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0042,
+     "win": 0.4987
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.0003,
+     "win": 0.491
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0096,
+     "win": 0.57
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.0128,
+     "win": 0.5595
+    }
+   }
+  },
+  {
+   "strategy": "concentrated (one random)",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.0049,
+   "medianExcess": 0.0013,
+   "winVsMarket": 0.5027,
+   "meanReturn": 0.0228,
+   "medianReturn": 0.0195,
+   "winAbsolute": 0.5676,
+   "worst5": -0.1509,
+   "best5": 0.2196,
+   "meanDrawdown": -0.0603,
+   "sharpe": 0.1921,
+   "excessT": 1.5206,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0037,
+     "win": 0.4987
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.0068,
+     "win": 0.5509
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0005,
+     "win": 0.46
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.0116,
+     "win": 0.4762
+    }
+   }
+  },
+  {
+   "strategy": "biggest losers",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.0045,
+   "medianExcess": 0.0033,
+   "winVsMarket": 0.5311,
+   "meanReturn": 0.0224,
+   "medianReturn": 0.0243,
+   "winAbsolute": 0.6149,
+   "worst5": -0.1171,
+   "best5": 0.1695,
+   "meanDrawdown": -0.0411,
+   "sharpe": 0.2415,
+   "excessT": 2.9545,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0017,
+     "win": 0.5167
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.0042,
+     "win": 0.5389
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0064,
+     "win": 0.55
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.0159,
+     "win": 0.5595
+    }
+   }
+  },
+  {
+   "strategy": "momentum + reversal",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.0044,
+   "medianExcess": 0.0014,
+   "winVsMarket": 0.5162,
+   "meanReturn": 0.0223,
+   "medianReturn": 0.0208,
+   "winAbsolute": 0.6081,
+   "worst5": -0.1142,
+   "best5": 0.1626,
+   "meanDrawdown": -0.0418,
+   "sharpe": 0.2464,
+   "excessT": 2.8138,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0049,
+     "win": 0.5321
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.0046,
+     "win": 0.515
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0038,
+     "win": 0.5
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.0022,
+     "win": 0.4643
+    }
+   }
+  },
+  {
+   "strategy": "deep discount (>40%)",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 578,
+   "meanExcess": 0.0043,
+   "medianExcess": -0.001,
+   "winVsMarket": 0.4948,
+   "meanReturn": 0.022,
+   "medianReturn": 0.0213,
+   "winAbsolute": 0.6125,
+   "worst5": -0.1594,
+   "best5": 0.202,
+   "meanDrawdown": -0.0508,
+   "sharpe": 0.1919,
+   "excessT": 1.3343,
+   "regimes": {
+    "bull": {
+     "n": 273,
+     "mean": 0.0078,
+     "win": 0.5238
+    },
+    "bear": {
+     "n": 147,
+     "mean": -0.0023,
+     "win": 0.4694
+    },
+    "recession": {
+     "n": 83,
+     "mean": 0.01,
+     "win": 0.4699
+    },
+    "crisis": {
+     "n": 75,
+     "mean": -0.0015,
+     "win": 0.4667
+    }
+   }
+  },
+  {
+   "strategy": "sector rotation",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.0041,
+   "medianExcess": -0.0001,
+   "winVsMarket": 0.4959,
+   "meanReturn": 0.0206,
+   "medianReturn": 0.0228,
+   "winAbsolute": 0.6054,
+   "worst5": -0.1273,
+   "best5": 0.1692,
+   "meanDrawdown": -0.0433,
+   "sharpe": 0.2118,
+   "excessT": 1.6821,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0053,
+     "win": 0.4884
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0004,
+     "win": 0.509
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0158,
+     "win": 0.54
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0063,
+     "win": 0.4524
+    }
+   }
+  },
+  {
+   "strategy": "below fair value",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 740,
+   "meanExcess": 0.004,
+   "medianExcess": 0.002,
+   "winVsMarket": 0.5216,
+   "meanReturn": 0.0195,
+   "medianReturn": 0.0179,
+   "winAbsolute": 0.6365,
+   "worst5": -0.1148,
+   "best5": 0.1526,
+   "meanDrawdown": -0.0357,
+   "sharpe": 0.2226,
+   "excessT": 2.0219,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0023,
+     "win": 0.5219
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0002,
+     "win": 0.497
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0141,
+     "win": 0.55
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.0086,
+     "win": 0.5357
+    }
+   }
+  },
+  {
+   "strategy": "small companies",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.0034,
+   "medianExcess": 0.0011,
+   "winVsMarket": 0.5041,
+   "meanReturn": 0.0199,
+   "medianReturn": 0.0194,
+   "winAbsolute": 0.5662,
+   "worst5": -0.2076,
+   "best5": 0.2479,
+   "meanDrawdown": -0.0724,
+   "sharpe": 0.1449,
+   "excessT": 1.1112,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0103,
+     "win": 0.5347
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0048,
+     "win": 0.4671
+    },
+    "recession": {
+     "n": 100,
+     "mean": -0.008,
+     "win": 0.46
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.0016,
+     "win": 0.4881
+    }
+   }
+  },
+  {
+   "strategy": "small companies",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.0011,
+   "medianExcess": -0.0006,
+   "winVsMarket": 0.4892,
+   "meanReturn": 0.0189,
+   "medianReturn": 0.0221,
+   "winAbsolute": 0.6,
+   "worst5": -0.1533,
+   "best5": 0.1674,
+   "meanDrawdown": -0.0523,
+   "sharpe": 0.1845,
+   "excessT": 0.5497,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0038,
+     "win": 0.4936
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0019,
+     "win": 0.4731
+    },
+    "recession": {
+     "n": 100,
+     "mean": -0.0089,
+     "win": 0.44
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.0062,
+     "win": 0.5595
+    }
+   }
+  },
+  {
+   "strategy": "random five",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": 0.0009,
+   "medianExcess": -0.001,
+   "winVsMarket": 0.4851,
+   "meanReturn": 0.0188,
+   "medianReturn": 0.0187,
+   "winAbsolute": 0.6054,
+   "worst5": -0.1163,
+   "best5": 0.1498,
+   "meanDrawdown": -0.0404,
+   "sharpe": 0.2176,
+   "excessT": 0.7102,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0005,
+     "win": 0.4602
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.002,
+     "win": 0.4731
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0012,
+     "win": 0.54
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.0083,
+     "win": 0.5595
+    }
+   }
+  },
+  {
+   "strategy": "concentrated (one random)",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0001,
+   "medianExcess": 0.0003,
+   "winVsMarket": 0.5027,
+   "meanReturn": 0.0153,
+   "medianReturn": 0.0151,
+   "winAbsolute": 0.5716,
+   "worst5": -0.1748,
+   "best5": 0.2104,
+   "meanDrawdown": -0.0611,
+   "sharpe": 0.1315,
+   "excessT": -0.0368,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0015,
+     "win": 0.527
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0014,
+     "win": 0.4491
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.006,
+     "win": 0.51
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0123,
+     "win": 0.4881
+    }
+   }
+  },
+  {
+   "strategy": "high growth",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0001,
+   "medianExcess": -0.0011,
+   "winVsMarket": 0.4919,
+   "meanReturn": 0.0178,
+   "medianReturn": 0.014,
+   "winAbsolute": 0.5851,
+   "worst5": -0.1274,
+   "best5": 0.1624,
+   "meanDrawdown": -0.0487,
+   "sharpe": 0.1872,
+   "excessT": -0.0621,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0028,
+     "win": 0.473
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.004,
+     "win": 0.491
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0051,
+     "win": 0.56
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0018,
+     "win": 0.5
+    }
+   }
+  },
+  {
+   "strategy": "small companies",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0002,
+   "medianExcess": -0.0028,
+   "winVsMarket": 0.4892,
+   "meanReturn": 0.0152,
+   "medianReturn": 0.0155,
+   "winAbsolute": 0.5757,
+   "worst5": -0.1522,
+   "best5": 0.175,
+   "meanDrawdown": -0.0509,
+   "sharpe": 0.1561,
+   "excessT": -0.0843,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.005,
+     "win": 0.527
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0065,
+     "win": 0.4371
+    },
+    "recession": {
+     "n": 100,
+     "mean": -0.0079,
+     "win": 0.44
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0028,
+     "win": 0.4762
+    }
+   }
+  },
+  {
+   "strategy": "after bad company news",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0003,
+   "medianExcess": 0.0003,
+   "winVsMarket": 0.5054,
+   "meanReturn": 0.0162,
+   "medianReturn": 0.015,
+   "winAbsolute": 0.5784,
+   "worst5": -0.121,
+   "best5": 0.1501,
+   "meanDrawdown": -0.0432,
+   "sharpe": 0.1897,
+   "excessT": -0.1763,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0003,
+     "win": 0.4987
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.0048,
+     "win": 0.5629
+    },
+    "recession": {
+     "n": 100,
+     "mean": -0.0038,
+     "win": 0.46
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0061,
+     "win": 0.4762
+    }
+   }
+  },
+  {
+   "strategy": "random five",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0004,
+   "medianExcess": -0.002,
+   "winVsMarket": 0.4689,
+   "meanReturn": 0.0161,
+   "medianReturn": 0.0195,
+   "winAbsolute": 0.6054,
+   "worst5": -0.1188,
+   "best5": 0.1446,
+   "meanDrawdown": -0.0419,
+   "sharpe": 0.1898,
+   "excessT": -0.2375,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0018,
+     "win": 0.4602
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.0021,
+     "win": 0.4671
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0035,
+     "win": 0.53
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0032,
+     "win": 0.4405
+    }
+   }
+  },
+  {
+   "strategy": "after good company news",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 736,
+   "meanExcess": -0.001,
+   "medianExcess": 0,
+   "winVsMarket": 0.4986,
+   "meanReturn": 0.0155,
+   "medianReturn": 0.0146,
+   "winAbsolute": 0.5951,
+   "worst5": -0.1267,
+   "best5": 0.1544,
+   "meanDrawdown": -0.0447,
+   "sharpe": 0.1725,
+   "excessT": -0.5718,
+   "regimes": {
+    "bull": {
+     "n": 388,
+     "mean": -0.003,
+     "win": 0.4588
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0001,
+     "win": 0.5389
+    },
+    "recession": {
+     "n": 97,
+     "mean": 0.0071,
+     "win": 0.567
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0029,
+     "win": 0.5238
+    }
+   }
+  },
+  {
+   "strategy": "after good company news",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 689,
+   "meanExcess": -0.0011,
+   "medianExcess": -0.0011,
+   "winVsMarket": 0.4891,
+   "meanReturn": 0.0136,
+   "medianReturn": 0.0126,
+   "winAbsolute": 0.5646,
+   "worst5": -0.1524,
+   "best5": 0.1782,
+   "meanDrawdown": -0.0529,
+   "sharpe": 0.1321,
+   "excessT": -0.432,
+   "regimes": {
+    "bull": {
+     "n": 362,
+     "mean": -0.0022,
+     "win": 0.4724
+    },
+    "bear": {
+     "n": 153,
+     "mean": -0.0058,
+     "win": 0.4771
+    },
+    "recession": {
+     "n": 94,
+     "mean": 0.017,
+     "win": 0.5957
+    },
+    "crisis": {
+     "n": 80,
+     "mean": -0.0086,
+     "win": 0.4625
+    }
+   }
+  },
+  {
+   "strategy": "after bad company news",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 705,
+   "meanExcess": -0.0012,
+   "medianExcess": -0.0018,
+   "winVsMarket": 0.4823,
+   "meanReturn": 0.0137,
+   "medianReturn": 0.0181,
+   "winAbsolute": 0.5745,
+   "worst5": -0.1286,
+   "best5": 0.1554,
+   "meanDrawdown": -0.0486,
+   "sharpe": 0.148,
+   "excessT": -0.5353,
+   "regimes": {
+    "bull": {
+     "n": 369,
+     "mean": -0.0027,
+     "win": 0.4824
+    },
+    "bear": {
+     "n": 162,
+     "mean": 0.0067,
+     "win": 0.5247
+    },
+    "recession": {
+     "n": 96,
+     "mean": -0.0073,
+     "win": 0.3958
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0033,
+     "win": 0.5
+    }
+   }
+  },
+  {
+   "strategy": "random five",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0012,
+   "medianExcess": -0.0016,
+   "winVsMarket": 0.4851,
+   "meanReturn": 0.0143,
+   "medianReturn": 0.0174,
+   "winAbsolute": 0.5919,
+   "worst5": -0.121,
+   "best5": 0.1326,
+   "meanDrawdown": -0.0409,
+   "sharpe": 0.1778,
+   "excessT": -0.8245,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0003,
+     "win": 0.509
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0026,
+     "win": 0.4491
+    },
+    "recession": {
+     "n": 100,
+     "mean": -0.0002,
+     "win": 0.51
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0063,
+     "win": 0.4167
+    }
+   }
+  },
+  {
+   "strategy": "after good company news",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 372,
+   "meanExcess": -0.0016,
+   "medianExcess": 0.0013,
+   "winVsMarket": 0.5134,
+   "meanReturn": 0.0157,
+   "medianReturn": 0.0142,
+   "winAbsolute": 0.5511,
+   "worst5": -0.1553,
+   "best5": 0.2067,
+   "meanDrawdown": -0.0613,
+   "sharpe": 0.1236,
+   "excessT": -0.3322,
+   "regimes": {
+    "bull": {
+     "n": 199,
+     "mean": -0.0005,
+     "win": 0.4975
+    },
+    "bear": {
+     "n": 84,
+     "mean": -0.0123,
+     "win": 0.5476
+    },
+    "recession": {
+     "n": 43,
+     "mean": 0.0046,
+     "win": 0.4419
+    },
+    "crisis": {
+     "n": 46,
+     "mean": 0.0075,
+     "win": 0.587
+    }
+   }
+  },
+  {
+   "strategy": "momentum + reversal",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 740,
+   "meanExcess": -0.0018,
+   "medianExcess": -0.0034,
+   "winVsMarket": 0.4689,
+   "meanReturn": 0.0136,
+   "medianReturn": 0.0095,
+   "winAbsolute": 0.6041,
+   "worst5": -0.0682,
+   "best5": 0.1052,
+   "meanDrawdown": -0.0244,
+   "sharpe": 0.2138,
+   "excessT": -0.872,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0033,
+     "win": 0.4473
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0028,
+     "win": 0.4671
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0108,
+     "win": 0.56
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0079,
+     "win": 0.4643
+    }
+   }
+  },
+  {
+   "strategy": "biggest losers",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 740,
+   "meanExcess": -0.0022,
+   "medianExcess": -0.0015,
+   "winVsMarket": 0.473,
+   "meanReturn": 0.0132,
+   "medianReturn": 0.0079,
+   "winAbsolute": 0.573,
+   "worst5": -0.0981,
+   "best5": 0.1382,
+   "meanDrawdown": -0.0311,
+   "sharpe": 0.1685,
+   "excessT": -1.1334,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0074,
+     "win": 0.437
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0007,
+     "win": 0.4611
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0,
+     "win": 0.53
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.0162,
+     "win": 0.5952
+    }
+   }
+  },
+  {
+   "strategy": "sector rotation",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 740,
+   "meanExcess": -0.0025,
+   "medianExcess": -0.006,
+   "winVsMarket": 0.4459,
+   "meanReturn": 0.013,
+   "medianReturn": 0.0065,
+   "winAbsolute": 0.5419,
+   "worst5": -0.0828,
+   "best5": 0.1176,
+   "meanDrawdown": -0.0272,
+   "sharpe": 0.1882,
+   "excessT": -1.0554,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0031,
+     "win": 0.4319
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0066,
+     "win": 0.4251
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.011,
+     "win": 0.55
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0075,
+     "win": 0.4286
+    }
+   }
+  },
+  {
+   "strategy": "small companies",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 740,
+   "meanExcess": -0.0027,
+   "medianExcess": -0.0041,
+   "winVsMarket": 0.4757,
+   "meanReturn": 0.0127,
+   "medianReturn": 0.013,
+   "winAbsolute": 0.573,
+   "worst5": -0.133,
+   "best5": 0.1615,
+   "meanDrawdown": -0.0449,
+   "sharpe": 0.15,
+   "excessT": -1.1376,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": 0.0011,
+     "win": 0.4987
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0077,
+     "win": 0.4431
+    },
+    "recession": {
+     "n": 100,
+     "mean": -0.0082,
+     "win": 0.47
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0041,
+     "win": 0.4405
+    }
+   }
+  },
+  {
+   "strategy": "defensive",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0029,
+   "medianExcess": -0.0026,
+   "winVsMarket": 0.4635,
+   "meanReturn": 0.015,
+   "medianReturn": 0.0187,
+   "winAbsolute": 0.6473,
+   "worst5": -0.0827,
+   "best5": 0.0988,
+   "meanDrawdown": -0.0263,
+   "sharpe": 0.2686,
+   "excessT": -2.0881,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.003,
+     "win": 0.4576
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0032,
+     "win": 0.4431
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0007,
+     "win": 0.54
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0058,
+     "win": 0.4405
+    }
+   }
+  },
+  {
+   "strategy": "equal weight",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0029,
+   "medianExcess": -0.0026,
+   "winVsMarket": 0.4081,
+   "meanReturn": 0.015,
+   "medianReturn": 0.0173,
+   "winAbsolute": 0.6405,
+   "worst5": -0.0965,
+   "best5": 0.1108,
+   "meanDrawdown": -0.0311,
+   "sharpe": 0.2222,
+   "excessT": -5.4121,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0038,
+     "win": 0.3933
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.002,
+     "win": 0.3892
+    },
+    "recession": {
+     "n": 100,
+     "mean": -0.0011,
+     "win": 0.48
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0026,
+     "win": 0.4286
+    }
+   }
+  },
+  {
+   "strategy": "recent winners",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0033,
+   "medianExcess": -0.0022,
+   "winVsMarket": 0.4797,
+   "meanReturn": 0.0146,
+   "medianReturn": 0.0186,
+   "winAbsolute": 0.5946,
+   "worst5": -0.1259,
+   "best5": 0.1384,
+   "meanDrawdown": -0.0458,
+   "sharpe": 0.1668,
+   "excessT": -2.1556,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0002,
+     "win": 0.5064
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0061,
+     "win": 0.4551
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0019,
+     "win": 0.53
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0181,
+     "win": 0.3452
+    }
+   }
+  },
+  {
+   "strategy": "defensive",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0039,
+   "medianExcess": -0.0037,
+   "winVsMarket": 0.4635,
+   "meanReturn": 0.0116,
+   "medianReturn": 0.0125,
+   "winAbsolute": 0.6365,
+   "worst5": -0.0637,
+   "best5": 0.0751,
+   "meanDrawdown": -0.0203,
+   "sharpe": 0.2671,
+   "excessT": -2.4297,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.005,
+     "win": 0.437
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0036,
+     "win": 0.4611
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0046,
+     "win": 0.55
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0094,
+     "win": 0.4881
+    }
+   }
+  },
+  {
+   "strategy": "improving earnings",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 740,
+   "meanExcess": -0.0039,
+   "medianExcess": -0.0037,
+   "winVsMarket": 0.4608,
+   "meanReturn": 0.0115,
+   "medianReturn": 0.0042,
+   "winAbsolute": 0.5419,
+   "worst5": -0.0727,
+   "best5": 0.1027,
+   "meanDrawdown": -0.0249,
+   "sharpe": 0.2035,
+   "excessT": -1.9983,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0069,
+     "win": 0.4319
+    },
+    "bear": {
+     "n": 167,
+     "mean": 0.0006,
+     "win": 0.4731
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.001,
+     "win": 0.49
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0054,
+     "win": 0.5357
+    }
+   }
+  },
+  {
+   "strategy": "after good company news",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 689,
+   "meanExcess": -0.004,
+   "medianExcess": -0.0042,
+   "winVsMarket": 0.4659,
+   "meanReturn": 0.0108,
+   "medianReturn": 0.0034,
+   "winAbsolute": 0.5385,
+   "worst5": -0.1195,
+   "best5": 0.1451,
+   "meanDrawdown": -0.0404,
+   "sharpe": 0.1277,
+   "excessT": -1.6073,
+   "regimes": {
+    "bull": {
+     "n": 362,
+     "mean": -0.0065,
+     "win": 0.4475
+    },
+    "bear": {
+     "n": 153,
+     "mean": -0.0071,
+     "win": 0.4379
+    },
+    "recession": {
+     "n": 94,
+     "mean": 0.0109,
+     "win": 0.5957
+    },
+    "crisis": {
+     "n": 80,
+     "mean": -0.0041,
+     "win": 0.45
+    }
+   }
+  },
+  {
+   "strategy": "concentrated (one random)",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0043,
+   "medianExcess": -0.0087,
+   "winVsMarket": 0.4581,
+   "meanReturn": 0.0121,
+   "medianReturn": 0.0098,
+   "winAbsolute": 0.5243,
+   "worst5": -0.1661,
+   "best5": 0.2132,
+   "meanDrawdown": -0.0682,
+   "sharpe": 0.0983,
+   "excessT": -1.25,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0026,
+     "win": 0.455
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0164,
+     "win": 0.3952
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0011,
+     "win": 0.53
+    },
+    "crisis": {
+     "n": 84,
+     "mean": 0.0052,
+     "win": 0.5119
+    }
+   }
+  },
+  {
+   "strategy": "high growth",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 740,
+   "meanExcess": -0.0047,
+   "medianExcess": -0.0056,
+   "winVsMarket": 0.4486,
+   "meanReturn": 0.0108,
+   "medianReturn": 0.0072,
+   "winAbsolute": 0.5797,
+   "worst5": -0.073,
+   "best5": 0.1079,
+   "meanDrawdown": -0.0269,
+   "sharpe": 0.1812,
+   "excessT": -2.3974,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0062,
+     "win": 0.4396
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0044,
+     "win": 0.4192
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0035,
+     "win": 0.49
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0081,
+     "win": 0.5
+    }
+   }
+  },
+  {
+   "strategy": "after bad company news",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 705,
+   "meanExcess": -0.005,
+   "medianExcess": -0.0059,
+   "winVsMarket": 0.461,
+   "meanReturn": 0.01,
+   "medianReturn": 0.0073,
+   "winAbsolute": 0.5475,
+   "worst5": -0.1107,
+   "best5": 0.1275,
+   "meanDrawdown": -0.0371,
+   "sharpe": 0.1345,
+   "excessT": -2.2367,
+   "regimes": {
+    "bull": {
+     "n": 369,
+     "mean": -0.0075,
+     "win": 0.4309
+    },
+    "bear": {
+     "n": 162,
+     "mean": 0.0036,
+     "win": 0.5494
+    },
+    "recession": {
+     "n": 96,
+     "mean": -0.0055,
+     "win": 0.4688
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0104,
+     "win": 0.4103
+    }
+   }
+  },
+  {
+   "strategy": "after bad company news",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 369,
+   "meanExcess": -0.0051,
+   "medianExcess": -0.0037,
+   "winVsMarket": 0.4878,
+   "meanReturn": 0.0115,
+   "medianReturn": 0.0115,
+   "winAbsolute": 0.5501,
+   "worst5": -0.1568,
+   "best5": 0.1822,
+   "meanDrawdown": -0.0626,
+   "sharpe": 0.104,
+   "excessT": -1.1221,
+   "regimes": {
+    "bull": {
+     "n": 206,
+     "mean": -0.0028,
+     "win": 0.4903
+    },
+    "bear": {
+     "n": 75,
+     "mean": -0.0156,
+     "win": 0.4133
+    },
+    "recession": {
+     "n": 47,
+     "mean": -0.0201,
+     "win": 0.5319
+    },
+    "crisis": {
+     "n": 41,
+     "mean": 0.0202,
+     "win": 0.561
+    }
+   }
+  },
+  {
+   "strategy": "concentrated (one random)",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 740,
+   "meanExcess": -0.0051,
+   "medianExcess": -0.0065,
+   "winVsMarket": 0.4649,
+   "meanReturn": 0.0104,
+   "medianReturn": 0.0063,
+   "winAbsolute": 0.5216,
+   "worst5": -0.1495,
+   "best5": 0.1731,
+   "meanDrawdown": -0.0562,
+   "sharpe": 0.0998,
+   "excessT": -1.6787,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0034,
+     "win": 0.4859
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.008,
+     "win": 0.4311
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0032,
+     "win": 0.5
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0168,
+     "win": 0.3929
+    }
+   }
+  },
+  {
+   "strategy": "deteriorating earnings",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0052,
+   "medianExcess": -0.0041,
+   "winVsMarket": 0.4405,
+   "meanReturn": 0.0127,
+   "medianReturn": 0.0112,
+   "winAbsolute": 0.573,
+   "worst5": -0.117,
+   "best5": 0.1435,
+   "meanDrawdown": -0.0429,
+   "sharpe": 0.1458,
+   "excessT": -3.5305,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0066,
+     "win": 0.4499
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0031,
+     "win": 0.4371
+    },
+    "recession": {
+     "n": 100,
+     "mean": -0.0059,
+     "win": 0.41
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0018,
+     "win": 0.4405
+    }
+   }
+  },
+  {
+   "strategy": "defensive",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0053,
+   "medianExcess": -0.006,
+   "winVsMarket": 0.4514,
+   "meanReturn": 0.0112,
+   "medianReturn": 0.0141,
+   "winAbsolute": 0.6405,
+   "worst5": -0.0663,
+   "best5": 0.0794,
+   "meanDrawdown": -0.0225,
+   "sharpe": 0.2462,
+   "excessT": -2.9968,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0078,
+     "win": 0.419
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0023,
+     "win": 0.4731
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.005,
+     "win": 0.51
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0121,
+     "win": 0.4881
+    }
+   }
+  },
+  {
+   "strategy": "deteriorating earnings",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0054,
+   "medianExcess": -0.0052,
+   "winVsMarket": 0.4419,
+   "meanReturn": 0.0111,
+   "medianReturn": 0.0138,
+   "winAbsolute": 0.577,
+   "worst5": -0.1371,
+   "best5": 0.1555,
+   "meanDrawdown": -0.0482,
+   "sharpe": 0.116,
+   "excessT": -2.827,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0047,
+     "win": 0.4679
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0092,
+     "win": 0.3772
+    },
+    "recession": {
+     "n": 100,
+     "mean": -0.0003,
+     "win": 0.48
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0069,
+     "win": 0.4048
+    }
+   }
+  },
+  {
+   "strategy": "recent winners",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0058,
+   "medianExcess": -0.0088,
+   "winVsMarket": 0.4216,
+   "meanReturn": 0.0096,
+   "medianReturn": 0.0097,
+   "winAbsolute": 0.5486,
+   "worst5": -0.1288,
+   "best5": 0.1606,
+   "meanDrawdown": -0.0506,
+   "sharpe": 0.1003,
+   "excessT": -2.6163,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0036,
+     "win": 0.4319
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0121,
+     "win": 0.3653
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0021,
+     "win": 0.43
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0128,
+     "win": 0.4762
+    }
+   }
+  },
+  {
+   "strategy": "random five",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 740,
+   "meanExcess": -0.0058,
+   "medianExcess": -0.0084,
+   "winVsMarket": 0.4216,
+   "meanReturn": 0.0097,
+   "medianReturn": 0.0063,
+   "winAbsolute": 0.5703,
+   "worst5": -0.0688,
+   "best5": 0.0904,
+   "meanDrawdown": -0.0246,
+   "sharpe": 0.1762,
+   "excessT": -3.4121,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0085,
+     "win": 0.3907
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0047,
+     "win": 0.4371
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0,
+     "win": 0.48
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0021,
+     "win": 0.4643
+    }
+   }
+  },
+  {
+   "strategy": "sector rotation",
+   "holdRounds": 1,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0061,
+   "medianExcess": -0.0073,
+   "winVsMarket": 0.4581,
+   "meanReturn": 0.0118,
+   "medianReturn": 0.0156,
+   "winAbsolute": 0.5459,
+   "worst5": -0.2084,
+   "best5": 0.2208,
+   "meanDrawdown": -0.0764,
+   "sharpe": 0.0866,
+   "excessT": -1.6352,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0016,
+     "win": 0.4833
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0063,
+     "win": 0.4671
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.002,
+     "win": 0.43
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0362,
+     "win": 0.3571
+    }
+   }
+  },
+  {
+   "strategy": "equal weight",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0083,
+   "medianExcess": -0.0096,
+   "winVsMarket": 0.4122,
+   "meanReturn": 0.0071,
+   "medianReturn": 0.0074,
+   "winAbsolute": 0.6432,
+   "worst5": -0.0503,
+   "best5": 0.0553,
+   "meanDrawdown": -0.015,
+   "sharpe": 0.1981,
+   "excessT": -5.1544,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0103,
+     "win": 0.3907
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0079,
+     "win": 0.4072
+    },
+    "recession": {
+     "n": 100,
+     "mean": -0.0023,
+     "win": 0.5
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0074,
+     "win": 0.4167
+    }
+   }
+  },
+  {
+   "strategy": "recent winners",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 740,
+   "meanExcess": -0.0087,
+   "medianExcess": -0.0132,
+   "winVsMarket": 0.3905,
+   "meanReturn": 0.0068,
+   "medianReturn": 0.0035,
+   "winAbsolute": 0.5351,
+   "worst5": -0.0765,
+   "best5": 0.1011,
+   "meanDrawdown": -0.0293,
+   "sharpe": 0.107,
+   "excessT": -4.1502,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0092,
+     "win": 0.3676
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0126,
+     "win": 0.3772
+    },
+    "recession": {
+     "n": 100,
+     "mean": 0.0039,
+     "win": 0.46
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0133,
+     "win": 0.4405
+    }
+   }
+  },
+  {
+   "strategy": "deteriorating earnings",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0093,
+   "medianExcess": -0.0117,
+   "winVsMarket": 0.4068,
+   "meanReturn": 0.0062,
+   "medianReturn": 0.0064,
+   "winAbsolute": 0.5432,
+   "worst5": -0.1274,
+   "best5": 0.1334,
+   "meanDrawdown": -0.0444,
+   "sharpe": 0.0736,
+   "excessT": -5.6373,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0078,
+     "win": 0.4242
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0121,
+     "win": 0.3832
+    },
+    "recession": {
+     "n": 100,
+     "mean": -0.0077,
+     "win": 0.43
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0122,
+     "win": 0.3452
+    }
+   }
+  },
+  {
+   "strategy": "deteriorating earnings",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 740,
+   "meanExcess": -0.0102,
+   "medianExcess": -0.0127,
+   "winVsMarket": 0.3973,
+   "meanReturn": 0.0053,
+   "medianReturn": 0.0039,
+   "winAbsolute": 0.5446,
+   "worst5": -0.0849,
+   "best5": 0.0988,
+   "meanDrawdown": -0.0301,
+   "sharpe": 0.0846,
+   "excessT": -5.9201,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0104,
+     "win": 0.3985
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.012,
+     "win": 0.3832
+    },
+    "recession": {
+     "n": 100,
+     "mean": -0.0076,
+     "win": 0.41
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0089,
+     "win": 0.4048
+    }
+   }
+  },
+  {
+   "strategy": "equal weight",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0106,
+   "medianExcess": -0.0117,
+   "winVsMarket": 0.4027,
+   "meanReturn": 0.0059,
+   "medianReturn": 0.0053,
+   "winAbsolute": 0.6311,
+   "worst5": -0.0416,
+   "best5": 0.0449,
+   "meanDrawdown": -0.0121,
+   "sharpe": 0.1987,
+   "excessT": -5.3916,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.013,
+     "win": 0.383
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0099,
+     "win": 0.3772
+    },
+    "recession": {
+     "n": 100,
+     "mean": -0.0015,
+     "win": 0.5
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0117,
+     "win": 0.4286
+    }
+   }
+  },
+  {
+   "strategy": "defensive",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 740,
+   "meanExcess": -0.0109,
+   "medianExcess": -0.0092,
+   "winVsMarket": 0.4189,
+   "meanReturn": 0.0045,
+   "medianReturn": 0.0045,
+   "winAbsolute": 0.5946,
+   "worst5": -0.0287,
+   "best5": 0.037,
+   "meanDrawdown": -0.0113,
+   "sharpe": 0.1952,
+   "excessT": -5.0034,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0134,
+     "win": 0.383
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.009,
+     "win": 0.4192
+    },
+    "recession": {
+     "n": 100,
+     "mean": -0.0011,
+     "win": 0.54
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0147,
+     "win": 0.4405
+    }
+   }
+  },
+  {
+   "strategy": "after sector decline",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 369,
+   "meanExcess": -0.0114,
+   "medianExcess": -0.0053,
+   "winVsMarket": 0.4499,
+   "meanReturn": 0.0048,
+   "medianReturn": -0.0002,
+   "winAbsolute": 0.4959,
+   "worst5": -0.1858,
+   "best5": 0.1977,
+   "meanDrawdown": -0.0592,
+   "sharpe": 0.0415,
+   "excessT": -3.2107,
+   "regimes": {
+    "bull": {
+     "n": 135,
+     "mean": -0.0152,
+     "win": 0.4519
+    },
+    "bear": {
+     "n": 111,
+     "mean": -0.0126,
+     "win": 0.4324
+    },
+    "recession": {
+     "n": 63,
+     "mean": -0.0054,
+     "win": 0.4603
+    },
+    "crisis": {
+     "n": 60,
+     "mean": -0.0069,
+     "win": 0.4667
+    }
+   }
+  },
+  {
+   "strategy": "after sector decline",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 10000,
+   "n": 405,
+   "meanExcess": -0.0116,
+   "medianExcess": -0.006,
+   "winVsMarket": 0.4444,
+   "meanReturn": 0.0016,
+   "medianReturn": -0.0009,
+   "winAbsolute": 0.4988,
+   "worst5": -0.1986,
+   "best5": 0.2016,
+   "meanDrawdown": -0.064,
+   "sharpe": 0.0134,
+   "excessT": -3.1485,
+   "regimes": {
+    "bull": {
+     "n": 151,
+     "mean": -0.0109,
+     "win": 0.4901
+    },
+    "bear": {
+     "n": 129,
+     "mean": -0.0137,
+     "win": 0.3953
+    },
+    "recession": {
+     "n": 65,
+     "mean": -0.0124,
+     "win": 0.3692
+    },
+    "crisis": {
+     "n": 60,
+     "mean": -0.0081,
+     "win": 0.5167
+    }
+   }
+  },
+  {
+   "strategy": "recent winners",
+   "holdRounds": 1,
+   "universe": "all",
+   "budget": 10000,
+   "n": 740,
+   "meanExcess": -0.0117,
+   "medianExcess": -0.0161,
+   "winVsMarket": 0.3892,
+   "meanReturn": 0.0048,
+   "medianReturn": 0.0047,
+   "winAbsolute": 0.5257,
+   "worst5": -0.1593,
+   "best5": 0.1597,
+   "meanDrawdown": -0.06,
+   "sharpe": 0.0441,
+   "excessT": -4.7575,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.0087,
+     "win": 0.3882
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0147,
+     "win": 0.3772
+    },
+    "recession": {
+     "n": 100,
+     "mean": -0.0064,
+     "win": 0.43
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.026,
+     "win": 0.369
+    }
+   }
+  },
+  {
+   "strategy": "after sector decline",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 405,
+   "meanExcess": -0.0126,
+   "medianExcess": -0.0077,
+   "winVsMarket": 0.4123,
+   "meanReturn": 0.0006,
+   "medianReturn": 0,
+   "winAbsolute": 0.4815,
+   "worst5": -0.1438,
+   "best5": 0.1415,
+   "meanDrawdown": -0.0409,
+   "sharpe": 0.0071,
+   "excessT": -4.2551,
+   "regimes": {
+    "bull": {
+     "n": 151,
+     "mean": -0.0124,
+     "win": 0.4238
+    },
+    "bear": {
+     "n": 129,
+     "mean": -0.0129,
+     "win": 0.3876
+    },
+    "recession": {
+     "n": 65,
+     "mean": -0.0065,
+     "win": 0.4769
+    },
+    "crisis": {
+     "n": 60,
+     "mean": -0.0189,
+     "win": 0.3667
+    }
+   }
+  },
+  {
+   "strategy": "equal weight",
+   "holdRounds": 1,
+   "universe": "core",
+   "budget": 1000,
+   "n": 740,
+   "meanExcess": -0.0145,
+   "medianExcess": -0.0158,
+   "winVsMarket": 0.4041,
+   "meanReturn": 0.0009,
+   "medianReturn": 0.0008,
+   "winAbsolute": 0.5973,
+   "worst5": -0.0063,
+   "best5": 0.0079,
+   "meanDrawdown": -0.0021,
+   "sharpe": 0.1784,
+   "excessT": -5.422,
+   "regimes": {
+    "bull": {
+     "n": 389,
+     "mean": -0.017,
+     "win": 0.383
+    },
+    "bear": {
+     "n": 167,
+     "mean": -0.0133,
+     "win": 0.3832
+    },
+    "recession": {
+     "n": 100,
+     "mean": -0.0042,
+     "win": 0.5
+    },
+    "crisis": {
+     "n": 84,
+     "mean": -0.0177,
+     "win": 0.4286
+    }
+   }
+  },
+  {
+   "strategy": "deep discount (>40%)",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 571,
+   "meanExcess": 0.1297,
+   "medianExcess": 0.0634,
+   "winVsMarket": 0.6515,
+   "meanReturn": 0.2291,
+   "medianReturn": 0.1715,
+   "winAbsolute": 0.7373,
+   "worst5": -0.3273,
+   "best5": 0.7988,
+   "meanDrawdown": -0.1146,
+   "sharpe": 0.4153,
+   "excessT": 6.6374,
+   "regimes": {
+    "bull": {
+     "n": 286,
+     "mean": 0.1475,
+     "win": 0.6853
+    },
+    "bear": {
+     "n": 143,
+     "mean": 0.1131,
+     "win": 0.6224
+    },
+    "recession": {
+     "n": 70,
+     "mean": 0.1479,
+     "win": 0.5857
+    },
+    "crisis": {
+     "n": 72,
+     "mean": 0.0745,
+     "win": 0.6389
+    }
+   }
+  },
+  {
+   "strategy": "after market crash",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 55,
+   "meanExcess": 0.1247,
+   "medianExcess": 0.0916,
+   "winVsMarket": 0.6909,
+   "meanReturn": 0.2706,
+   "medianReturn": 0.2385,
+   "winAbsolute": 0.6909,
+   "worst5": -0.2841,
+   "best5": 1.1352,
+   "meanDrawdown": -0.1856,
+   "sharpe": 0.578,
+   "excessT": 3.6366,
+   "regimes": {
+    "bull": {
+     "n": 1,
+     "mean": 0.1,
+     "win": 1
+    },
+    "bear": {
+     "n": 16,
+     "mean": 0.0991,
+     "win": 0.625
+    },
+    "recession": {
+     "n": 7,
+     "mean": 0.0238,
+     "win": 0.5714
+    },
+    "crisis": {
+     "n": 31,
+     "mean": 0.1615,
+     "win": 0.7419
+    }
+   }
+  },
+  {
+   "strategy": "deep discount (>40%)",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 504,
+   "meanExcess": 0.1079,
+   "medianExcess": 0.0462,
+   "winVsMarket": 0.6071,
+   "meanReturn": 0.2072,
+   "medianReturn": 0.1594,
+   "winAbsolute": 0.7123,
+   "worst5": -0.3338,
+   "best5": 0.7605,
+   "meanDrawdown": -0.1243,
+   "sharpe": 0.3928,
+   "excessT": 5.3844,
+   "regimes": {
+    "bull": {
+     "n": 236,
+     "mean": 0.1358,
+     "win": 0.6186
+    },
+    "bear": {
+     "n": 130,
+     "mean": 0.0783,
+     "win": 0.5846
+    },
+    "recession": {
+     "n": 68,
+     "mean": 0.1523,
+     "win": 0.6618
+    },
+    "crisis": {
+     "n": 70,
+     "mean": 0.0256,
+     "win": 0.5571
+    }
+   }
+  },
+  {
+   "strategy": "below fair value",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.1057,
+   "medianExcess": 0.0469,
+   "winVsMarket": 0.6864,
+   "meanReturn": 0.1945,
+   "medianReturn": 0.155,
+   "winAbsolute": 0.7227,
+   "worst5": -0.297,
+   "best5": 0.6685,
+   "meanDrawdown": -0.1012,
+   "sharpe": 0.3821,
+   "excessT": 6.3982,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.1132,
+     "win": 0.7356
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.1033,
+     "win": 0.6667
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.1117,
+     "win": 0.5952
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0699,
+     "win": 0.6026
+    }
+   }
+  },
+  {
+   "strategy": "after market crash",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 48,
+   "meanExcess": 0.1051,
+   "medianExcess": 0.0429,
+   "winVsMarket": 0.5833,
+   "meanReturn": 0.2353,
+   "medianReturn": 0.2091,
+   "winAbsolute": 0.6875,
+   "worst5": -0.3037,
+   "best5": 0.8617,
+   "meanDrawdown": -0.1825,
+   "sharpe": 0.6011,
+   "excessT": 3.494,
+   "regimes": {
+    "bull": {
+     "n": 0,
+     "mean": 0,
+     "win": 0
+    },
+    "bear": {
+     "n": 12,
+     "mean": 0.1673,
+     "win": 0.75
+    },
+    "recession": {
+     "n": 7,
+     "mean": 0.017,
+     "win": 0.2857
+    },
+    "crisis": {
+     "n": 29,
+     "mean": 0.1006,
+     "win": 0.5862
+    }
+   }
+  },
+  {
+   "strategy": "deep discount (>40%)",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 272,
+   "meanExcess": 0.0917,
+   "medianExcess": 0.0127,
+   "winVsMarket": 0.5257,
+   "meanReturn": 0.2327,
+   "medianReturn": 0.1382,
+   "winAbsolute": 0.7132,
+   "worst5": -0.3077,
+   "best5": 0.8964,
+   "meanDrawdown": -0.1274,
+   "sharpe": 0.357,
+   "excessT": 2.7217,
+   "regimes": {
+    "bull": {
+     "n": 104,
+     "mean": 0.0865,
+     "win": 0.4808
+    },
+    "bear": {
+     "n": 70,
+     "mean": 0.1305,
+     "win": 0.5
+    },
+    "recession": {
+     "n": 44,
+     "mean": 0.0951,
+     "win": 0.5682
+    },
+    "crisis": {
+     "n": 54,
+     "mean": 0.0487,
+     "win": 0.6111
+    }
+   }
+  },
+  {
+   "strategy": "below fair value",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0842,
+   "medianExcess": 0.0406,
+   "winVsMarket": 0.6303,
+   "meanReturn": 0.1679,
+   "medianReturn": 0.1166,
+   "winAbsolute": 0.7152,
+   "worst5": -0.2877,
+   "best5": 0.6452,
+   "meanDrawdown": -0.0976,
+   "sharpe": 0.3704,
+   "excessT": 5.7789,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0913,
+     "win": 0.6552
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0733,
+     "win": 0.5667
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.1233,
+     "win": 0.7024
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0314,
+     "win": 0.5641
+    }
+   }
+  },
+  {
+   "strategy": "after market crash",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 50,
+   "meanExcess": 0.0809,
+   "medianExcess": 0.0647,
+   "winVsMarket": 0.62,
+   "meanReturn": 0.2209,
+   "medianReturn": 0.1627,
+   "winAbsolute": 0.76,
+   "worst5": -0.3082,
+   "best5": 1.0666,
+   "meanDrawdown": -0.1755,
+   "sharpe": 0.5197,
+   "excessT": 2.7678,
+   "regimes": {
+    "bull": {
+     "n": 1,
+     "mean": 0.0439,
+     "win": 1
+    },
+    "bear": {
+     "n": 13,
+     "mean": 0.0908,
+     "win": 0.6923
+    },
+    "recession": {
+     "n": 6,
+     "mean": 0.0094,
+     "win": 0.6667
+    },
+    "crisis": {
+     "n": 30,
+     "mean": 0.0922,
+     "win": 0.5667
+    }
+   }
+  },
+  {
+   "strategy": "after market crash",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 48,
+   "meanExcess": 0.0736,
+   "medianExcess": 0.0273,
+   "winVsMarket": 0.5625,
+   "meanReturn": 0.2038,
+   "medianReturn": 0.161,
+   "winAbsolute": 0.75,
+   "worst5": -0.2971,
+   "best5": 0.7032,
+   "meanDrawdown": -0.1478,
+   "sharpe": 0.6104,
+   "excessT": 2.9849,
+   "regimes": {
+    "bull": {
+     "n": 0,
+     "mean": 0,
+     "win": 0
+    },
+    "bear": {
+     "n": 12,
+     "mean": 0.1052,
+     "win": 0.6667
+    },
+    "recession": {
+     "n": 7,
+     "mean": 0.0305,
+     "win": 0.4286
+    },
+    "crisis": {
+     "n": 29,
+     "mean": 0.0709,
+     "win": 0.5517
+    }
+   }
+  },
+  {
+   "strategy": "deep discount (>40%)",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 504,
+   "meanExcess": 0.0701,
+   "medianExcess": 0.0191,
+   "winVsMarket": 0.5516,
+   "meanReturn": 0.1694,
+   "medianReturn": 0.1182,
+   "winAbsolute": 0.6905,
+   "worst5": -0.298,
+   "best5": 0.7099,
+   "meanDrawdown": -0.1071,
+   "sharpe": 0.3506,
+   "excessT": 3.7976,
+   "regimes": {
+    "bull": {
+     "n": 236,
+     "mean": 0.0956,
+     "win": 0.572
+    },
+    "bear": {
+     "n": 130,
+     "mean": 0.0521,
+     "win": 0.5308
+    },
+    "recession": {
+     "n": 68,
+     "mean": 0.0903,
+     "win": 0.6029
+    },
+    "crisis": {
+     "n": 70,
+     "mean": -0.0023,
+     "win": 0.4714
+    }
+   }
+  },
+  {
+   "strategy": "momentum + reversal",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0573,
+   "medianExcess": 0.0268,
+   "winVsMarket": 0.5788,
+   "meanReturn": 0.1461,
+   "medianReturn": 0.1131,
+   "winAbsolute": 0.6909,
+   "worst5": -0.2651,
+   "best5": 0.5534,
+   "meanDrawdown": -0.1036,
+   "sharpe": 0.3255,
+   "excessT": 3.9724,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0433,
+     "win": 0.5603
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0846,
+     "win": 0.58
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0978,
+     "win": 0.6429
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0232,
+     "win": 0.5897
+    }
+   }
+  },
+  {
+   "strategy": "below fair value",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 660,
+   "meanExcess": 0.0448,
+   "medianExcess": 0.0065,
+   "winVsMarket": 0.5258,
+   "meanReturn": 0.1285,
+   "medianReturn": 0.0768,
+   "winAbsolute": 0.7015,
+   "worst5": -0.2249,
+   "best5": 0.5208,
+   "meanDrawdown": -0.0748,
+   "sharpe": 0.3148,
+   "excessT": 3.3205,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0424,
+     "win": 0.5057
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.046,
+     "win": 0.5533
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0847,
+     "win": 0.6071
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0097,
+     "win": 0.4744
+    }
+   }
+  },
+  {
+   "strategy": "sector rotation",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0437,
+   "medianExcess": 0.001,
+   "winVsMarket": 0.503,
+   "meanReturn": 0.1275,
+   "medianReturn": 0.0901,
+   "winAbsolute": 0.6667,
+   "worst5": -0.2746,
+   "best5": 0.5674,
+   "meanDrawdown": -0.1048,
+   "sharpe": 0.2889,
+   "excessT": 2.9955,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0414,
+     "win": 0.5029
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0621,
+     "win": 0.4933
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0626,
+     "win": 0.5238
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0013,
+     "win": 0.5
+    }
+   }
+  },
+  {
+   "strategy": "high growth",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0435,
+   "medianExcess": 0.0122,
+   "winVsMarket": 0.5409,
+   "meanReturn": 0.1273,
+   "medianReturn": 0.1004,
+   "winAbsolute": 0.6742,
+   "worst5": -0.297,
+   "best5": 0.6225,
+   "meanDrawdown": -0.107,
+   "sharpe": 0.4054,
+   "excessT": 5.2189,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0471,
+     "win": 0.5402
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0623,
+     "win": 0.6067
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.015,
+     "win": 0.4524
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0222,
+     "win": 0.5128
+    }
+   }
+  },
+  {
+   "strategy": "momentum + reversal",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0399,
+   "medianExcess": 0.0111,
+   "winVsMarket": 0.55,
+   "meanReturn": 0.1236,
+   "medianReturn": 0.0932,
+   "winAbsolute": 0.6939,
+   "worst5": -0.2504,
+   "best5": 0.478,
+   "meanDrawdown": -0.0935,
+   "sharpe": 0.3117,
+   "excessT": 3.1756,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0311,
+     "win": 0.5632
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0648,
+     "win": 0.52
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0712,
+     "win": 0.5714
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0025,
+     "win": 0.5256
+    }
+   }
+  },
+  {
+   "strategy": "high growth",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0384,
+   "medianExcess": 0.0078,
+   "winVsMarket": 0.5258,
+   "meanReturn": 0.1273,
+   "medianReturn": 0.1004,
+   "winAbsolute": 0.6742,
+   "worst5": -0.297,
+   "best5": 0.6225,
+   "meanDrawdown": -0.107,
+   "sharpe": 0.4054,
+   "excessT": 4.4091,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0448,
+     "win": 0.523
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0542,
+     "win": 0.5733
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0116,
+     "win": 0.4762
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0083,
+     "win": 0.5
+    }
+   }
+  },
+  {
+   "strategy": "below fair value",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.034,
+   "medianExcess": 0.0223,
+   "winVsMarket": 0.6258,
+   "meanReturn": 0.1292,
+   "medianReturn": 0.1125,
+   "winAbsolute": 0.7348,
+   "worst5": -0.2323,
+   "best5": 0.4622,
+   "meanDrawdown": -0.0807,
+   "sharpe": 0.4895,
+   "excessT": 5.908,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0257,
+     "win": 0.5833
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0349,
+     "win": 0.62
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.059,
+     "win": 0.7738
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0425,
+     "win": 0.6667
+    }
+   }
+  },
+  {
+   "strategy": "sector rotation",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0335,
+   "medianExcess": 0.0028,
+   "winVsMarket": 0.5045,
+   "meanReturn": 0.1223,
+   "medianReturn": 0.0904,
+   "winAbsolute": 0.6758,
+   "worst5": -0.2985,
+   "best5": 0.5162,
+   "meanDrawdown": -0.0965,
+   "sharpe": 0.3028,
+   "excessT": 2.5945,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0244,
+     "win": 0.4598
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0622,
+     "win": 0.58
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0575,
+     "win": 0.5595
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0071,
+     "win": 0.5
+    }
+   }
+  },
+  {
+   "strategy": "recent winners",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0298,
+   "medianExcess": -0.0031,
+   "winVsMarket": 0.4742,
+   "meanReturn": 0.1186,
+   "medianReturn": 0.0857,
+   "winAbsolute": 0.6485,
+   "worst5": -0.2969,
+   "best5": 0.5609,
+   "meanDrawdown": -0.1207,
+   "sharpe": 0.3269,
+   "excessT": 2.8941,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0303,
+     "win": 0.4569
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0228,
+     "win": 0.4733
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0549,
+     "win": 0.5476
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0137,
+     "win": 0.4744
+    }
+   }
+  },
+  {
+   "strategy": "improving earnings",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0245,
+   "medianExcess": 0.0051,
+   "winVsMarket": 0.5106,
+   "meanReturn": 0.1082,
+   "medianReturn": 0.0774,
+   "winAbsolute": 0.6485,
+   "worst5": -0.2865,
+   "best5": 0.5485,
+   "meanDrawdown": -0.1058,
+   "sharpe": 0.4098,
+   "excessT": 4.0473,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0201,
+     "win": 0.5144
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0482,
+     "win": 0.5933
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0181,
+     "win": 0.4167
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0053,
+     "win": 0.4359
+    }
+   }
+  },
+  {
+   "strategy": "recent winners",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0244,
+   "medianExcess": 0.0011,
+   "winVsMarket": 0.5061,
+   "meanReturn": 0.1081,
+   "medianReturn": 0.0866,
+   "winAbsolute": 0.6545,
+   "worst5": -0.2641,
+   "best5": 0.5238,
+   "meanDrawdown": -0.1064,
+   "sharpe": 0.3487,
+   "excessT": 2.8094,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0234,
+     "win": 0.4856
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.03,
+     "win": 0.5467
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.049,
+     "win": 0.5595
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0084,
+     "win": 0.4615
+    }
+   }
+  },
+  {
+   "strategy": "momentum + reversal",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0239,
+   "medianExcess": 0.0144,
+   "winVsMarket": 0.5561,
+   "meanReturn": 0.1191,
+   "medianReturn": 0.1013,
+   "winAbsolute": 0.7015,
+   "worst5": -0.2277,
+   "best5": 0.4929,
+   "meanDrawdown": -0.0895,
+   "sharpe": 0.4548,
+   "excessT": 4.391,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0234,
+     "win": 0.5489
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.035,
+     "win": 0.6067
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0129,
+     "win": 0.4881
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0166,
+     "win": 0.5641
+    }
+   }
+  },
+  {
+   "strategy": "sector rotation",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0228,
+   "medianExcess": -0.0045,
+   "winVsMarket": 0.4939,
+   "meanReturn": 0.118,
+   "medianReturn": 0.0905,
+   "winAbsolute": 0.6333,
+   "worst5": -0.3815,
+   "best5": 0.676,
+   "meanDrawdown": -0.1495,
+   "sharpe": 0.3041,
+   "excessT": 1.9313,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0292,
+     "win": 0.5086
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0103,
+     "win": 0.4867
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0498,
+     "win": 0.5119
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0109,
+     "win": 0.4231
+    }
+   }
+  },
+  {
+   "strategy": "small companies",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0196,
+   "medianExcess": -0.0134,
+   "winVsMarket": 0.4667,
+   "meanReturn": 0.1084,
+   "medianReturn": 0.0787,
+   "winAbsolute": 0.5894,
+   "worst5": -0.3962,
+   "best5": 0.7288,
+   "meanDrawdown": -0.1655,
+   "sharpe": 0.3007,
+   "excessT": 2.2832,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0011,
+     "win": 0.4569
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0241,
+     "win": 0.4467
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0292,
+     "win": 0.4643
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0929,
+     "win": 0.5513
+    }
+   }
+  },
+  {
+   "strategy": "recent winners",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.016,
+   "medianExcess": 0.0052,
+   "winVsMarket": 0.5303,
+   "meanReturn": 0.1111,
+   "medianReturn": 0.0927,
+   "winAbsolute": 0.6803,
+   "worst5": -0.245,
+   "best5": 0.4959,
+   "meanDrawdown": -0.0962,
+   "sharpe": 0.4198,
+   "excessT": 2.8538,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0174,
+     "win": 0.5259
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0221,
+     "win": 0.5267
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0149,
+     "win": 0.5238
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0014,
+     "win": 0.5641
+    }
+   }
+  },
+  {
+   "strategy": "improving earnings",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0123,
+   "medianExcess": 0.0014,
+   "winVsMarket": 0.503,
+   "meanReturn": 0.1012,
+   "medianReturn": 0.092,
+   "winAbsolute": 0.6545,
+   "worst5": -0.2985,
+   "best5": 0.5628,
+   "meanDrawdown": -0.1126,
+   "sharpe": 0.3856,
+   "excessT": 2.0983,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.01,
+     "win": 0.4914
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0228,
+     "win": 0.58
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0098,
+     "win": 0.4524
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0055,
+     "win": 0.4615
+    }
+   }
+  },
+  {
+   "strategy": "concentrated (one random)",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0095,
+   "medianExcess": -0.0131,
+   "winVsMarket": 0.4788,
+   "meanReturn": 0.1047,
+   "medianReturn": 0.0674,
+   "winAbsolute": 0.6136,
+   "worst5": -0.3305,
+   "best5": 0.6343,
+   "meanDrawdown": -0.1331,
+   "sharpe": 0.3312,
+   "excessT": 1.0088,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0129,
+     "win": 0.5
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0024,
+     "win": 0.46
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.04,
+     "win": 0.3929
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0708,
+     "win": 0.5128
+    }
+   }
+  },
+  {
+   "strategy": "improving earnings",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0079,
+   "medianExcess": 0.0026,
+   "winVsMarket": 0.5136,
+   "meanReturn": 0.1031,
+   "medianReturn": 0.1009,
+   "winAbsolute": 0.7045,
+   "worst5": -0.2501,
+   "best5": 0.4788,
+   "meanDrawdown": -0.0973,
+   "sharpe": 0.4701,
+   "excessT": 1.9351,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0127,
+     "win": 0.5402
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0094,
+     "win": 0.5267
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0043,
+     "win": 0.4524
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0127,
+     "win": 0.4359
+    }
+   }
+  },
+  {
+   "strategy": "after sector decline",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 438,
+   "meanExcess": 0.0051,
+   "medianExcess": -0.0295,
+   "winVsMarket": 0.4429,
+   "meanReturn": 0.0955,
+   "medianReturn": 0.0547,
+   "winAbsolute": 0.5845,
+   "worst5": -0.4271,
+   "best5": 0.6806,
+   "meanDrawdown": -0.1705,
+   "sharpe": 0.2611,
+   "excessT": 0.4156,
+   "regimes": {
+    "bull": {
+     "n": 194,
+     "mean": -0.0231,
+     "win": 0.4227
+    },
+    "bear": {
+     "n": 116,
+     "mean": 0.0161,
+     "win": 0.4655
+    },
+    "recession": {
+     "n": 62,
+     "mean": 0.01,
+     "win": 0.4032
+    },
+    "crisis": {
+     "n": 66,
+     "mean": 0.0643,
+     "win": 0.5
+    }
+   }
+  },
+  {
+   "strategy": "biggest losers",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0034,
+   "medianExcess": -0.0054,
+   "winVsMarket": 0.4818,
+   "meanReturn": 0.0923,
+   "medianReturn": 0.0854,
+   "winAbsolute": 0.6364,
+   "worst5": -0.3422,
+   "best5": 0.5318,
+   "meanDrawdown": -0.122,
+   "sharpe": 0.3152,
+   "excessT": 0.4885,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0149,
+     "win": 0.4397
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0131,
+     "win": 0.5267
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.009,
+     "win": 0.4762
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0804,
+     "win": 0.5897
+    }
+   }
+  },
+  {
+   "strategy": "sector rotation",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 660,
+   "meanExcess": 0.0025,
+   "medianExcess": -0.0324,
+   "winVsMarket": 0.4288,
+   "meanReturn": 0.0862,
+   "medianReturn": 0.0377,
+   "winAbsolute": 0.6167,
+   "worst5": -0.1575,
+   "best5": 0.3673,
+   "meanDrawdown": -0.0605,
+   "sharpe": 0.2247,
+   "excessT": 0.1824,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0049,
+     "win": 0.3822
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0256,
+     "win": 0.5
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0408,
+     "win": 0.4762
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0503,
+     "win": 0.4487
+    }
+   }
+  },
+  {
+   "strategy": "after bad company news",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 318,
+   "meanExcess": 0.0024,
+   "medianExcess": -0.0075,
+   "winVsMarket": 0.4874,
+   "meanReturn": 0.1101,
+   "medianReturn": 0.0792,
+   "winAbsolute": 0.6384,
+   "worst5": -0.3126,
+   "best5": 0.5769,
+   "meanDrawdown": -0.1251,
+   "sharpe": 0.3734,
+   "excessT": 0.1906,
+   "regimes": {
+    "bull": {
+     "n": 178,
+     "mean": 0.0125,
+     "win": 0.5169
+    },
+    "bear": {
+     "n": 67,
+     "mean": 0.0085,
+     "win": 0.4776
+    },
+    "recession": {
+     "n": 37,
+     "mean": -0.0217,
+     "win": 0.4865
+    },
+    "crisis": {
+     "n": 36,
+     "mean": -0.0344,
+     "win": 0.3611
+    }
+   }
+  },
+  {
+   "strategy": "small companies",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0023,
+   "medianExcess": -0.0077,
+   "winVsMarket": 0.4712,
+   "meanReturn": 0.0975,
+   "medianReturn": 0.0856,
+   "winAbsolute": 0.647,
+   "worst5": -0.2752,
+   "best5": 0.5169,
+   "meanDrawdown": -0.1175,
+   "sharpe": 0.3883,
+   "excessT": 0.4804,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0085,
+     "win": 0.4684
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0119,
+     "win": 0.4867
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0036,
+     "win": 0.4643
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0309,
+     "win": 0.4615
+    }
+   }
+  },
+  {
+   "strategy": "high growth",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0015,
+   "medianExcess": -0.0056,
+   "winVsMarket": 0.4697,
+   "meanReturn": 0.0967,
+   "medianReturn": 0.0904,
+   "winAbsolute": 0.6894,
+   "worst5": -0.2695,
+   "best5": 0.4814,
+   "meanDrawdown": -0.1066,
+   "sharpe": 0.4082,
+   "excessT": 0.3715,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0026,
+     "win": 0.4799
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.001,
+     "win": 0.4533
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.0024,
+     "win": 0.4524
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0052,
+     "win": 0.4744
+    }
+   }
+  },
+  {
+   "strategy": "after bad company news",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0005,
+   "medianExcess": -0.0032,
+   "winVsMarket": 0.4924,
+   "meanReturn": 0.0894,
+   "medianReturn": 0.0916,
+   "winAbsolute": 0.6682,
+   "worst5": -0.2695,
+   "best5": 0.4291,
+   "meanDrawdown": -0.0964,
+   "sharpe": 0.4181,
+   "excessT": 0.1276,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0047,
+     "win": 0.4741
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0156,
+     "win": 0.5933
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0034,
+     "win": 0.4167
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0081,
+     "win": 0.4615
+    }
+   }
+  },
+  {
+   "strategy": "small companies",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": 0.0001,
+   "medianExcess": -0.0072,
+   "winVsMarket": 0.4848,
+   "meanReturn": 0.0838,
+   "medianReturn": 0.0582,
+   "winAbsolute": 0.6061,
+   "worst5": -0.2448,
+   "best5": 0.5059,
+   "meanDrawdown": -0.1139,
+   "sharpe": 0.3536,
+   "excessT": 0.0081,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0142,
+     "win": 0.431
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0171,
+     "win": 0.5533
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0168,
+     "win": 0.5595
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0129,
+     "win": 0.5128
+    }
+   }
+  },
+  {
+   "strategy": "after bad company news",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 630,
+   "meanExcess": -0.0012,
+   "medianExcess": -0.0019,
+   "winVsMarket": 0.4889,
+   "meanReturn": 0.0825,
+   "medianReturn": 0.076,
+   "winAbsolute": 0.6587,
+   "worst5": -0.3039,
+   "best5": 0.4527,
+   "meanDrawdown": -0.108,
+   "sharpe": 0.3591,
+   "excessT": -0.2031,
+   "regimes": {
+    "bull": {
+     "n": 331,
+     "mean": -0.0012,
+     "win": 0.5136
+    },
+    "bear": {
+     "n": 145,
+     "mean": 0.01,
+     "win": 0.5034
+    },
+    "recession": {
+     "n": 81,
+     "mean": -0.0074,
+     "win": 0.4074
+    },
+    "crisis": {
+     "n": 73,
+     "mean": -0.0162,
+     "win": 0.4384
+    }
+   }
+  },
+  {
+   "strategy": "momentum + reversal",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 660,
+   "meanExcess": -0.0025,
+   "medianExcess": -0.0209,
+   "winVsMarket": 0.4273,
+   "meanReturn": 0.0812,
+   "medianReturn": 0.0419,
+   "winAbsolute": 0.6485,
+   "worst5": -0.1126,
+   "best5": 0.3058,
+   "meanDrawdown": -0.0503,
+   "sharpe": 0.2376,
+   "excessT": -0.2085,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0179,
+     "win": 0.3966
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0272,
+     "win": 0.4467
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.047,
+     "win": 0.5476
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0445,
+     "win": 0.3974
+    }
+   }
+  },
+  {
+   "strategy": "after good company news",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 332,
+   "meanExcess": -0.0027,
+   "medianExcess": -0.0336,
+   "winVsMarket": 0.4307,
+   "meanReturn": 0.0951,
+   "medianReturn": 0.067,
+   "winAbsolute": 0.5843,
+   "worst5": -0.3518,
+   "best5": 0.5612,
+   "meanDrawdown": -0.1324,
+   "sharpe": 0.3146,
+   "excessT": -0.2057,
+   "regimes": {
+    "bull": {
+     "n": 178,
+     "mean": -0.0026,
+     "win": 0.4663
+    },
+    "bear": {
+     "n": 75,
+     "mean": -0.0223,
+     "win": 0.4267
+    },
+    "recession": {
+     "n": 35,
+     "mean": 0.0047,
+     "win": 0.3429
+    },
+    "crisis": {
+     "n": 44,
+     "mean": 0.0246,
+     "win": 0.3636
+    }
+   }
+  },
+  {
+   "strategy": "random five",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": -0.003,
+   "medianExcess": -0.0036,
+   "winVsMarket": 0.4742,
+   "meanReturn": 0.0807,
+   "medianReturn": 0.0765,
+   "winAbsolute": 0.6727,
+   "worst5": -0.246,
+   "best5": 0.4037,
+   "meanDrawdown": -0.0902,
+   "sharpe": 0.3892,
+   "excessT": -0.7478,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0158,
+     "win": 0.431
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0123,
+     "win": 0.52
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0153,
+     "win": 0.5714
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0052,
+     "win": 0.4744
+    }
+   }
+  },
+  {
+   "strategy": "random five",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": -0.0031,
+   "medianExcess": -0.0028,
+   "winVsMarket": 0.4879,
+   "meanReturn": 0.0857,
+   "medianReturn": 0.0906,
+   "winAbsolute": 0.6803,
+   "worst5": -0.2336,
+   "best5": 0.3932,
+   "meanDrawdown": -0.0939,
+   "sharpe": 0.4363,
+   "excessT": -0.7789,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0005,
+     "win": 0.5172
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.001,
+     "win": 0.4867
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.0024,
+     "win": 0.4405
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0197,
+     "win": 0.4103
+    }
+   }
+  },
+  {
+   "strategy": "concentrated (one random)",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": -0.0044,
+   "medianExcess": -0.0211,
+   "winVsMarket": 0.4621,
+   "meanReturn": 0.0844,
+   "medianReturn": 0.0631,
+   "winAbsolute": 0.5879,
+   "worst5": -0.3643,
+   "best5": 0.5907,
+   "meanDrawdown": -0.1481,
+   "sharpe": 0.2718,
+   "excessT": -0.4597,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": 0.0099,
+     "win": 0.4943
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0077,
+     "win": 0.4333
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.0477,
+     "win": 0.4167
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0153,
+     "win": 0.4231
+    }
+   }
+  },
+  {
+   "strategy": "random five",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": -0.0046,
+   "medianExcess": -0.0009,
+   "winVsMarket": 0.497,
+   "meanReturn": 0.0906,
+   "medianReturn": 0.0908,
+   "winAbsolute": 0.7,
+   "worst5": -0.2228,
+   "best5": 0.41,
+   "meanDrawdown": -0.0903,
+   "sharpe": 0.4513,
+   "excessT": -1.2693,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0024,
+     "win": 0.5086
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0031,
+     "win": 0.54
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.0089,
+     "win": 0.4762
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0241,
+     "win": 0.3846
+    }
+   }
+  },
+  {
+   "strategy": "concentrated (one random)",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 660,
+   "meanExcess": -0.0052,
+   "medianExcess": -0.011,
+   "winVsMarket": 0.4727,
+   "meanReturn": 0.0785,
+   "medianReturn": 0.0457,
+   "winAbsolute": 0.5742,
+   "worst5": -0.3128,
+   "best5": 0.5519,
+   "meanDrawdown": -0.1226,
+   "sharpe": 0.2923,
+   "excessT": -0.6185,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0151,
+     "win": 0.4397
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0006,
+     "win": 0.5
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.037,
+     "win": 0.6071
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0152,
+     "win": 0.4231
+    }
+   }
+  },
+  {
+   "strategy": "concentrated (one random)",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": -0.0056,
+   "medianExcess": -0.0238,
+   "winVsMarket": 0.4424,
+   "meanReturn": 0.0781,
+   "medianReturn": 0.0499,
+   "winAbsolute": 0.5955,
+   "worst5": -0.3337,
+   "best5": 0.5532,
+   "meanDrawdown": -0.1448,
+   "sharpe": 0.2691,
+   "excessT": -0.623,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0113,
+     "win": 0.4339
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0345,
+     "win": 0.4933
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.0505,
+     "win": 0.381
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0088,
+     "win": 0.4487
+    }
+   }
+  },
+  {
+   "strategy": "after good company news",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 656,
+   "meanExcess": -0.0069,
+   "medianExcess": -0.0117,
+   "winVsMarket": 0.4649,
+   "meanReturn": 0.0819,
+   "medianReturn": 0.0698,
+   "winAbsolute": 0.6616,
+   "worst5": -0.2671,
+   "best5": 0.4271,
+   "meanDrawdown": -0.1022,
+   "sharpe": 0.3682,
+   "excessT": -1.4736,
+   "regimes": {
+    "bull": {
+     "n": 347,
+     "mean": -0.0089,
+     "win": 0.4438
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0164,
+     "win": 0.4533
+    },
+    "recession": {
+     "n": 81,
+     "mean": 0.0012,
+     "win": 0.5185
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0119,
+     "win": 0.5256
+    }
+   }
+  },
+  {
+   "strategy": "recent winners",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 660,
+   "meanExcess": -0.0098,
+   "medianExcess": -0.0254,
+   "winVsMarket": 0.4288,
+   "meanReturn": 0.074,
+   "medianReturn": 0.0296,
+   "winAbsolute": 0.6303,
+   "worst5": -0.1384,
+   "best5": 0.3478,
+   "meanDrawdown": -0.0613,
+   "sharpe": 0.2906,
+   "excessT": -1.1453,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0183,
+     "win": 0.3851
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0072,
+     "win": 0.4867
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0359,
+     "win": 0.5357
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0534,
+     "win": 0.3974
+    }
+   }
+  },
+  {
+   "strategy": "biggest losers",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": -0.0107,
+   "medianExcess": -0.0176,
+   "winVsMarket": 0.4424,
+   "meanReturn": 0.073,
+   "medianReturn": 0.06,
+   "winAbsolute": 0.6091,
+   "worst5": -0.3233,
+   "best5": 0.4882,
+   "meanDrawdown": -0.1153,
+   "sharpe": 0.291,
+   "excessT": -1.7691,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.021,
+     "win": 0.4023
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0003,
+     "win": 0.5267
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.0227,
+     "win": 0.381
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0282,
+     "win": 0.5256
+    }
+   }
+  },
+  {
+   "strategy": "biggest losers",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": -0.0107,
+   "medianExcess": -0.0133,
+   "winVsMarket": 0.4318,
+   "meanReturn": 0.0845,
+   "medianReturn": 0.0859,
+   "winAbsolute": 0.6576,
+   "worst5": -0.2628,
+   "best5": 0.4462,
+   "meanDrawdown": -0.0999,
+   "sharpe": 0.3696,
+   "excessT": -2.4549,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0175,
+     "win": 0.4109
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0177,
+     "win": 0.42
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.0163,
+     "win": 0.4405
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0389,
+     "win": 0.5385
+    }
+   }
+  },
+  {
+   "strategy": "high growth",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 660,
+   "meanExcess": -0.011,
+   "medianExcess": -0.0199,
+   "winVsMarket": 0.4348,
+   "meanReturn": 0.0727,
+   "medianReturn": 0.0291,
+   "winAbsolute": 0.6152,
+   "worst5": -0.1726,
+   "best5": 0.4025,
+   "meanDrawdown": -0.0584,
+   "sharpe": 0.3187,
+   "excessT": -1.434,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0205,
+     "win": 0.4052
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0164,
+     "win": 0.5
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0097,
+     "win": 0.4881
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0436,
+     "win": 0.3846
+    }
+   }
+  },
+  {
+   "strategy": "after good company news",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 615,
+   "meanExcess": -0.0111,
+   "medianExcess": -0.02,
+   "winVsMarket": 0.4341,
+   "meanReturn": 0.0708,
+   "medianReturn": 0.054,
+   "winAbsolute": 0.6,
+   "worst5": -0.2949,
+   "best5": 0.482,
+   "meanDrawdown": -0.1191,
+   "sharpe": 0.295,
+   "excessT": -1.6742,
+   "regimes": {
+    "bull": {
+     "n": 324,
+     "mean": -0.0046,
+     "win": 0.4444
+    },
+    "bear": {
+     "n": 137,
+     "mean": -0.0286,
+     "win": 0.4526
+    },
+    "recession": {
+     "n": 80,
+     "mean": -0.0033,
+     "win": 0.4
+    },
+    "crisis": {
+     "n": 74,
+     "mean": -0.0152,
+     "win": 0.3919
+    }
+   }
+  },
+  {
+   "strategy": "deteriorating earnings",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": -0.0121,
+   "medianExcess": -0.0191,
+   "winVsMarket": 0.4197,
+   "meanReturn": 0.0767,
+   "medianReturn": 0.0527,
+   "winAbsolute": 0.6152,
+   "worst5": -0.2507,
+   "best5": 0.4305,
+   "meanDrawdown": -0.1092,
+   "sharpe": 0.3195,
+   "excessT": -2.1595,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0208,
+     "win": 0.3966
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0225,
+     "win": 0.3867
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0023,
+     "win": 0.4881
+    },
+    "crisis": {
+     "n": 78,
+     "mean": 0.0309,
+     "win": 0.5128
+    }
+   }
+  },
+  {
+   "strategy": "small companies",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 660,
+   "meanExcess": -0.0142,
+   "medianExcess": -0.023,
+   "winVsMarket": 0.4515,
+   "meanReturn": 0.0695,
+   "medianReturn": 0.0474,
+   "winAbsolute": 0.5939,
+   "worst5": -0.2245,
+   "best5": 0.4552,
+   "meanDrawdown": -0.1014,
+   "sharpe": 0.3331,
+   "excessT": -2.3705,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.03,
+     "win": 0.3937
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.0044,
+     "win": 0.5333
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0057,
+     "win": 0.5
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0011,
+     "win": 0.5
+    }
+   }
+  },
+  {
+   "strategy": "defensive",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": -0.0144,
+   "medianExcess": -0.0063,
+   "winVsMarket": 0.4652,
+   "meanReturn": 0.0808,
+   "medianReturn": 0.0801,
+   "winAbsolute": 0.7394,
+   "worst5": -0.1564,
+   "best5": 0.3008,
+   "meanDrawdown": -0.0569,
+   "sharpe": 0.5856,
+   "excessT": -3.9068,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0157,
+     "win": 0.4828
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0081,
+     "win": 0.4467
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0017,
+     "win": 0.5119
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0377,
+     "win": 0.3718
+    }
+   }
+  },
+  {
+   "strategy": "equal weight",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": -0.0149,
+   "medianExcess": -0.0171,
+   "winVsMarket": 0.3076,
+   "meanReturn": 0.0803,
+   "medianReturn": 0.0809,
+   "winAbsolute": 0.7288,
+   "worst5": -0.2026,
+   "best5": 0.3534,
+   "meanDrawdown": -0.0704,
+   "sharpe": 0.4753,
+   "excessT": -11.3226,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0177,
+     "win": 0.2701
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0106,
+     "win": 0.3467
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.0082,
+     "win": 0.3929
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0181,
+     "win": 0.3077
+    }
+   }
+  },
+  {
+   "strategy": "defensive",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": -0.0201,
+   "medianExcess": -0.0247,
+   "winVsMarket": 0.4258,
+   "meanReturn": 0.0636,
+   "medianReturn": 0.0679,
+   "winAbsolute": 0.7591,
+   "worst5": -0.1273,
+   "best5": 0.2284,
+   "meanDrawdown": -0.0443,
+   "sharpe": 0.5861,
+   "excessT": -4.915,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0198,
+     "win": 0.4052
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0159,
+     "win": 0.4533
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.0001,
+     "win": 0.5119
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0513,
+     "win": 0.3718
+    }
+   }
+  },
+  {
+   "strategy": "improving earnings",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 660,
+   "meanExcess": -0.0212,
+   "medianExcess": -0.026,
+   "winVsMarket": 0.4303,
+   "meanReturn": 0.0625,
+   "medianReturn": 0.0199,
+   "winAbsolute": 0.5742,
+   "worst5": -0.1489,
+   "best5": 0.3485,
+   "meanDrawdown": -0.0553,
+   "sharpe": 0.357,
+   "excessT": -3.6097,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0334,
+     "win": 0.3793
+    },
+    "bear": {
+     "n": 150,
+     "mean": 0.012,
+     "win": 0.5333
+    },
+    "recession": {
+     "n": 84,
+     "mean": 0.0035,
+     "win": 0.4762
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0574,
+     "win": 0.4103
+    }
+   }
+  },
+  {
+   "strategy": "deteriorating earnings",
+   "holdRounds": 5,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": -0.0225,
+   "medianExcess": -0.0204,
+   "winVsMarket": 0.397,
+   "meanReturn": 0.0727,
+   "medianReturn": 0.0698,
+   "winAbsolute": 0.6394,
+   "worst5": -0.2484,
+   "best5": 0.3969,
+   "meanDrawdown": -0.0987,
+   "sharpe": 0.3422,
+   "excessT": -5.6058,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0305,
+     "win": 0.3707
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0216,
+     "win": 0.4067
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.0029,
+     "win": 0.4405
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0091,
+     "win": 0.4487
+    }
+   }
+  },
+  {
+   "strategy": "after bad company news",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 630,
+   "meanExcess": -0.0227,
+   "medianExcess": -0.0241,
+   "winVsMarket": 0.4206,
+   "meanReturn": 0.061,
+   "medianReturn": 0.0428,
+   "winAbsolute": 0.627,
+   "worst5": -0.2629,
+   "best5": 0.3809,
+   "meanDrawdown": -0.084,
+   "sharpe": 0.3247,
+   "excessT": -4.0459,
+   "regimes": {
+    "bull": {
+     "n": 331,
+     "mean": -0.0317,
+     "win": 0.3897
+    },
+    "bear": {
+     "n": 145,
+     "mean": 0.0004,
+     "win": 0.4897
+    },
+    "recession": {
+     "n": 81,
+     "mean": -0.012,
+     "win": 0.4321
+    },
+    "crisis": {
+     "n": 73,
+     "mean": -0.0396,
+     "win": 0.411
+    }
+   }
+  },
+  {
+   "strategy": "after sector decline",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 352,
+   "meanExcess": -0.0237,
+   "medianExcess": -0.014,
+   "winVsMarket": 0.4489,
+   "meanReturn": 0.0528,
+   "medianReturn": 0.0482,
+   "winAbsolute": 0.5795,
+   "worst5": -0.4152,
+   "best5": 0.4881,
+   "meanDrawdown": -0.1482,
+   "sharpe": 0.1877,
+   "excessT": -2.26,
+   "regimes": {
+    "bull": {
+     "n": 133,
+     "mean": -0.0389,
+     "win": 0.4286
+    },
+    "bear": {
+     "n": 113,
+     "mean": -0.0202,
+     "win": 0.4513
+    },
+    "recession": {
+     "n": 50,
+     "mean": -0.0052,
+     "win": 0.4
+    },
+    "crisis": {
+     "n": 56,
+     "mean": -0.0113,
+     "win": 0.5357
+    }
+   }
+  },
+  {
+   "strategy": "after good company news",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 615,
+   "meanExcess": -0.0252,
+   "medianExcess": -0.0333,
+   "winVsMarket": 0.4033,
+   "meanReturn": 0.0567,
+   "medianReturn": 0.034,
+   "winAbsolute": 0.5886,
+   "worst5": -0.245,
+   "best5": 0.3881,
+   "meanDrawdown": -0.0898,
+   "sharpe": 0.2818,
+   "excessT": -3.9332,
+   "regimes": {
+    "bull": {
+     "n": 324,
+     "mean": -0.024,
+     "win": 0.4043
+    },
+    "bear": {
+     "n": 137,
+     "mean": -0.0299,
+     "win": 0.4161
+    },
+    "recession": {
+     "n": 80,
+     "mean": -0.0164,
+     "win": 0.4
+    },
+    "crisis": {
+     "n": 74,
+     "mean": -0.031,
+     "win": 0.3784
+    }
+   }
+  },
+  {
+   "strategy": "deteriorating earnings",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": -0.0277,
+   "medianExcess": -0.0332,
+   "winVsMarket": 0.3682,
+   "meanReturn": 0.056,
+   "medianReturn": 0.0495,
+   "winAbsolute": 0.6167,
+   "worst5": -0.2658,
+   "best5": 0.3983,
+   "meanDrawdown": -0.1007,
+   "sharpe": 0.2814,
+   "excessT": -6.4824,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0289,
+     "win": 0.3592
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0464,
+     "win": 0.3333
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.0044,
+     "win": 0.4405
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0112,
+     "win": 0.3974
+    }
+   }
+  },
+  {
+   "strategy": "defensive",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": -0.0287,
+   "medianExcess": -0.0291,
+   "winVsMarket": 0.4197,
+   "meanReturn": 0.0601,
+   "medianReturn": 0.0667,
+   "winAbsolute": 0.7288,
+   "worst5": -0.1315,
+   "best5": 0.2298,
+   "meanDrawdown": -0.049,
+   "sharpe": 0.5377,
+   "excessT": -5.9325,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0296,
+     "win": 0.4052
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0186,
+     "win": 0.46
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.006,
+     "win": 0.4762
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0684,
+     "win": 0.3462
+    }
+   }
+  },
+  {
+   "strategy": "biggest losers",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 660,
+   "meanExcess": -0.0318,
+   "medianExcess": -0.0328,
+   "winVsMarket": 0.3803,
+   "meanReturn": 0.0519,
+   "medianReturn": 0.0333,
+   "winAbsolute": 0.603,
+   "worst5": -0.221,
+   "best5": 0.374,
+   "meanDrawdown": -0.0768,
+   "sharpe": 0.274,
+   "excessT": -6.0051,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0492,
+     "win": 0.319
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.016,
+     "win": 0.48
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.0166,
+     "win": 0.4048
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.001,
+     "win": 0.4359
+    }
+   }
+  },
+  {
+   "strategy": "after sector decline",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 325,
+   "meanExcess": -0.0329,
+   "medianExcess": -0.0298,
+   "winVsMarket": 0.4062,
+   "meanReturn": 0.048,
+   "medianReturn": 0.045,
+   "winAbsolute": 0.5631,
+   "worst5": -0.409,
+   "best5": 0.5025,
+   "meanDrawdown": -0.1437,
+   "sharpe": 0.1697,
+   "excessT": -3.2033,
+   "regimes": {
+    "bull": {
+     "n": 118,
+     "mean": -0.0607,
+     "win": 0.3729
+    },
+    "bear": {
+     "n": 99,
+     "mean": -0.0272,
+     "win": 0.3939
+    },
+    "recession": {
+     "n": 51,
+     "mean": -0.0198,
+     "win": 0.3922
+    },
+    "crisis": {
+     "n": 57,
+     "mean": 0.0033,
+     "win": 0.5088
+    }
+   }
+  },
+  {
+   "strategy": "deteriorating earnings",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 660,
+   "meanExcess": -0.0383,
+   "medianExcess": -0.0399,
+   "winVsMarket": 0.353,
+   "meanReturn": 0.0454,
+   "medianReturn": 0.0277,
+   "winAbsolute": 0.6182,
+   "worst5": -0.1736,
+   "best5": 0.2897,
+   "meanDrawdown": -0.0688,
+   "sharpe": 0.301,
+   "excessT": -8.8135,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0429,
+     "win": 0.3362
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0489,
+     "win": 0.3267
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.0123,
+     "win": 0.4167
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0251,
+     "win": 0.4103
+    }
+   }
+  },
+  {
+   "strategy": "random five",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 660,
+   "meanExcess": -0.0386,
+   "medianExcess": -0.0355,
+   "winVsMarket": 0.3606,
+   "meanReturn": 0.0451,
+   "medianReturn": 0.0325,
+   "winAbsolute": 0.6364,
+   "worst5": -0.141,
+   "best5": 0.2906,
+   "meanDrawdown": -0.0565,
+   "sharpe": 0.3427,
+   "excessT": -8.1144,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0355,
+     "win": 0.3764
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0412,
+     "win": 0.3533
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.03,
+     "win": 0.4048
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0569,
+     "win": 0.2564
+    }
+   }
+  },
+  {
+   "strategy": "after sector decline",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 352,
+   "meanExcess": -0.0399,
+   "medianExcess": -0.0289,
+   "winVsMarket": 0.4119,
+   "meanReturn": 0.0366,
+   "medianReturn": 0.0267,
+   "winAbsolute": 0.5682,
+   "worst5": -0.3247,
+   "best5": 0.3703,
+   "meanDrawdown": -0.0948,
+   "sharpe": 0.1821,
+   "excessT": -4.5832,
+   "regimes": {
+    "bull": {
+     "n": 133,
+     "mean": -0.0632,
+     "win": 0.3383
+    },
+    "bear": {
+     "n": 113,
+     "mean": -0.0232,
+     "win": 0.4248
+    },
+    "recession": {
+     "n": 50,
+     "mean": -0.0117,
+     "win": 0.56
+    },
+    "crisis": {
+     "n": 56,
+     "mean": -0.0434,
+     "win": 0.4286
+    }
+   }
+  },
+  {
+   "strategy": "equal weight",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": -0.0448,
+   "medianExcess": -0.0535,
+   "winVsMarket": 0.3076,
+   "meanReturn": 0.039,
+   "medianReturn": 0.0354,
+   "winAbsolute": 0.7076,
+   "worst5": -0.0993,
+   "best5": 0.1793,
+   "meanDrawdown": -0.0352,
+   "sharpe": 0.4374,
+   "excessT": -10.9734,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0532,
+     "win": 0.2615
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0335,
+     "win": 0.3267
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.0185,
+     "win": 0.4405
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0569,
+     "win": 0.3333
+    }
+   }
+  },
+  {
+   "strategy": "equal weight",
+   "holdRounds": 5,
+   "universe": "all",
+   "budget": 10000,
+   "n": 660,
+   "meanExcess": -0.0559,
+   "medianExcess": -0.0651,
+   "winVsMarket": 0.2924,
+   "meanReturn": 0.0329,
+   "medianReturn": 0.026,
+   "winAbsolute": 0.6833,
+   "worst5": -0.0709,
+   "best5": 0.1445,
+   "meanDrawdown": -0.0277,
+   "sharpe": 0.4256,
+   "excessT": -11.2128,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0631,
+     "win": 0.2471
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0451,
+     "win": 0.2933
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.0263,
+     "win": 0.4167
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0766,
+     "win": 0.359
+    }
+   }
+  },
+  {
+   "strategy": "defensive",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 660,
+   "meanExcess": -0.0592,
+   "medianExcess": -0.0636,
+   "winVsMarket": 0.3197,
+   "meanReturn": 0.0246,
+   "medianReturn": 0.024,
+   "winAbsolute": 0.6864,
+   "worst5": -0.0647,
+   "best5": 0.1076,
+   "meanDrawdown": -0.0249,
+   "sharpe": 0.4306,
+   "excessT": -10.4473,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0678,
+     "win": 0.2701
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0425,
+     "win": 0.3533
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.0257,
+     "win": 0.4524
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.0885,
+     "win": 0.3333
+    }
+   }
+  },
+  {
+   "strategy": "equal weight",
+   "holdRounds": 5,
+   "universe": "core",
+   "budget": 1000,
+   "n": 660,
+   "meanExcess": -0.0781,
+   "medianExcess": -0.0875,
+   "winVsMarket": 0.2909,
+   "meanReturn": 0.0057,
+   "medianReturn": 0.0034,
+   "winAbsolute": 0.653,
+   "worst5": -0.0114,
+   "best5": 0.0278,
+   "meanDrawdown": -0.0046,
+   "sharpe": 0.3772,
+   "excessT": -11.4468,
+   "regimes": {
+    "bull": {
+     "n": 348,
+     "mean": -0.0851,
+     "win": 0.2471
+    },
+    "bear": {
+     "n": 150,
+     "mean": -0.0631,
+     "win": 0.3
+    },
+    "recession": {
+     "n": 84,
+     "mean": -0.0415,
+     "win": 0.3929
+    },
+    "crisis": {
+     "n": 78,
+     "mean": -0.1149,
+     "win": 0.359
+    }
+   }
+  },
+  {
+   "strategy": "deep discount (>40%)",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 476,
+   "meanExcess": 0.4105,
+   "medianExcess": 0.2042,
+   "winVsMarket": 0.7689,
+   "meanReturn": 0.6355,
+   "medianReturn": 0.4575,
+   "winAbsolute": 0.8088,
+   "worst5": -0.3417,
+   "best5": 1.6354,
+   "meanDrawdown": -0.1427,
+   "sharpe": 0.4553,
+   "excessT": 7.0963,
+   "regimes": {
+    "bull": {
+     "n": 243,
+     "mean": 0.5474,
+     "win": 0.8025
+    },
+    "bear": {
+     "n": 118,
+     "mean": 0.2624,
+     "win": 0.7119
+    },
+    "recession": {
+     "n": 52,
+     "mean": 0.3551,
+     "win": 0.8077
+    },
+    "crisis": {
+     "n": 63,
+     "mean": 0.2052,
+     "win": 0.7143
+    }
+   }
+  },
+  {
+   "strategy": "deep discount (>40%)",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 412,
+   "meanExcess": 0.3777,
+   "medianExcess": 0.1546,
+   "winVsMarket": 0.699,
+   "meanReturn": 0.6017,
+   "medianReturn": 0.394,
+   "winAbsolute": 0.7718,
+   "worst5": -0.3844,
+   "best5": 1.6553,
+   "meanDrawdown": -0.1539,
+   "sharpe": 0.4659,
+   "excessT": 6.6379,
+   "regimes": {
+    "bull": {
+     "n": 195,
+     "mean": 0.56,
+     "win": 0.759
+    },
+    "bear": {
+     "n": 106,
+     "mean": 0.216,
+     "win": 0.6509
+    },
+    "recession": {
+     "n": 50,
+     "mean": 0.3583,
+     "win": 0.72
+    },
+    "crisis": {
+     "n": 61,
+     "mean": 0.092,
+     "win": 0.5738
+    }
+   }
+  },
+  {
+   "strategy": "below fair value",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.3244,
+   "medianExcess": 0.138,
+   "winVsMarket": 0.75,
+   "meanReturn": 0.5224,
+   "medianReturn": 0.3224,
+   "winAbsolute": 0.775,
+   "worst5": -0.3148,
+   "best5": 1.46,
+   "meanDrawdown": -0.1307,
+   "sharpe": 0.4022,
+   "excessT": 6.5932,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.407,
+     "win": 0.7674
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.2335,
+     "win": 0.7177
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.2666,
+     "win": 0.8333
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.1833,
+     "win": 0.6522
+    }
+   }
+  },
+  {
+   "strategy": "deep discount (>40%)",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 222,
+   "meanExcess": 0.3146,
+   "medianExcess": 0.0813,
+   "winVsMarket": 0.6081,
+   "meanReturn": 0.6228,
+   "medianReturn": 0.3516,
+   "winAbsolute": 0.7568,
+   "worst5": -0.3458,
+   "best5": 1.9535,
+   "meanDrawdown": -0.1655,
+   "sharpe": 0.4547,
+   "excessT": 3.9923,
+   "regimes": {
+    "bull": {
+     "n": 83,
+     "mean": 0.5379,
+     "win": 0.5783
+    },
+    "bear": {
+     "n": 55,
+     "mean": 0.1663,
+     "win": 0.5273
+    },
+    "recession": {
+     "n": 36,
+     "mean": 0.1948,
+     "win": 0.6944
+    },
+    "crisis": {
+     "n": 48,
+     "mean": 0.1883,
+     "win": 0.6875
+    }
+   }
+  },
+  {
+   "strategy": "after market crash",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 46,
+   "meanExcess": 0.2889,
+   "medianExcess": 0.1694,
+   "winVsMarket": 0.6739,
+   "meanReturn": 0.6205,
+   "medianReturn": 0.5713,
+   "winAbsolute": 0.7174,
+   "worst5": -0.4236,
+   "best5": 2.4643,
+   "meanDrawdown": -0.231,
+   "sharpe": 0.7604,
+   "excessT": 3.6651,
+   "regimes": {
+    "bull": {
+     "n": 1,
+     "mean": 1.3435,
+     "win": 1
+    },
+    "bear": {
+     "n": 12,
+     "mean": 0.1789,
+     "win": 0.5833
+    },
+    "recession": {
+     "n": 6,
+     "mean": 0.0072,
+     "win": 0.3333
+    },
+    "crisis": {
+     "n": 27,
+     "mean": 0.3613,
+     "win": 0.7778
+    }
+   }
+  },
+  {
+   "strategy": "deep discount (>40%)",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 412,
+   "meanExcess": 0.2874,
+   "medianExcess": 0.0746,
+   "winVsMarket": 0.6238,
+   "meanReturn": 0.5114,
+   "medianReturn": 0.2932,
+   "winAbsolute": 0.7549,
+   "worst5": -0.3124,
+   "best5": 1.4995,
+   "meanDrawdown": -0.1301,
+   "sharpe": 0.4123,
+   "excessT": 5.2165,
+   "regimes": {
+    "bull": {
+     "n": 195,
+     "mean": 0.4647,
+     "win": 0.6923
+    },
+    "bear": {
+     "n": 106,
+     "mean": 0.1508,
+     "win": 0.5377
+    },
+    "recession": {
+     "n": 50,
+     "mean": 0.2168,
+     "win": 0.68
+    },
+    "crisis": {
+     "n": 61,
+     "mean": 0.0162,
+     "win": 0.5082
+    }
+   }
+  },
+  {
+   "strategy": "below fair value",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.2636,
+   "medianExcess": 0.085,
+   "winVsMarket": 0.6982,
+   "meanReturn": 0.4529,
+   "medianReturn": 0.2838,
+   "winAbsolute": 0.7536,
+   "worst5": -0.3018,
+   "best5": 1.3439,
+   "meanDrawdown": -0.1264,
+   "sharpe": 0.406,
+   "excessT": 6.3557,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.336,
+     "win": 0.7276
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.1725,
+     "win": 0.6613
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.2766,
+     "win": 0.7121
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.099,
+     "win": 0.6232
+    }
+   }
+  },
+  {
+   "strategy": "below fair value",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 560,
+   "meanExcess": 0.1633,
+   "medianExcess": 0.0273,
+   "winVsMarket": 0.5607,
+   "meanReturn": 0.3526,
+   "medianReturn": 0.1746,
+   "winAbsolute": 0.7429,
+   "worst5": -0.2257,
+   "best5": 1.1128,
+   "meanDrawdown": -0.0952,
+   "sharpe": 0.3325,
+   "excessT": 4.0717,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.2191,
+     "win": 0.5482
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0955,
+     "win": 0.5403
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.1764,
+     "win": 0.697
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.0288,
+     "win": 0.5217
+    }
+   }
+  },
+  {
+   "strategy": "after market crash",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 41,
+   "meanExcess": 0.1591,
+   "medianExcess": 0.0818,
+   "winVsMarket": 0.6098,
+   "meanReturn": 0.4778,
+   "medianReturn": 0.4556,
+   "winAbsolute": 0.6829,
+   "worst5": -0.4532,
+   "best5": 1.9419,
+   "meanDrawdown": -0.2387,
+   "sharpe": 0.69,
+   "excessT": 3.0296,
+   "regimes": {
+    "bull": {
+     "n": 1,
+     "mean": 0.857,
+     "win": 1
+    },
+    "bear": {
+     "n": 9,
+     "mean": 0.0373,
+     "win": 0.5556
+    },
+    "recession": {
+     "n": 5,
+     "mean": -0.0086,
+     "win": 0.4
+    },
+    "crisis": {
+     "n": 26,
+     "mean": 0.2068,
+     "win": 0.6538
+    }
+   }
+  },
+  {
+   "strategy": "after market crash",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 39,
+   "meanExcess": 0.1435,
+   "medianExcess": 0.0701,
+   "winVsMarket": 0.6154,
+   "meanReturn": 0.4335,
+   "medianReturn": 0.4467,
+   "winAbsolute": 0.7179,
+   "worst5": -0.4289,
+   "best5": 1.4366,
+   "meanDrawdown": -0.2242,
+   "sharpe": 0.7933,
+   "excessT": 3.1307,
+   "regimes": {
+    "bull": {
+     "n": 0,
+     "mean": 0,
+     "win": 0
+    },
+    "bear": {
+     "n": 9,
+     "mean": 0.2135,
+     "win": 0.8889
+    },
+    "recession": {
+     "n": 5,
+     "mean": -0.0679,
+     "win": 0.2
+    },
+    "crisis": {
+     "n": 25,
+     "mean": 0.1606,
+     "win": 0.6
+    }
+   }
+  },
+  {
+   "strategy": "high growth",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.1246,
+   "medianExcess": 0.0317,
+   "winVsMarket": 0.5554,
+   "meanReturn": 0.3139,
+   "medianReturn": 0.1925,
+   "winAbsolute": 0.6982,
+   "worst5": -0.3536,
+   "best5": 1.2619,
+   "meanDrawdown": -0.1452,
+   "sharpe": 0.4763,
+   "excessT": 5.9891,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.1446,
+     "win": 0.5116
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.1456,
+     "win": 0.6613
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.0088,
+     "win": 0.4545
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.1105,
+     "win": 0.6522
+    }
+   }
+  },
+  {
+   "strategy": "high growth",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.116,
+   "medianExcess": 0.0299,
+   "winVsMarket": 0.5482,
+   "meanReturn": 0.3139,
+   "medianReturn": 0.1925,
+   "winAbsolute": 0.6982,
+   "worst5": -0.3536,
+   "best5": 1.2619,
+   "meanDrawdown": -0.1452,
+   "sharpe": 0.4763,
+   "excessT": 5.4978,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.1415,
+     "win": 0.5017
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.137,
+     "win": 0.6452
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0025,
+     "win": 0.5
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.0803,
+     "win": 0.6232
+    }
+   }
+  },
+  {
+   "strategy": "below fair value",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.0984,
+   "medianExcess": 0.0673,
+   "winVsMarket": 0.6714,
+   "meanReturn": 0.3116,
+   "medianReturn": 0.2428,
+   "winAbsolute": 0.7732,
+   "worst5": -0.2817,
+   "best5": 0.951,
+   "meanDrawdown": -0.1062,
+   "sharpe": 0.5805,
+   "excessT": 6.9603,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0987,
+     "win": 0.6611
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0623,
+     "win": 0.6371
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.1266,
+     "win": 0.7424
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.1352,
+     "win": 0.7101
+    }
+   }
+  },
+  {
+   "strategy": "after market crash",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 39,
+   "meanExcess": 0.0882,
+   "medianExcess": 0.0344,
+   "winVsMarket": 0.641,
+   "meanReturn": 0.3782,
+   "medianReturn": 0.4035,
+   "winAbsolute": 0.7436,
+   "worst5": -0.3804,
+   "best5": 1.2854,
+   "meanDrawdown": -0.1834,
+   "sharpe": 0.8083,
+   "excessT": 2.312,
+   "regimes": {
+    "bull": {
+     "n": 0,
+     "mean": 0,
+     "win": 0
+    },
+    "bear": {
+     "n": 9,
+     "mean": 0.1004,
+     "win": 0.7778
+    },
+    "recession": {
+     "n": 5,
+     "mean": -0.0172,
+     "win": 0.6
+    },
+    "crisis": {
+     "n": 25,
+     "mean": 0.1049,
+     "win": 0.6
+    }
+   }
+  },
+  {
+   "strategy": "momentum + reversal",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.0622,
+   "medianExcess": 0.0127,
+   "winVsMarket": 0.5375,
+   "meanReturn": 0.2602,
+   "medianReturn": 0.1901,
+   "winAbsolute": 0.7089,
+   "worst5": -0.3562,
+   "best5": 1.0351,
+   "meanDrawdown": -0.1433,
+   "sharpe": 0.4859,
+   "excessT": 3.8419,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0388,
+     "win": 0.5017
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0702,
+     "win": 0.5242
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.1343,
+     "win": 0.6667
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.0813,
+     "win": 0.5942
+    }
+   }
+  },
+  {
+   "strategy": "recent winners",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.0609,
+   "medianExcess": 0.0005,
+   "winVsMarket": 0.5,
+   "meanReturn": 0.2588,
+   "medianReturn": 0.1758,
+   "winAbsolute": 0.7054,
+   "worst5": -0.3665,
+   "best5": 1.0836,
+   "meanDrawdown": -0.163,
+   "sharpe": 0.4263,
+   "excessT": 3.2475,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0796,
+     "win": 0.4817
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0076,
+     "win": 0.4597
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.0977,
+     "win": 0.6061
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.0395,
+     "win": 0.5507
+    }
+   }
+  },
+  {
+   "strategy": "after sector decline",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 370,
+   "meanExcess": 0.0545,
+   "medianExcess": -0.029,
+   "winVsMarket": 0.4514,
+   "meanReturn": 0.2503,
+   "medianReturn": 0.1219,
+   "winAbsolute": 0.6081,
+   "worst5": -0.4769,
+   "best5": 1.6255,
+   "meanDrawdown": -0.2281,
+   "sharpe": 0.3573,
+   "excessT": 1.9669,
+   "regimes": {
+    "bull": {
+     "n": 165,
+     "mean": 0.0122,
+     "win": 0.4061
+    },
+    "bear": {
+     "n": 97,
+     "mean": 0.0399,
+     "win": 0.4536
+    },
+    "recession": {
+     "n": 49,
+     "mean": 0.0297,
+     "win": 0.3878
+    },
+    "crisis": {
+     "n": 59,
+     "mean": 0.2176,
+     "win": 0.6271
+    }
+   }
+  },
+  {
+   "strategy": "sector rotation",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.0543,
+   "medianExcess": -0.0085,
+   "winVsMarket": 0.475,
+   "meanReturn": 0.2436,
+   "medianReturn": 0.1571,
+   "winAbsolute": 0.7036,
+   "worst5": -0.3347,
+   "best5": 0.9017,
+   "meanDrawdown": -0.1412,
+   "sharpe": 0.4097,
+   "excessT": 2.5768,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0648,
+     "win": 0.485
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0286,
+     "win": 0.4516
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.1188,
+     "win": 0.4848
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0073,
+     "win": 0.4638
+    }
+   }
+  },
+  {
+   "strategy": "sector rotation",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.0533,
+   "medianExcess": -0.0139,
+   "winVsMarket": 0.4821,
+   "meanReturn": 0.2665,
+   "medianReturn": 0.1924,
+   "winAbsolute": 0.6732,
+   "worst5": -0.4665,
+   "best5": 1.303,
+   "meanDrawdown": -0.1935,
+   "sharpe": 0.4491,
+   "excessT": 2.7423,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0348,
+     "win": 0.4718
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0553,
+     "win": 0.5403
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.1475,
+     "win": 0.5
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.0399,
+     "win": 0.4058
+    }
+   }
+  },
+  {
+   "strategy": "biggest losers",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.0515,
+   "medianExcess": -0.0089,
+   "winVsMarket": 0.4839,
+   "meanReturn": 0.2494,
+   "medianReturn": 0.1786,
+   "winAbsolute": 0.6768,
+   "worst5": -0.395,
+   "best5": 1.0688,
+   "meanDrawdown": -0.168,
+   "sharpe": 0.4325,
+   "excessT": 2.9783,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0273,
+     "win": 0.4352
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0773,
+     "win": 0.5484
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0053,
+     "win": 0.4091
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.1649,
+     "win": 0.6522
+    }
+   }
+  },
+  {
+   "strategy": "improving earnings",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.0426,
+   "medianExcess": -0.0092,
+   "winVsMarket": 0.4732,
+   "meanReturn": 0.2319,
+   "medianReturn": 0.1551,
+   "winAbsolute": 0.6696,
+   "worst5": -0.3216,
+   "best5": 1.0306,
+   "meanDrawdown": -0.1475,
+   "sharpe": 0.4918,
+   "excessT": 3.353,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0385,
+     "win": 0.4219
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0761,
+     "win": 0.621
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.0256,
+     "win": 0.4545
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.0163,
+     "win": 0.4493
+    }
+   }
+  },
+  {
+   "strategy": "momentum + reversal",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.0424,
+   "medianExcess": 0.0094,
+   "winVsMarket": 0.5179,
+   "meanReturn": 0.2317,
+   "medianReturn": 0.1736,
+   "winAbsolute": 0.7143,
+   "worst5": -0.3052,
+   "best5": 0.9202,
+   "meanDrawdown": -0.1289,
+   "sharpe": 0.4849,
+   "excessT": 2.8863,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0263,
+     "win": 0.4684
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0613,
+     "win": 0.5565
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.0947,
+     "win": 0.6515
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.0287,
+     "win": 0.5362
+    }
+   }
+  },
+  {
+   "strategy": "recent winners",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.04,
+   "medianExcess": -0.0023,
+   "winVsMarket": 0.4857,
+   "meanReturn": 0.2294,
+   "medianReturn": 0.1648,
+   "winAbsolute": 0.7071,
+   "worst5": -0.3245,
+   "best5": 0.9657,
+   "meanDrawdown": -0.1435,
+   "sharpe": 0.4788,
+   "excessT": 2.8468,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0447,
+     "win": 0.4651
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.026,
+     "win": 0.5242
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.0956,
+     "win": 0.5606
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0084,
+     "win": 0.4348
+    }
+   }
+  },
+  {
+   "strategy": "sector rotation",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.034,
+   "medianExcess": -0.0066,
+   "winVsMarket": 0.4786,
+   "meanReturn": 0.2319,
+   "medianReturn": 0.1808,
+   "winAbsolute": 0.7054,
+   "worst5": -0.3433,
+   "best5": 0.8887,
+   "meanDrawdown": -0.1326,
+   "sharpe": 0.4149,
+   "excessT": 1.7829,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0395,
+     "win": 0.4718
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0257,
+     "win": 0.4516
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.0823,
+     "win": 0.5303
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0216,
+     "win": 0.5072
+    }
+   }
+  },
+  {
+   "strategy": "small companies",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.0311,
+   "medianExcess": -0.0378,
+   "winVsMarket": 0.4429,
+   "meanReturn": 0.229,
+   "medianReturn": 0.1446,
+   "winAbsolute": 0.6357,
+   "worst5": -0.486,
+   "best5": 1.3352,
+   "meanDrawdown": -0.2265,
+   "sharpe": 0.4241,
+   "excessT": 2.1639,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0156,
+     "win": 0.3987
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0092,
+     "win": 0.4516
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.0941,
+     "win": 0.4697
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.2135,
+     "win": 0.5942
+    }
+   }
+  },
+  {
+   "strategy": "after sector decline",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 298,
+   "meanExcess": 0.0301,
+   "medianExcess": -0.0072,
+   "winVsMarket": 0.4664,
+   "meanReturn": 0.2091,
+   "medianReturn": 0.1238,
+   "winAbsolute": 0.6174,
+   "worst5": -0.4548,
+   "best5": 1.0505,
+   "meanDrawdown": -0.1931,
+   "sharpe": 0.3632,
+   "excessT": 1.1382,
+   "regimes": {
+    "bull": {
+     "n": 115,
+     "mean": 0.0235,
+     "win": 0.4087
+    },
+    "bear": {
+     "n": 95,
+     "mean": 0.0557,
+     "win": 0.5053
+    },
+    "recession": {
+     "n": 39,
+     "mean": 0.0225,
+     "win": 0.4872
+    },
+    "crisis": {
+     "n": 49,
+     "mean": 0.002,
+     "win": 0.5102
+    }
+   }
+  },
+  {
+   "strategy": "biggest losers",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.0269,
+   "medianExcess": -0.0238,
+   "winVsMarket": 0.4411,
+   "meanReturn": 0.2163,
+   "medianReturn": 0.1489,
+   "winAbsolute": 0.6607,
+   "worst5": -0.3969,
+   "best5": 0.988,
+   "meanDrawdown": -0.1569,
+   "sharpe": 0.3664,
+   "excessT": 1.3926,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0249,
+     "win": 0.3987
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0515,
+     "win": 0.5403
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0223,
+     "win": 0.3788
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.0385,
+     "win": 0.5072
+    }
+   }
+  },
+  {
+   "strategy": "recent winners",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.0241,
+   "medianExcess": 0.0038,
+   "winVsMarket": 0.5143,
+   "meanReturn": 0.2374,
+   "medianReturn": 0.2116,
+   "winAbsolute": 0.7304,
+   "worst5": -0.3136,
+   "best5": 0.9265,
+   "meanDrawdown": -0.1302,
+   "sharpe": 0.576,
+   "excessT": 2.4508,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0241,
+     "win": 0.5116
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0262,
+     "win": 0.5323
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.0572,
+     "win": 0.5303
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0111,
+     "win": 0.4783
+    }
+   }
+  },
+  {
+   "strategy": "momentum + reversal",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.0198,
+   "medianExcess": 0.0072,
+   "winVsMarket": 0.5179,
+   "meanReturn": 0.233,
+   "medianReturn": 0.2115,
+   "winAbsolute": 0.7536,
+   "worst5": -0.3244,
+   "best5": 0.8809,
+   "meanDrawdown": -0.1233,
+   "sharpe": 0.6144,
+   "excessT": 2.2653,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0127,
+     "win": 0.5183
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0274,
+     "win": 0.5565
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.048,
+     "win": 0.5758
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.0095,
+     "win": 0.3913
+    }
+   }
+  },
+  {
+   "strategy": "high growth",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.0177,
+   "medianExcess": 0.0018,
+   "winVsMarket": 0.5036,
+   "meanReturn": 0.231,
+   "medianReturn": 0.2104,
+   "winAbsolute": 0.7054,
+   "worst5": -0.3478,
+   "best5": 0.8949,
+   "meanDrawdown": -0.1445,
+   "sharpe": 0.5508,
+   "excessT": 2.1688,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0241,
+     "win": 0.515
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0261,
+     "win": 0.5484
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0031,
+     "win": 0.4394
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0051,
+     "win": 0.4348
+    }
+   }
+  },
+  {
+   "strategy": "after sector decline",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 271,
+   "meanExcess": 0.0168,
+   "medianExcess": -0.0071,
+   "winVsMarket": 0.476,
+   "meanReturn": 0.2168,
+   "medianReturn": 0.1449,
+   "winAbsolute": 0.6347,
+   "worst5": -0.4093,
+   "best5": 0.957,
+   "meanDrawdown": -0.1841,
+   "sharpe": 0.4035,
+   "excessT": 0.6987,
+   "regimes": {
+    "bull": {
+     "n": 99,
+     "mean": 0.0115,
+     "win": 0.4848
+    },
+    "bear": {
+     "n": 82,
+     "mean": 0.0197,
+     "win": 0.4512
+    },
+    "recession": {
+     "n": 40,
+     "mean": 0.0193,
+     "win": 0.5
+    },
+    "crisis": {
+     "n": 50,
+     "mean": 0.0202,
+     "win": 0.48
+    }
+   }
+  },
+  {
+   "strategy": "improving earnings",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.0098,
+   "medianExcess": -0.0313,
+   "winVsMarket": 0.4321,
+   "meanReturn": 0.2077,
+   "medianReturn": 0.1425,
+   "winAbsolute": 0.6679,
+   "worst5": -0.3487,
+   "best5": 0.994,
+   "meanDrawdown": -0.1554,
+   "sharpe": 0.4649,
+   "excessT": 0.8364,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0004,
+     "win": 0.4053
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0436,
+     "win": 0.4677
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0017,
+     "win": 0.4545
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.0013,
+     "win": 0.4638
+    }
+   }
+  },
+  {
+   "strategy": "concentrated (one random)",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.0092,
+   "medianExcess": -0.0311,
+   "winVsMarket": 0.4482,
+   "meanReturn": 0.1985,
+   "medianReturn": 0.1446,
+   "winAbsolute": 0.6321,
+   "worst5": -0.4157,
+   "best5": 1.0289,
+   "meanDrawdown": -0.1917,
+   "sharpe": 0.4105,
+   "excessT": 0.5403,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0032,
+     "win": 0.4286
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0618,
+     "win": 0.4758
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0451,
+     "win": 0.4545
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0078,
+     "win": 0.4783
+    }
+   }
+  },
+  {
+   "strategy": "after good company news",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 285,
+   "meanExcess": 0.0053,
+   "medianExcess": -0.0165,
+   "winVsMarket": 0.4632,
+   "meanReturn": 0.2106,
+   "medianReturn": 0.1594,
+   "winAbsolute": 0.6386,
+   "worst5": -0.3898,
+   "best5": 1.0645,
+   "meanDrawdown": -0.1755,
+   "sharpe": 0.4644,
+   "excessT": 0.2483,
+   "regimes": {
+    "bull": {
+     "n": 156,
+     "mean": -0.008,
+     "win": 0.4615
+    },
+    "bear": {
+     "n": 63,
+     "mean": -0.0143,
+     "win": 0.4127
+    },
+    "recession": {
+     "n": 27,
+     "mean": 0.0807,
+     "win": 0.4815
+    },
+    "crisis": {
+     "n": 39,
+     "mean": 0.0379,
+     "win": 0.5385
+    }
+   }
+  },
+  {
+   "strategy": "after bad company news",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.0052,
+   "medianExcess": 0.0009,
+   "winVsMarket": 0.5,
+   "meanReturn": 0.2031,
+   "medianReturn": 0.1954,
+   "winAbsolute": 0.7071,
+   "worst5": -0.3223,
+   "best5": 0.8068,
+   "meanDrawdown": -0.1341,
+   "sharpe": 0.5858,
+   "excessT": 0.5685,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0005,
+     "win": 0.495
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0301,
+     "win": 0.5323
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.0043,
+     "win": 0.5
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0179,
+     "win": 0.4638
+    }
+   }
+  },
+  {
+   "strategy": "high growth",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 560,
+   "meanExcess": 0.0037,
+   "medianExcess": -0.0218,
+   "winVsMarket": 0.4661,
+   "meanReturn": 0.1931,
+   "medianReturn": 0.0651,
+   "winAbsolute": 0.6429,
+   "worst5": -0.1681,
+   "best5": 0.8383,
+   "meanDrawdown": -0.0756,
+   "sharpe": 0.3549,
+   "excessT": 0.1919,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.021,
+     "win": 0.4385
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.018,
+     "win": 0.5645
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0245,
+     "win": 0.4697
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0702,
+     "win": 0.4058
+    }
+   }
+  },
+  {
+   "strategy": "after bad company news",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 533,
+   "meanExcess": 0.0024,
+   "medianExcess": -0.0072,
+   "winVsMarket": 0.4859,
+   "meanReturn": 0.1915,
+   "medianReturn": 0.1634,
+   "winAbsolute": 0.6679,
+   "worst5": -0.3526,
+   "best5": 0.8172,
+   "meanDrawdown": -0.1493,
+   "sharpe": 0.4929,
+   "excessT": 0.1949,
+   "regimes": {
+    "bull": {
+     "n": 287,
+     "mean": 0.0058,
+     "win": 0.4599
+    },
+    "bear": {
+     "n": 119,
+     "mean": 0.0373,
+     "win": 0.605
+    },
+    "recession": {
+     "n": 63,
+     "mean": -0.0239,
+     "win": 0.4127
+    },
+    "crisis": {
+     "n": 64,
+     "mean": -0.052,
+     "win": 0.4531
+    }
+   }
+  },
+  {
+   "strategy": "biggest losers",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": 0.0002,
+   "medianExcess": -0.0121,
+   "winVsMarket": 0.4625,
+   "meanReturn": 0.2134,
+   "medianReturn": 0.186,
+   "winAbsolute": 0.7054,
+   "worst5": -0.3477,
+   "best5": 0.8519,
+   "meanDrawdown": -0.1379,
+   "sharpe": 0.4605,
+   "excessT": 0.0158,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.009,
+     "win": 0.4452
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0114,
+     "win": 0.4919
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0424,
+     "win": 0.3485
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.1018,
+     "win": 0.5942
+    }
+   }
+  },
+  {
+   "strategy": "after good company news",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 523,
+   "meanExcess": -0.0038,
+   "medianExcess": -0.031,
+   "winVsMarket": 0.4436,
+   "meanReturn": 0.1857,
+   "medianReturn": 0.1365,
+   "winAbsolute": 0.6577,
+   "worst5": -0.3475,
+   "best5": 0.894,
+   "meanDrawdown": -0.1554,
+   "sharpe": 0.4503,
+   "excessT": -0.2717,
+   "regimes": {
+    "bull": {
+     "n": 281,
+     "mean": -0.0007,
+     "win": 0.4448
+    },
+    "bear": {
+     "n": 114,
+     "mean": -0.0171,
+     "win": 0.4211
+    },
+    "recession": {
+     "n": 62,
+     "mean": -0.0177,
+     "win": 0.3871
+    },
+    "crisis": {
+     "n": 66,
+     "mean": 0.0194,
+     "win": 0.5303
+    }
+   }
+  },
+  {
+   "strategy": "random five",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": -0.0053,
+   "medianExcess": -0.0094,
+   "winVsMarket": 0.4625,
+   "meanReturn": 0.1926,
+   "medianReturn": 0.1556,
+   "winAbsolute": 0.7179,
+   "worst5": -0.3054,
+   "best5": 0.7865,
+   "meanDrawdown": -0.1283,
+   "sharpe": 0.5701,
+   "excessT": -0.6678,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0167,
+     "win": 0.4518
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0016,
+     "win": 0.4677
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.0209,
+     "win": 0.4697
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.0129,
+     "win": 0.4928
+    }
+   }
+  },
+  {
+   "strategy": "random five",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": -0.0076,
+   "medianExcess": -0.0091,
+   "winVsMarket": 0.4786,
+   "meanReturn": 0.2057,
+   "medianReturn": 0.1855,
+   "winAbsolute": 0.725,
+   "worst5": -0.3054,
+   "best5": 0.7744,
+   "meanDrawdown": -0.1274,
+   "sharpe": 0.5548,
+   "excessT": -0.9246,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0178,
+     "win": 0.4585
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.015,
+     "win": 0.5565
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0084,
+     "win": 0.4394
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0026,
+     "win": 0.4638
+    }
+   }
+  },
+  {
+   "strategy": "improving earnings",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": -0.0083,
+   "medianExcess": 0.0008,
+   "winVsMarket": 0.5071,
+   "meanReturn": 0.205,
+   "medianReturn": 0.1887,
+   "winAbsolute": 0.7286,
+   "worst5": -0.3502,
+   "best5": 0.7929,
+   "meanDrawdown": -0.1371,
+   "sharpe": 0.5735,
+   "excessT": -1.0583,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0145,
+     "win": 0.5183
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0074,
+     "win": 0.5081
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.026,
+     "win": 0.5152
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0153,
+     "win": 0.4493
+    }
+   }
+  },
+  {
+   "strategy": "random five",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": -0.0084,
+   "medianExcess": -0.0154,
+   "winVsMarket": 0.45,
+   "meanReturn": 0.1809,
+   "medianReturn": 0.1689,
+   "winAbsolute": 0.7089,
+   "worst5": -0.3104,
+   "best5": 0.7027,
+   "meanDrawdown": -0.1266,
+   "sharpe": 0.5425,
+   "excessT": -1.0528,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0069,
+     "win": 0.4452
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0064,
+     "win": 0.4839
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.033,
+     "win": 0.4091
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0181,
+     "win": 0.4493
+    }
+   }
+  },
+  {
+   "strategy": "after good company news",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 556,
+   "meanExcess": -0.0084,
+   "medianExcess": -0.0099,
+   "winVsMarket": 0.4676,
+   "meanReturn": 0.1898,
+   "medianReturn": 0.1664,
+   "winAbsolute": 0.6817,
+   "worst5": -0.3052,
+   "best5": 0.8408,
+   "meanDrawdown": -0.1379,
+   "sharpe": 0.529,
+   "excessT": -0.8928,
+   "regimes": {
+    "bull": {
+     "n": 300,
+     "mean": -0.0144,
+     "win": 0.4233
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0045,
+     "win": 0.5242
+    },
+    "recession": {
+     "n": 63,
+     "mean": -0.0153,
+     "win": 0.4762
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.0168,
+     "win": 0.5507
+    }
+   }
+  },
+  {
+   "strategy": "deteriorating earnings",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": -0.0094,
+   "medianExcess": -0.0188,
+   "winVsMarket": 0.4482,
+   "meanReturn": 0.1885,
+   "medianReturn": 0.1557,
+   "winAbsolute": 0.7018,
+   "worst5": -0.3224,
+   "best5": 0.8269,
+   "meanDrawdown": -0.1441,
+   "sharpe": 0.5311,
+   "excessT": -1.0359,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0306,
+     "win": 0.412
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0249,
+     "win": 0.4032
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.0306,
+     "win": 0.6061
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.0725,
+     "win": 0.5362
+    }
+   }
+  },
+  {
+   "strategy": "small companies",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": -0.0098,
+   "medianExcess": -0.0296,
+   "winVsMarket": 0.4411,
+   "meanReturn": 0.2035,
+   "medianReturn": 0.1616,
+   "winAbsolute": 0.6982,
+   "worst5": -0.3641,
+   "best5": 0.9015,
+   "meanDrawdown": -0.1601,
+   "sharpe": 0.509,
+   "excessT": -1.1021,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0295,
+     "win": 0.3887
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0124,
+     "win": 0.4919
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.0134,
+     "win": 0.5455
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.0588,
+     "win": 0.4783
+    }
+   }
+  },
+  {
+   "strategy": "after bad company news",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 272,
+   "meanExcess": -0.0128,
+   "medianExcess": -0.0108,
+   "winVsMarket": 0.4816,
+   "meanReturn": 0.2135,
+   "medianReturn": 0.1744,
+   "winAbsolute": 0.625,
+   "worst5": -0.3678,
+   "best5": 0.895,
+   "meanDrawdown": -0.1719,
+   "sharpe": 0.4744,
+   "excessT": -0.5575,
+   "regimes": {
+    "bull": {
+     "n": 154,
+     "mean": -0.014,
+     "win": 0.4935
+    },
+    "bear": {
+     "n": 57,
+     "mean": 0.0231,
+     "win": 0.5263
+    },
+    "recession": {
+     "n": 32,
+     "mean": 0.0397,
+     "win": 0.4688
+    },
+    "crisis": {
+     "n": 29,
+     "mean": -0.135,
+     "win": 0.3448
+    }
+   }
+  },
+  {
+   "strategy": "concentrated (one random)",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": -0.0135,
+   "medianExcess": -0.0507,
+   "winVsMarket": 0.4286,
+   "meanReturn": 0.1997,
+   "medianReturn": 0.1244,
+   "winAbsolute": 0.6321,
+   "worst5": -0.4346,
+   "best5": 1.0645,
+   "meanDrawdown": -0.1882,
+   "sharpe": 0.3852,
+   "excessT": -0.7784,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": 0.0003,
+     "win": 0.4319
+    },
+    "bear": {
+     "n": 124,
+     "mean": 0.0088,
+     "win": 0.4597
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.071,
+     "win": 0.3636
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0588,
+     "win": 0.4203
+    }
+   }
+  },
+  {
+   "strategy": "concentrated (one random)",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": -0.0169,
+   "medianExcess": -0.0632,
+   "winVsMarket": 0.4304,
+   "meanReturn": 0.181,
+   "medianReturn": 0.1138,
+   "winAbsolute": 0.6,
+   "worst5": -0.4641,
+   "best5": 1.0943,
+   "meanDrawdown": -0.2099,
+   "sharpe": 0.3638,
+   "excessT": -1.0459,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0253,
+     "win": 0.4319
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0367,
+     "win": 0.4194
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0364,
+     "win": 0.3939
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.0743,
+     "win": 0.4783
+    }
+   }
+  },
+  {
+   "strategy": "small companies",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": -0.0184,
+   "medianExcess": -0.0215,
+   "winVsMarket": 0.4661,
+   "meanReturn": 0.1709,
+   "medianReturn": 0.1101,
+   "winAbsolute": 0.6321,
+   "worst5": -0.3161,
+   "best5": 0.8751,
+   "meanDrawdown": -0.1556,
+   "sharpe": 0.4848,
+   "excessT": -1.6899,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0373,
+     "win": 0.412
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0205,
+     "win": 0.4597
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.0194,
+     "win": 0.6061
+    },
+    "crisis": {
+     "n": 69,
+     "mean": 0.0316,
+     "win": 0.5797
+    }
+   }
+  },
+  {
+   "strategy": "after sector decline",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 298,
+   "meanExcess": -0.0213,
+   "medianExcess": -0.0338,
+   "winVsMarket": 0.4262,
+   "meanReturn": 0.1578,
+   "medianReturn": 0.0593,
+   "winAbsolute": 0.5906,
+   "worst5": -0.2951,
+   "best5": 0.759,
+   "meanDrawdown": -0.1212,
+   "sharpe": 0.3209,
+   "excessT": -0.8555,
+   "regimes": {
+    "bull": {
+     "n": 115,
+     "mean": -0.0325,
+     "win": 0.3565
+    },
+    "bear": {
+     "n": 95,
+     "mean": 0.0088,
+     "win": 0.4632
+    },
+    "recession": {
+     "n": 39,
+     "mean": -0.0185,
+     "win": 0.5385
+    },
+    "crisis": {
+     "n": 49,
+     "mean": -0.0555,
+     "win": 0.4286
+    }
+   }
+  },
+  {
+   "strategy": "sector rotation",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 560,
+   "meanExcess": -0.0266,
+   "medianExcess": -0.0631,
+   "winVsMarket": 0.4143,
+   "meanReturn": 0.1627,
+   "medianReturn": 0.0719,
+   "winAbsolute": 0.6589,
+   "worst5": -0.2033,
+   "best5": 0.726,
+   "meanDrawdown": -0.0817,
+   "sharpe": 0.3191,
+   "excessT": -1.3359,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0185,
+     "win": 0.4086
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0413,
+     "win": 0.4355
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.0529,
+     "win": 0.4848
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.1117,
+     "win": 0.3333
+    }
+   }
+  },
+  {
+   "strategy": "biggest losers",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 560,
+   "meanExcess": -0.0289,
+   "medianExcess": -0.0571,
+   "winVsMarket": 0.35,
+   "meanReturn": 0.1604,
+   "medianReturn": 0.082,
+   "winAbsolute": 0.6571,
+   "worst5": -0.261,
+   "best5": 0.7541,
+   "meanDrawdown": -0.1048,
+   "sharpe": 0.3021,
+   "excessT": -1.5468,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0367,
+     "win": 0.309
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0076,
+     "win": 0.3952
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0407,
+     "win": 0.3788
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0217,
+     "win": 0.4203
+    }
+   }
+  },
+  {
+   "strategy": "deteriorating earnings",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": -0.0298,
+   "medianExcess": -0.0304,
+   "winVsMarket": 0.4071,
+   "meanReturn": 0.1596,
+   "medianReturn": 0.1249,
+   "winAbsolute": 0.6804,
+   "worst5": -0.2912,
+   "best5": 0.7245,
+   "meanDrawdown": -0.1349,
+   "sharpe": 0.5131,
+   "excessT": -3.9405,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0395,
+     "win": 0.4153
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0503,
+     "win": 0.3387
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.0369,
+     "win": 0.5
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0145,
+     "win": 0.4058
+    }
+   }
+  },
+  {
+   "strategy": "equal weight",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": -0.0322,
+   "medianExcess": -0.0343,
+   "winVsMarket": 0.2786,
+   "meanReturn": 0.181,
+   "medianReturn": 0.1749,
+   "winAbsolute": 0.7464,
+   "worst5": -0.2518,
+   "best5": 0.688,
+   "meanDrawdown": -0.0979,
+   "sharpe": 0.6499,
+   "excessT": -14.3504,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0335,
+     "win": 0.2625
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0293,
+     "win": 0.3065
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.024,
+     "win": 0.3939
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0398,
+     "win": 0.1884
+    }
+   }
+  },
+  {
+   "strategy": "deteriorating earnings",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": -0.0343,
+   "medianExcess": -0.0245,
+   "winVsMarket": 0.4196,
+   "meanReturn": 0.1789,
+   "medianReturn": 0.1697,
+   "winAbsolute": 0.6804,
+   "worst5": -0.3094,
+   "best5": 0.7705,
+   "meanDrawdown": -0.1313,
+   "sharpe": 0.5414,
+   "excessT": -4.5736,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0475,
+     "win": 0.3987
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0325,
+     "win": 0.4194
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0096,
+     "win": 0.4697
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.004,
+     "win": 0.4638
+    }
+   }
+  },
+  {
+   "strategy": "recent winners",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 560,
+   "meanExcess": -0.0346,
+   "medianExcess": -0.0558,
+   "winVsMarket": 0.3964,
+   "meanReturn": 0.1547,
+   "medianReturn": 0.0769,
+   "winAbsolute": 0.6857,
+   "worst5": -0.1882,
+   "best5": 0.6024,
+   "meanDrawdown": -0.0823,
+   "sharpe": 0.3955,
+   "excessT": -2.5108,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0315,
+     "win": 0.3688
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0452,
+     "win": 0.4677
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.05,
+     "win": 0.5
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.1104,
+     "win": 0.2899
+    }
+   }
+  },
+  {
+   "strategy": "after good company news",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 523,
+   "meanExcess": -0.0396,
+   "medianExcess": -0.0617,
+   "winVsMarket": 0.413,
+   "meanReturn": 0.1498,
+   "medianReturn": 0.089,
+   "winAbsolute": 0.6405,
+   "worst5": -0.2824,
+   "best5": 0.7905,
+   "meanDrawdown": -0.1182,
+   "sharpe": 0.4193,
+   "excessT": -2.9215,
+   "regimes": {
+    "bull": {
+     "n": 281,
+     "mean": -0.0417,
+     "win": 0.4093
+    },
+    "bear": {
+     "n": 114,
+     "mean": -0.0331,
+     "win": 0.4123
+    },
+    "recession": {
+     "n": 62,
+     "mean": -0.0257,
+     "win": 0.4516
+    },
+    "crisis": {
+     "n": 66,
+     "mean": -0.0552,
+     "win": 0.3939
+    }
+   }
+  },
+  {
+   "strategy": "concentrated (one random)",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 560,
+   "meanExcess": -0.0401,
+   "medianExcess": -0.0536,
+   "winVsMarket": 0.4161,
+   "meanReturn": 0.1492,
+   "medianReturn": 0.0952,
+   "winAbsolute": 0.5821,
+   "worst5": -0.4188,
+   "best5": 0.8584,
+   "meanDrawdown": -0.1647,
+   "sharpe": 0.3622,
+   "excessT": -2.7179,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0402,
+     "win": 0.402
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0087,
+     "win": 0.4758
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0706,
+     "win": 0.3939
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0671,
+     "win": 0.3913
+    }
+   }
+  },
+  {
+   "strategy": "defensive",
+   "holdRounds": 10,
+   "universe": "room20",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": -0.0402,
+   "medianExcess": -0.0197,
+   "winVsMarket": 0.4482,
+   "meanReturn": 0.1731,
+   "medianReturn": 0.174,
+   "winAbsolute": 0.8125,
+   "worst5": -0.1783,
+   "best5": 0.496,
+   "meanDrawdown": -0.077,
+   "sharpe": 0.8094,
+   "excessT": -5.6938,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0391,
+     "win": 0.4485
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0326,
+     "win": 0.4274
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0057,
+     "win": 0.5758
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0919,
+     "win": 0.3623
+    }
+   }
+  },
+  {
+   "strategy": "momentum + reversal",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 560,
+   "meanExcess": -0.0415,
+   "medianExcess": -0.0467,
+   "winVsMarket": 0.4125,
+   "meanReturn": 0.1478,
+   "medianReturn": 0.0707,
+   "winAbsolute": 0.6982,
+   "worst5": -0.1544,
+   "best5": 0.6066,
+   "meanDrawdown": -0.0683,
+   "sharpe": 0.3853,
+   "excessT": -2.8647,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0501,
+     "win": 0.3953
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0321,
+     "win": 0.4435
+    },
+    "recession": {
+     "n": 66,
+     "mean": 0.0345,
+     "win": 0.5152
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0937,
+     "win": 0.3333
+    }
+   }
+  },
+  {
+   "strategy": "after bad company news",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 533,
+   "meanExcess": -0.0433,
+   "medianExcess": -0.0417,
+   "winVsMarket": 0.4203,
+   "meanReturn": 0.1458,
+   "medianReturn": 0.0957,
+   "winAbsolute": 0.6529,
+   "worst5": -0.2812,
+   "best5": 0.6826,
+   "meanDrawdown": -0.1172,
+   "sharpe": 0.4397,
+   "excessT": -3.7202,
+   "regimes": {
+    "bull": {
+     "n": 287,
+     "mean": -0.0511,
+     "win": 0.3693
+    },
+    "bear": {
+     "n": 119,
+     "mean": 0.0051,
+     "win": 0.5378
+    },
+    "recession": {
+     "n": 63,
+     "mean": -0.042,
+     "win": 0.4762
+    },
+    "crisis": {
+     "n": 64,
+     "mean": -0.0995,
+     "win": 0.375
+    }
+   }
+  },
+  {
+   "strategy": "defensive",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": -0.0461,
+   "medianExcess": -0.0304,
+   "winVsMarket": 0.4125,
+   "meanReturn": 0.1432,
+   "medianReturn": 0.152,
+   "winAbsolute": 0.8018,
+   "worst5": -0.1449,
+   "best5": 0.4399,
+   "meanDrawdown": -0.0603,
+   "sharpe": 0.813,
+   "excessT": -6.4923,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0432,
+     "win": 0.4153
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.039,
+     "win": 0.4274
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0104,
+     "win": 0.4848
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.1057,
+     "win": 0.3043
+    }
+   }
+  },
+  {
+   "strategy": "improving earnings",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 560,
+   "meanExcess": -0.0468,
+   "medianExcess": -0.0508,
+   "winVsMarket": 0.3982,
+   "meanReturn": 0.1426,
+   "medianReturn": 0.0526,
+   "winAbsolute": 0.6071,
+   "worst5": -0.1572,
+   "best5": 0.7262,
+   "meanDrawdown": -0.0769,
+   "sharpe": 0.3996,
+   "excessT": -3.8243,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0436,
+     "win": 0.3688
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0201,
+     "win": 0.4677
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0221,
+     "win": 0.4697
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.1323,
+     "win": 0.3333
+    }
+   }
+  },
+  {
+   "strategy": "small companies",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 560,
+   "meanExcess": -0.05,
+   "medianExcess": -0.0372,
+   "winVsMarket": 0.4232,
+   "meanReturn": 0.1394,
+   "medianReturn": 0.0884,
+   "winAbsolute": 0.625,
+   "worst5": -0.2829,
+   "best5": 0.7422,
+   "meanDrawdown": -0.1379,
+   "sharpe": 0.4582,
+   "excessT": -4.8886,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0711,
+     "win": 0.3721
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0489,
+     "win": 0.4355
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.002,
+     "win": 0.5758
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0053,
+     "win": 0.4783
+    }
+   }
+  },
+  {
+   "strategy": "defensive",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": -0.0685,
+   "medianExcess": -0.0557,
+   "winVsMarket": 0.3857,
+   "meanReturn": 0.1294,
+   "medianReturn": 0.1298,
+   "winAbsolute": 0.7661,
+   "worst5": -0.1553,
+   "best5": 0.4397,
+   "meanDrawdown": -0.0665,
+   "sharpe": 0.7384,
+   "excessT": -7.8839,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.065,
+     "win": 0.3688
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0467,
+     "win": 0.4435
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.023,
+     "win": 0.4697
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.1664,
+     "win": 0.2754
+    }
+   }
+  },
+  {
+   "strategy": "deteriorating earnings",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 560,
+   "meanExcess": -0.0703,
+   "medianExcess": -0.0642,
+   "winVsMarket": 0.3518,
+   "meanReturn": 0.1191,
+   "medianReturn": 0.0793,
+   "winAbsolute": 0.6625,
+   "worst5": -0.1876,
+   "best5": 0.5732,
+   "meanDrawdown": -0.0933,
+   "sharpe": 0.499,
+   "excessT": -9.2274,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0792,
+     "win": 0.3422
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0826,
+     "win": 0.3065
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.002,
+     "win": 0.5303
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.0744,
+     "win": 0.3043
+    }
+   }
+  },
+  {
+   "strategy": "random five",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 560,
+   "meanExcess": -0.0715,
+   "medianExcess": -0.0609,
+   "winVsMarket": 0.3821,
+   "meanReturn": 0.1179,
+   "medianReturn": 0.0823,
+   "winAbsolute": 0.6946,
+   "worst5": -0.1745,
+   "best5": 0.517,
+   "meanDrawdown": -0.0767,
+   "sharpe": 0.5066,
+   "excessT": -8.0677,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.0832,
+     "win": 0.3389
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0493,
+     "win": 0.4113
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0289,
+     "win": 0.5606
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.1009,
+     "win": 0.3478
+    }
+   }
+  },
+  {
+   "strategy": "equal weight",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": -0.0998,
+   "medianExcess": -0.1117,
+   "winVsMarket": 0.2821,
+   "meanReturn": 0.0896,
+   "medianReturn": 0.0859,
+   "winAbsolute": 0.7446,
+   "worst5": -0.1325,
+   "best5": 0.3408,
+   "meanDrawdown": -0.0499,
+   "sharpe": 0.6116,
+   "excessT": -14.5063,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.1027,
+     "win": 0.2658
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.0922,
+     "win": 0.2984
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.0598,
+     "win": 0.3939
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.1387,
+     "win": 0.2174
+    }
+   }
+  },
+  {
+   "strategy": "equal weight",
+   "holdRounds": 10,
+   "universe": "all",
+   "budget": 10000,
+   "n": 560,
+   "meanExcess": -0.1242,
+   "medianExcess": -0.1464,
+   "winVsMarket": 0.2804,
+   "meanReturn": 0.0737,
+   "medianReturn": 0.0559,
+   "winAbsolute": 0.7446,
+   "worst5": -0.0893,
+   "best5": 0.2938,
+   "meanDrawdown": -0.0384,
+   "sharpe": 0.5785,
+   "excessT": -14.8331,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.1229,
+     "win": 0.2658
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.1182,
+     "win": 0.2903
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.082,
+     "win": 0.3788
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.1811,
+     "win": 0.2319
+    }
+   }
+  },
+  {
+   "strategy": "defensive",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 560,
+   "meanExcess": -0.136,
+   "medianExcess": -0.1301,
+   "winVsMarket": 0.2964,
+   "meanReturn": 0.0534,
+   "medianReturn": 0.0439,
+   "winAbsolute": 0.7214,
+   "worst5": -0.0714,
+   "best5": 0.1859,
+   "meanDrawdown": -0.0345,
+   "sharpe": 0.602,
+   "excessT": -13.6142,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.1408,
+     "win": 0.2757
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.115,
+     "win": 0.2984
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.084,
+     "win": 0.4697
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.2024,
+     "win": 0.2174
+    }
+   }
+  },
+  {
+   "strategy": "equal weight",
+   "holdRounds": 10,
+   "universe": "core",
+   "budget": 1000,
+   "n": 560,
+   "meanExcess": -0.1754,
+   "medianExcess": -0.1998,
+   "winVsMarket": 0.275,
+   "meanReturn": 0.0139,
+   "medianReturn": 0.0062,
+   "winAbsolute": 0.6911,
+   "worst5": -0.0123,
+   "best5": 0.0504,
+   "meanDrawdown": -0.0062,
+   "sharpe": 0.3034,
+   "excessT": -15.1813,
+   "regimes": {
+    "bull": {
+     "n": 301,
+     "mean": -0.1697,
+     "win": 0.2525
+    },
+    "bear": {
+     "n": 124,
+     "mean": -0.1619,
+     "win": 0.2984
+    },
+    "recession": {
+     "n": 66,
+     "mean": -0.1281,
+     "win": 0.3788
+    },
+    "crisis": {
+     "n": 69,
+     "mean": -0.2699,
+     "win": 0.2319
+    }
+   }
+  }
+ ],
+ "anchor": [
+  {
+   "kind": "anchor",
+   "discount": "above fair",
+   "holdRounds": 1,
+   "n": 23990,
+   "meanLog": -0.0116,
+   "medianLog": -0.0022,
+   "pUp": 0.4905,
+   "meanExcess": -0.0169,
+   "pExcess": 0.427,
+   "recovered": 0.543,
+   "meanWorstDip": -0.0861,
+   "worst5": -0.2234
+  },
+  {
+   "kind": "anchor",
+   "discount": "0-10%",
+   "holdRounds": 1,
+   "n": 32989,
+   "meanLog": 0.0186,
+   "medianLog": 0.0248,
+   "pUp": 0.596,
+   "meanExcess": 0.0123,
+   "pExcess": 0.5557,
+   "recovered": 0.5356,
+   "meanWorstDip": -0.068,
+   "worst5": -0.1901
+  },
+  {
+   "kind": "anchor",
+   "discount": "10-25%",
+   "holdRounds": 1,
+   "n": 21,
+   "meanLog": 0.079,
+   "medianLog": 0.0928,
+   "pUp": 0.619,
+   "meanExcess": 0.0832,
+   "pExcess": 0.7143,
+   "recovered": 0.4286,
+   "meanWorstDip": -0.087,
+   "worst5": -0.2828
+  },
+  {
+   "kind": "anchor",
+   "discount": "above fair",
+   "holdRounds": 5,
+   "n": 21540,
+   "meanLog": 0.0121,
+   "medianLog": 0.0298,
+   "pUp": 0.5484,
+   "meanExcess": -0.0261,
+   "pExcess": 0.4535,
+   "recovered": 0.57,
+   "meanWorstDip": -0.1968,
+   "worst5": -0.4692
+  },
+  {
+   "kind": "anchor",
+   "discount": "0-10%",
+   "holdRounds": 5,
+   "n": 29442,
+   "meanLog": 0.0653,
+   "medianLog": 0.0767,
+   "pUp": 0.6224,
+   "meanExcess": 0.0189,
+   "pExcess": 0.5341,
+   "recovered": 0.5972,
+   "meanWorstDip": -0.1634,
+   "worst5": -0.4045
+  },
+  {
+   "kind": "anchor",
+   "discount": "10-25%",
+   "holdRounds": 5,
+   "n": 18,
+   "meanLog": 0.3306,
+   "medianLog": 0.4694,
+   "pUp": 0.6667,
+   "meanExcess": 0.3011,
+   "pExcess": 0.7778,
+   "recovered": 0.6667,
+   "meanWorstDip": -0.2357,
+   "worst5": -0.7302
+  },
+  {
+   "kind": "anchor",
+   "discount": "above fair",
+   "holdRounds": 10,
+   "n": 17953,
+   "meanLog": 0.0514,
+   "medianLog": 0.0738,
+   "pUp": 0.5778,
+   "meanExcess": -0.0357,
+   "pExcess": 0.4571,
+   "recovered": 0.5923,
+   "meanWorstDip": -0.2806,
+   "worst5": -0.6381
+  },
+  {
+   "kind": "anchor",
+   "discount": "0-10%",
+   "holdRounds": 10,
+   "n": 24029,
+   "meanLog": 0.13,
+   "medianLog": 0.1434,
+   "pUp": 0.65,
+   "meanExcess": 0.0261,
+   "pExcess": 0.5321,
+   "recovered": 0.6347,
+   "meanWorstDip": -0.2359,
+   "worst5": -0.5493
+  },
+  {
+   "kind": "anchor",
+   "discount": "10-25%",
+   "holdRounds": 10,
+   "n": 18,
+   "meanLog": 0.9464,
+   "medianLog": 0.7809,
+   "pUp": 0.8333,
+   "meanExcess": 0.7546,
+   "pExcess": 0.8889,
+   "recovered": 0.6667,
+   "meanWorstDip": -0.2398,
+   "worst5": -0.5257
+  },
+  {
+   "kind": "fair",
+   "discount": "above fair",
+   "holdRounds": 1,
+   "n": 21504,
+   "meanLog": 0.0001,
+   "medianLog": 0.0076,
+   "pUp": 0.5275,
+   "meanExcess": -0.0058,
+   "pExcess": 0.4793,
+   "recovered": 0.8698,
+   "meanWorstDip": -0.0801,
+   "worst5": -0.2069
+  },
+  {
+   "kind": "fair",
+   "discount": "0-10%",
+   "holdRounds": 1,
+   "n": 8247,
+   "meanLog": 0.0071,
+   "medianLog": 0.015,
+   "pUp": 0.5621,
+   "meanExcess": 0.0013,
+   "pExcess": 0.5082,
+   "recovered": 0.3603,
+   "meanWorstDip": -0.0695,
+   "worst5": -0.1869
+  },
+  {
+   "kind": "fair",
+   "discount": "10-25%",
+   "holdRounds": 1,
+   "n": 11531,
+   "meanLog": 0.0108,
+   "medianLog": 0.0163,
+   "pUp": 0.5686,
+   "meanExcess": 0.004,
+   "pExcess": 0.514,
+   "recovered": 0.077,
+   "meanWorstDip": -0.0677,
+   "worst5": -0.1797
+  },
+  {
+   "kind": "fair",
+   "discount": "25-50%",
+   "holdRounds": 1,
+   "n": 10998,
+   "meanLog": 0.009,
+   "medianLog": 0.017,
+   "pUp": 0.5651,
+   "meanExcess": 0.0036,
+   "pExcess": 0.5169,
+   "recovered": 0.0172,
+   "meanWorstDip": -0.072,
+   "worst5": -0.2029
+  },
+  {
+   "kind": "fair",
+   "discount": "50-100%",
+   "holdRounds": 1,
+   "n": 4329,
+   "meanLog": 0.0085,
+   "medianLog": 0.0225,
+   "pUp": 0.5666,
+   "meanExcess": 0.0043,
+   "pExcess": 0.5174,
+   "recovered": 0.0448,
+   "meanWorstDip": -0.0924,
+   "worst5": -0.2848
+  },
+  {
+   "kind": "fair",
+   "discount": "over 100%",
+   "holdRounds": 1,
+   "n": 391,
+   "meanLog": 0.0404,
+   "medianLog": 0.0513,
+   "pUp": 0.6036,
+   "meanExcess": 0.0288,
+   "pExcess": 0.6164,
+   "recovered": 0.1739,
+   "meanWorstDip": -0.107,
+   "worst5": -0.3257
+  },
+  {
+   "kind": "fair",
+   "discount": "above fair",
+   "holdRounds": 5,
+   "n": 19585,
+   "meanLog": 0.0055,
+   "medianLog": 0.0239,
+   "pUp": 0.5384,
+   "meanExcess": -0.0214,
+   "pExcess": 0.462,
+   "recovered": 0.7701,
+   "meanWorstDip": -0.1972,
+   "worst5": -0.4821
+  },
+  {
+   "kind": "fair",
+   "discount": "0-10%",
+   "holdRounds": 5,
+   "n": 7471,
+   "meanLog": 0.0419,
+   "medianLog": 0.0611,
+   "pUp": 0.6006,
+   "meanExcess": 0.0064,
+   "pExcess": 0.5203,
+   "recovered": 0.5185,
+   "meanWorstDip": -0.1621,
+   "worst5": -0.4035
+  },
+  {
+   "kind": "fair",
+   "discount": "10-25%",
+   "holdRounds": 5,
+   "n": 10336,
+   "meanLog": 0.0567,
+   "medianLog": 0.0685,
+   "pUp": 0.6151,
+   "meanExcess": 0.0128,
+   "pExcess": 0.5284,
+   "recovered": 0.3369,
+   "meanWorstDip": -0.1578,
+   "worst5": -0.3863
+  },
+  {
+   "kind": "fair",
+   "discount": "25-50%",
+   "holdRounds": 5,
+   "n": 9626,
+   "meanLog": 0.0668,
+   "medianLog": 0.0793,
+   "pUp": 0.6298,
+   "meanExcess": 0.0102,
+   "pExcess": 0.5152,
+   "recovered": 0.2354,
+   "meanWorstDip": -0.1653,
+   "worst5": -0.4054
+  },
+  {
+   "kind": "fair",
+   "discount": "50-100%",
+   "holdRounds": 5,
+   "n": 3658,
+   "meanLog": 0.113,
+   "medianLog": 0.1251,
+   "pUp": 0.6662,
+   "meanExcess": 0.0169,
+   "pExcess": 0.5221,
+   "recovered": 0.3311,
+   "meanWorstDip": -0.1907,
+   "worst5": -0.4458
+  },
+  {
+   "kind": "fair",
+   "discount": "over 100%",
+   "holdRounds": 5,
+   "n": 324,
+   "meanLog": 0.3955,
+   "medianLog": 0.3687,
+   "pUp": 0.8025,
+   "meanExcess": 0.2435,
+   "pExcess": 0.7377,
+   "recovered": 0.6235,
+   "meanWorstDip": -0.1883,
+   "worst5": -0.3344
+  },
+  {
+   "kind": "fair",
+   "discount": "above fair",
+   "holdRounds": 10,
+   "n": 16618,
+   "meanLog": 0.0241,
+   "medianLog": 0.0511,
+   "pUp": 0.5549,
+   "meanExcess": -0.0417,
+   "pExcess": 0.4521,
+   "recovered": 0.7346,
+   "meanWorstDip": -0.2893,
+   "worst5": -0.673
+  },
+  {
+   "kind": "fair",
+   "discount": "0-10%",
+   "holdRounds": 10,
+   "n": 6236,
+   "meanLog": 0.0914,
+   "medianLog": 0.1139,
+   "pUp": 0.6241,
+   "meanExcess": 0.0051,
+   "pExcess": 0.5085,
+   "recovered": 0.5726,
+   "meanWorstDip": -0.2346,
+   "worst5": -0.5354
+  },
+  {
+   "kind": "fair",
+   "discount": "10-25%",
+   "holdRounds": 10,
+   "n": 8562,
+   "meanLog": 0.1214,
+   "medianLog": 0.1368,
+   "pUp": 0.6524,
+   "meanExcess": 0.0175,
+   "pExcess": 0.5232,
+   "recovered": 0.4625,
+   "meanWorstDip": -0.2209,
+   "worst5": -0.5215
+  },
+  {
+   "kind": "fair",
+   "discount": "25-50%",
+   "holdRounds": 10,
+   "n": 7630,
+   "meanLog": 0.155,
+   "medianLog": 0.1697,
+   "pUp": 0.6743,
+   "meanExcess": 0.0244,
+   "pExcess": 0.5305,
+   "recovered": 0.4186,
+   "meanWorstDip": -0.2315,
+   "worst5": -0.5192
+  },
+  {
+   "kind": "fair",
+   "discount": "50-100%",
+   "holdRounds": 10,
+   "n": 2707,
+   "meanLog": 0.2467,
+   "medianLog": 0.2602,
+   "pUp": 0.7156,
+   "meanExcess": 0.0725,
+   "pExcess": 0.5866,
+   "recovered": 0.5124,
+   "meanWorstDip": -0.2696,
+   "worst5": -0.5288
+  },
+  {
+   "kind": "fair",
+   "discount": "over 100%",
+   "holdRounds": 10,
+   "n": 247,
+   "meanLog": 0.8248,
+   "medianLog": 0.7298,
+   "pUp": 0.915,
+   "meanExcess": 0.5254,
+   "pExcess": 0.8421,
+   "recovered": 0.8381,
+   "meanWorstDip": -0.214,
+   "worst5": -0.1957
+  }
+ ],
+ "gameplay": {
+  "rounds": 1600,
+  "leadChanges": 11.2413,
+  "closeFinish": 0.3081,
+  "earlyLeaderWins": 0.31,
+  "comeback": 0.5069,
+  "longestFreezeDays": 4.5219,
+  "spread": 0.2485,
+  "bestBot": 0.1394,
+  "worstBot": -0.1091,
+  "bigDailyMoves": 299.8356,
+  "bigCompanies": 12.6381,
+  "bigSectors": 8.2025,
+  "stories": 10.9025,
+  "severeStories": 6.1625,
+  "longestQuietDays": 7.9325,
+  "quietOver20Days": 0,
+  "storiesByThird": [
+   3.7281,
+   4.0631,
+   3.1113
+  ],
+  "marketMoveAbs": 0.0549,
+  "dullRounds": 0,
+  "bots": [
+   {
+    "bot": "conservative",
+    "winShare": 0.0156,
+    "mean": 0.0138,
+    "median": 0.0163,
+    "worst5": -0.0607,
+    "best5": 0.0774
+   },
+   {
+    "bot": "aggressive",
+    "winShare": 0.1244,
+    "mean": -0.0093,
+    "median": -0.0168,
+    "worst5": -0.2361,
+    "best5": 0.2352
+   },
+   {
+    "bot": "momentum",
+    "winShare": 0.0369,
+    "mean": -0.0169,
+    "median": -0.0183,
+    "worst5": -0.1676,
+    "best5": 0.1441
+   },
+   {
+    "bot": "contrarian",
+    "winShare": 0.2019,
+    "mean": 0.0419,
+    "median": 0.0394,
+    "worst5": -0.122,
+    "best5": 0.2118
+   },
+   {
+    "bot": "news trader",
+    "winShare": 0.1013,
+    "mean": 0.0056,
+    "median": 0,
+    "worst5": -0.091,
+    "best5": 0.1111
+   },
+   {
+    "bot": "sector specialist",
+    "winShare": 0.0744,
+    "mean": 0.0138,
+    "median": 0.0115,
+    "worst5": -0.1218,
+    "best5": 0.156
+   },
+   {
+    "bot": "random",
+    "winShare": 0.0819,
+    "mean": 0.0167,
+    "median": 0.0168,
+    "worst5": -0.1239,
+    "best5": 0.1573
+   },
+   {
+    "bot": "opportunist",
+    "winShare": 0.2544,
+    "mean": 0.0292,
+    "median": 0.0206,
+    "worst5": -0.2086,
+    "best5": 0.2962
+   },
+   {
+    "bot": "inactive",
+    "winShare": 0.0556,
+    "mean": 0,
+    "median": 0,
+    "worst5": 0,
+    "best5": 0
+   },
+   {
+    "bot": "leaderboard chaser",
+    "winShare": 0.0538,
+    "mean": -0.0028,
+    "median": 0.0013,
+    "worst5": -0.2007,
+    "best5": 0.1931
+   }
+  ]
+ }
+}

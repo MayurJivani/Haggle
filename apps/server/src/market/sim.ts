@@ -73,11 +73,11 @@ export const SIM = {
   recessionHeat: 3,
   recoveryCredit: -0.25,
   /** Gameplay-tuned to industry momentum: part of a sector's shared shock is lasting news about its demand. */
-  demandFromShock: 0.0004,
+  demandFromShock: 0.00005,
   /** Gameplay-tuned to stock momentum: part of a company's value news changes its prospects. */
-  growthFromNews: 0.0012,
+  growthFromNews: 0.00015,
   /** Gameplay-tuned: an earnings surprise changes prospects, the post-earnings drift documented in real markets. */
-  surpriseGrowth: 0.000012,
+  surpriseGrowth: 0.000003,
   /** Gameplay-tuned: how far a severity-3 story (a market-wide shock) lifts volatility, in long-run variances. */
   storyVariance: 0.2,
   // ---- business cycle (hidden)
@@ -189,6 +189,8 @@ export const SIM = {
    * 30% a year, offsets the long-run drift. Real companies keep share prices tradeable by splitting them;
    * this needs no change to anybody's holdings. levelCeilCents and levelFloorCents bound the range outright.
    */
+  /** Share of the gap between hidden value and a new report that the report closes. */
+  reportTrust: 0.35,
   levelBand: Math.log(3),
   levelRate: 1 / (2 * TICKS_PER_YEAR),
   levelMax: drift(0.3),
@@ -692,7 +694,11 @@ export class MarketSim {
    */
   setFair(i: number, cents: number) {
     // Inside the long-run range, or reports would undo its pull. Value below the reports reads as a miss, which steadies them too.
-    const l = clamp(Math.log(Math.max(1, cents)), this.levelLo[i]!, this.levelHi[i]!);
+    const reported = clamp(Math.log(Math.max(1, cents)), this.levelLo[i]!, this.levelHi[i]!);
+    // A report is one reading of the business, weighed against what the market already believes. Taken at
+    // face value, every stock below its published fair value had a known floor under it and a known way up:
+    // buying them beat the market 82% of the time over ten rounds (docs/calibration.md). Now the gap can also close from above, with a miss.
+    const l = this.fairLog[i]! + SIM.reportTrust * (reported - this.fairLog[i]!);
     this.sentiment[i] = this.sentiment[i]! - (l - this.fairLog[i]!);
     this.fairLog[i] = l;
   }

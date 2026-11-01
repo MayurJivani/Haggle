@@ -20,7 +20,7 @@ const started = Date.now();
 const mean = measure(simulateEpisodes(1000, SEEDS, EPISODE));
 process.stderr.write(`${YEARS} simulated years in ${((Date.now() - started) / 1000).toFixed(0)}s\n`);
 const sim = { generated: new Date().toISOString().slice(0, 10), years: YEARS, episodes: SEEDS, episodeYears: EPISODE, mean };
-writeFileSync(OUT, JSON.stringify(sim, null, 2) + '\n');
+if (!process.env.LAB_SET) writeFileSync(OUT, JSON.stringify(sim, null, 2) + '\n');
 
 const h = JSON.parse(readFileSync(HISTORY, 'utf8'));
 const s = sim.mean;

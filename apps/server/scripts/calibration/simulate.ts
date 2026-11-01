@@ -4,9 +4,12 @@
 import { ASSETS, SECTORS } from '../../src/market/assets.js';
 import { QUIET_REPORT } from '../../src/market/events.js';
 import { seedReports, sharesOf, summarize } from '../../src/market/fundamentals.js';
-import { DAYS_PER_TICK, initialState, type SimNote } from '../../src/market/sim.js';
+import { DAYS_PER_TICK, initialState, SIM, type SimNote } from '../../src/market/sim.js';
 import { Tape } from '../../src/market/tape.js';
 import { acf, corr, drawdowns, kurtosis, mean, sd, skew } from './stats.js';
+
+// An experiment overrides parameters without touching the code: LAB_SET='{"reversion":0.002}'.
+Object.assign(SIM, JSON.parse(process.env.LAB_SET ?? '{}'));
 
 const TICKS_PER_DAY = Math.round(1 / DAYS_PER_TICK);
 const COMPETITION = 600;

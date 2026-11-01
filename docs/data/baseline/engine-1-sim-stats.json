@@ -1,0 +1,113 @@
+{
+  "generated": "2026-11-01",
+  "years": 400,
+  "episodes": 40,
+  "episodeYears": 10,
+  "mean": {
+    "years": 400,
+    "market": {
+      "dailySd": 0.0098,
+      "annualSd": 0.1551,
+      "annualMean": 0.074,
+      "skew": -0.4506,
+      "excessKurtosis": 8.5184,
+      "acfReturnLag1": 0.005,
+      "acfAbsLag": {
+        "1": 0.2386,
+        "5": 0.2201,
+        "20": 0.1787,
+        "60": 0.1165,
+        "120": 0.0629
+      },
+      "leverageEffect": -0.0287,
+      "shareBeyond3Sd": 0.0151,
+      "shareBeyond5Sd": 0.0024
+    },
+    "drawdowns": {
+      "per100YearsOver25": 9.5,
+      "per100YearsOver40": 4.25,
+      "deepest": [
+        {
+          "peak": "46608",
+          "trough": "47750",
+          "recovered": "49945",
+          "depth": -0.6822,
+          "daysToTrough": 1142,
+          "daysToRecover": 3337
+        },
+        {
+          "peak": "50545",
+          "trough": "50960",
+          "recovered": "52284",
+          "depth": -0.5987,
+          "daysToTrough": 415,
+          "daysToRecover": 1739
+        },
+        {
+          "peak": "60304",
+          "trough": "60993",
+          "recovered": "61774",
+          "depth": -0.5678,
+          "daysToTrough": 689,
+          "daysToRecover": 1470
+        }
+      ]
+    },
+    "cycle": {
+      "recessionShareOfDays": 0.1334,
+      "annualMeanInRecession": -0.059,
+      "annualMeanOutsideRecession": 0.0945,
+      "annualSdInRecession": 0.1867,
+      "annualSdOutsideRecession": 0.1496
+    },
+    "sectors": {
+      "avgPairwiseCorr": 0.587,
+      "avgPairwiseCorrCalm": 0.405,
+      "avgPairwiseCorrStressed": 0.8546
+    },
+    "size": {
+      "monthlyAnnualSdSmallThird": 0.2069,
+      "monthlyAnnualSdBigThird": 0.1549,
+      "monthlyBetaSmallThird": 1.0019,
+      "monthlyBetaBigThird": 0.9662
+    },
+    "momentum": {
+      "annualMean": 0.0172,
+      "annualSd": 0.097,
+      "skew": -0.0761
+    },
+    "industryMomentum": {
+      "past12mRelVsNextMonthRelCorr": 0.0648,
+      "top3MinusBottom3MonthlyMean": 0.0012,
+      "shareOfMonthsPositive": 0.4999
+    },
+    "runups": {
+      "sectorMonths": 71280,
+      "baseRateCrash": 0.0557,
+      "runupMonths": 1336,
+      "crashGivenRunup": 0.1781
+    },
+    "notes": {
+      "sector-crash": 0.25,
+      "panic": 0.0825,
+      "recession": 0.135,
+      "credit-tight": 0.13
+    },
+    "credit": {
+      "mean": 2.164,
+      "max": 5.7479
+    },
+    "headlineTrade": {
+      "hold12Days": {
+        "trades": 3670,
+        "winRate": 0.4959,
+        "meanExcess": -0.0008
+      },
+      "hold60Days": {
+        "trades": 3670,
+        "winRate": 0.4842,
+        "meanExcess": -0.0053
+      }
+    }
+  }
+}
