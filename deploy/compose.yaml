@@ -3,6 +3,7 @@
 services:
   haggle:
     image: ghcr.io/mayurjivani/haggle:latest
+    pull_policy: always
     network_mode: host
     restart: unless-stopped
     user: "1000:1000"
