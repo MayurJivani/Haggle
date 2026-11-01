@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ASSETS, SECTORS } from '../src/market/assets.js';
+import { ASSETS, CORE_TICKERS, SECTORS } from '../src/market/assets.js';
 import { instantiate, schedule, TEMPLATES, type Context, type ScheduledEvent } from '../src/market/events.js';
 import { seedReports, summarize } from '../src/market/fundamentals.js';
 import { rng } from '../src/market/rng.js';
@@ -41,9 +41,13 @@ const raw = (asset: number, pct: number, over: Partial<SimEvent> = {}): SimEvent
 const logDiff = (a: number, b: number) => Math.log(a / b);
 
 describe('stock universe', () => {
-  it('lists exactly five identified companies in every sector', () => {
-    for (const s of SECTORS) expect(ASSETS.filter((a) => a.sector === s)).toHaveLength(5);
-    expect(ASSETS).toHaveLength(SECTORS.length * 5);
+  it('lists five core companies and five more for custom rooms in every sector', () => {
+    for (const s of SECTORS) {
+      expect(ASSETS.filter((a) => a.sector === s && a.core)).toHaveLength(5);
+      expect(ASSETS.filter((a) => a.sector === s && !a.core)).toHaveLength(5);
+    }
+    expect(CORE_TICKERS).toHaveLength(SECTORS.length * 5);
+    expect(ASSETS).toHaveLength(SECTORS.length * 10);
     expect(new Set(ASSETS.map((a) => a.ticker)).size).toBe(ASSETS.length);
     expect(new Set(ASSETS.map((a) => a.name)).size).toBe(ASSETS.length);
     for (const a of ASSETS) {

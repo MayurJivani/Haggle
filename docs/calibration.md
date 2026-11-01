@@ -40,7 +40,7 @@ npx tsx scripts/calibration/run-sim.ts 400                     # writes docs/dat
 | `creditExposed` | −0.03 per point | Gameplay | Extra for fully credit-exposed companies (banks, small, indebted) |
 | `creditTightAt`, `creditEasyAt` | 3.0, 2.2 points | Gameplay | When tightening and easing are reported (hysteresis) |
 | `demandHalfLife`, `demandScale` | 14 months, 4% a year | Tuned | Industry momentum (measured: correlation 0.058, leaders over laggards 0.59% a month) |
-| `growthHalfLife`, `growthVol` | 12 months, 3.5e-7 | Tuned | Stock momentum (measured: 6.4% a year) |
+| `growthHalfLife`, `growthVol` | 12 months, 9e-7 | Tuned | Stock momentum (measured: 6.4% a year) |
 | `specThreshold`, `specFeedback`, `specMax` | 20% lead, 0.0035, 100% a year | Tuned | Crash risk after a doubling (measured: 30% against a 6.7% base), without inflating momentum |
 | `specHalfLife`, `trendHalfLife`, `frothHalfLife` | 3, 3, 30 months | Gameplay | Enthusiasm fades within a few quarters; the premium it built fades over years |
 | `sectorHazard`, `heatSlope` | 1 in 80 years per sector, 10 | Tuned | Run-up and crash frequencies |
@@ -65,24 +65,28 @@ npx tsx scripts/calibration/run-sim.ts 400                     # writes docs/dat
 
 | Statistic | History | Simulation | Verdict |
 | --- | --- | --- | --- |
-| Market volatility, annual | 16.3% | 14.8% | Close |
-| Market mean, annual log | 10.3% (total return) | 8.9% (price only) | Close; Haggle has no dividends |
-| Daily excess kurtosis | 18.1 | 7.5 | Fat tails, but thinner than history |
-| Daily skew | −0.77 | −0.48 | Right sign, weaker |
-| Day-to-day return autocorrelation | 0.016 | 0.002 | Close to none in both |
-| Absolute-return autocorrelation, lag 1 / 20 / 120 days | 0.26 / 0.20 / 0.09 | 0.20 / 0.15 / 0.04 | Clustering present; memory shorter than history |
-| Leverage effect | −0.090 | −0.030 | Right sign, weaker |
-| Days beyond 3 sd | 1.43% | 1.44% | Matches |
-| Sector correlation, all / calm / stressed | 0.68 / 0.64 / 0.88 | 0.49 / 0.33 / 0.79 | Rises sharply in stress, as in history. Lower overall because five-company sectors keep company noise that 300-stock industries diversify away |
-| Annual mean, in recession / outside | −3.8% / 12.1% | −7.7% / 11.3% | Recessions hurt; somewhat more than history (only about 48 recessions in the sample, so noisy) |
-| Volatility, in recession / outside | 26.3% / 14.5% | 17.6% / 14.3% | Higher in recessions, by less than history: recessions are short next to GARCH's memory |
-| Monthly volatility, small / big | 22.0% / 14.8% (deciles) | 19.6% / 16.2% (thirds of the listing) | Small riskier. The listing has no true small caps, so the gap is narrower |
-| Monthly beta, small / big | 1.12 / 0.93 | 1.04 / 1.00 | Right order, narrower |
-| Stock momentum, mean / sd / skew | 6.4% / 12.6% / −1.44 | 3.1% / 10.4% / −0.12 | Positive and modest; crashes milder than history |
-| Industry momentum: correlation / leaders over laggards / share positive | 0.058 / 0.59% / 58% | 0.087 / 0.57% a month / 55% | Close |
-| 40% crash within 2 years: base / after a doubling | 6.7% / 30% | 5.4% / 14% | Run-ups raise crash risk 2.6× (history: 4.4×) |
-| Share of sector-months after a doubling | 3.5% | 4.5% | Close |
-| Drawdowns per 100 years over 25% / over 40% | 11 / about 5 | 8.5 / 2.5 | Deep crashes somewhat rarer |
+| Market volatility, annual | 16.3% | 15.5% | Close |
+| Market mean, annual log | 10.3% (total return) | 7.4% (price only) | Close; Haggle has no dividends |
+| Daily excess kurtosis | 18.1 | 8.5 | Fat tails, but thinner than history |
+| Daily skew | −0.77 | −0.45 | Right sign, weaker |
+| Day-to-day return autocorrelation | 0.016 | 0.005 | Close to none in both |
+| Absolute-return autocorrelation, lag 1 / 20 / 120 days | 0.26 / 0.20 / 0.09 | 0.24 / 0.18 / 0.06 | Clustering present; memory shorter than history |
+| Leverage effect | −0.090 | −0.029 | Right sign, weaker |
+| Days beyond 3 sd | 1.43% | 1.52% | Matches |
+| Sector correlation, all / calm / stressed | 0.68 / 0.64 / 0.88 | 0.59 / 0.40 / 0.85 | Rises sharply in stress, as in history. Lower overall because ten-company sectors keep company noise that 300-stock industries diversify away |
+| Annual mean, in recession / outside | −3.8% / 12.1% | −5.8% / 9.4% | Recessions hurt; somewhat more than history (only about 48 recessions in the sample, so noisy) |
+| Volatility, in recession / outside | 26.3% / 14.5% | 18.7% / 15.0% | Higher in recessions, by less than history: recessions are short next to GARCH's memory |
+| Monthly volatility, small / big | 22.0% / 14.8% (deciles) | 20.7% / 15.5% (thirds of the listing) | Small riskier. The listing has no true small caps, so the gap is narrower |
+| Monthly beta, small / big | 1.12 / 0.93 | 1.00 / 0.97 | Right order, narrower |
+| Stock momentum, mean / sd / skew | 6.4% / 12.6% / −1.44 | 1.7% / 9.7% / −0.09 | Positive and modest; crashes milder than history |
+| Industry momentum: correlation / leaders over laggards / share positive | 0.058 / 0.59% / 58% | 0.062 / 0.12% a month / 50% | Correlation matches; the leaders' monthly edge is much weaker since growth stopped compounding forever |
+| 40% crash within 2 years: base / after a doubling | 6.7% / 30% | 5.6% / 18% | Run-ups raise crash risk 3.2× (history: 4.4×) |
+| Share of sector-months after a doubling | 3.5% | 1.8% | Rarer than history |
+| Drawdowns per 100 years over 25% / over 40% | 11 / about 5 | 9.5 / 4.25 | Deep crashes somewhat rarer |
+
+### Prices over the life of a server
+
+`test/realism.test.ts` runs the full market with news for 160 simulated years (about 640 rounds). Before the long-run fixes, within 100 rounds Nvidia reached the EUR 1,000,000 ceiling and Deere fell to 1% of its seed price: reports compounded each company's seed growth forever. Trend growth now fades to 6% a year (half-way in eight quarters), and past three times either side of its seed price a share feels a gentle pull of at most 30% a year (`levelBand`, `levelRate`, `levelMax`; gameplay, standing in for the stock splits a fixed purse cannot follow). Measured at 100 simulated years, company prices run from about EUR 3 to EUR 8,000, with the same range at 25 years.
 
 ### Headline trade
 
@@ -90,8 +94,8 @@ Buying a company at the close of the simulated day a positive story about it lan
 
 | Hold | Trades | Won | Mean excess return |
 | --- | --- | --- | --- |
-| 12 days (a fifth of a competition) | 3,717 | 50.0% | +0.01% |
-| 60 days (a competition) | 3,717 | 48.4% | −0.28% |
+| 12 days (a fifth of a competition) | 3,611 | 50.8% | −0.06% |
+| 60 days (a competition) | 3,611 | 50.2% | −0.62% |
 
 The move lands on the headline tick, so reading the news is no edge on its own; momentum and hidden demand did not reopen the old exploit.
 

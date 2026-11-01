@@ -38,6 +38,8 @@ How the market model is checked. All tests run with `npm test` (the Postgres tes
 - prices carry across competitions;
 - a new fair value never jumps the price.
 
+`apps/server/test/realism.test.ts` covers what a player would call absurd, on the whole market over 160 simulated years: no price near the hard limits or outside EUR 20,000, the typical share staying within 0.5 to 8 times its seed, believable daily and per-round moves for companies and the market, fading growth, seed prices near fundamentals, and news in rooms that list part of the market.
+
 `apps/server/test/fundamentals.test.ts` covers reports, trailing EPS, fair value and P/E.
 
 ## Integration tests
@@ -46,7 +48,7 @@ How the market model is checked. All tests run with `npm test` (the Postgres tes
 
 - whole competitions with concurrent orders, duplicates and ledger consistency;
 - restart recovery that rebuilds the exact prices;
-- rooms side by side on one market;
+- rooms side by side on one market, each trading only the companies it lists;
 - quiet quarterly filings stored as reports and kept out of the news feed.
 
 Every player in a competition gets the same prices, because the server broadcasts one tick message to every socket. The tests check that every client's book and the database agree. Clients never compute returns: they only display server prices and value portfolios from them.

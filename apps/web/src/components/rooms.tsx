@@ -1,7 +1,8 @@
 import { Check, ChevronRight, Copy, Trophy, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { clock, money, moneyWhole, pct, SECTOR_COLOR, tone, when } from '../lib/format';
-import { useGame, type FullBoard, type HoldingResult, type PortfolioView, type RoomListing, type SessionInfo } from '../lib/game';
+import { useGame, type AssetInfo, type FullBoard, type HoldingResult, type PortfolioView, type RoomListing, type SessionInfo } from '../lib/game';
+import { TraderName } from './ceremony';
 import { Pnl, SimulatedChip, useNow, Wordmark } from './chrome';
 
 const field = 'h-11 w-full rounded-md border border-rule bg-night-2 px-3 text-[15px] focus:border-saffron/70 focus:outline-none';
@@ -13,6 +14,77 @@ async function post<T>(path: string, body?: unknown): Promise<{ ok: boolean; bod
 }
 
 // ---------------------------------------------------------------- rooms page
+
+const MIN_COMPANIES = 5;
+
+/** Which companies a room lists: the main market's 75, all of them, or a hand-picked set. */
+function CompanyPicker({ all, failed, picked, setPicked }: { all: AssetInfo[]; failed: boolean; picked: Set<string>; setPicked: (s: Set<string>) => void }) {
+  const [custom, setCustom] = useState(false);
+  const [query, setQuery] = useState('');
+  const core = all.filter((a) => a.core).map((a) => a.ticker);
+  const q = query.trim().toLowerCase();
+  const shown = q ? all.filter((a) => `${a.ticker} ${a.name} ${a.sector} ${a.industry}`.toLowerCase().includes(q)) : all;
+  const sectors = [...new Set(shown.map((a) => a.sector))];
+  const isCore = !custom && picked.size === core.length && core.every((t) => picked.has(t));
+  const isAll = !custom && picked.size === all.length;
+  const preset = (id: 'core' | 'all' | 'custom', text: string, on: boolean, pick: () => void) => (
+    <label key={id} className={`flex min-h-11 cursor-pointer items-center justify-center rounded-md border px-1 text-center text-[13px] font-semibold ${on ? 'border-saffron bg-saffron-deep text-saffron' : 'border-rule text-ink-2'}`}>
+      <input type="radio" name="companies" checked={on} onChange={pick} className="sr-only" />
+      {text}
+    </label>
+  );
+  const change = (tickers: string[], on: boolean) => {
+    const next = new Set(picked);
+    for (const t of tickers) if (on) next.add(t); else next.delete(t);
+    setPicked(next);
+  };
+  if (failed) return <p className="text-sm text-ink-3">The company list did not load, so this game will use the main market’s 75.</p>;
+  return (
+    <fieldset className="flex flex-col gap-1.5">
+      <legend className={`${label} mb-1.5`}>Companies</legend>
+      <div className="grid grid-cols-3 gap-2">
+        {preset('core', `Main ${core.length}`, isCore, () => { setCustom(false); setPicked(new Set(core)); })}
+        {preset('all', `All ${all.length}`, isAll, () => { setCustom(false); setPicked(new Set(all.map((a) => a.ticker))); })}
+        {preset('custom', 'Choose', custom, () => setCustom(true))}
+      </div>
+      {custom && (
+        <div className="mt-1.5 flex flex-col gap-2">
+          <label htmlFor="company-search" className="sr-only">Search companies</label>
+          <input id="company-search" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name, ticker or sector" className={field} />
+          <div className="max-h-80 overflow-y-auto rounded-md border border-rule">
+            {sectors.length === 0 && <p className="p-3 text-[13px] text-ink-3">No company matches that.</p>}
+            {sectors.map((sector) => {
+              const members = shown.filter((a) => a.sector === sector);
+              const tickers = members.map((a) => a.ticker);
+              const every = tickers.every((t) => picked.has(t));
+              return (
+                <section key={sector} aria-label={sector} className="border-b border-rule/60 last:border-b-0">
+                  <label className="sticky top-0 flex min-h-10 cursor-pointer items-center gap-2.5 bg-night-3 px-3 text-[13px] font-semibold" style={{ color: SECTOR_COLOR[sector] }}>
+                    <input type="checkbox" checked={every} onChange={(e) => change(tickers, e.target.checked)} className="h-4 w-4 accent-[var(--color-saffron)]" />
+                    {sector}
+                  </label>
+                  {members.map((a) => (
+                    <label key={a.ticker} className="flex min-h-10 cursor-pointer items-center gap-2.5 px-3 py-1 text-[13px] hover:bg-night-3">
+                      <input type="checkbox" checked={picked.has(a.ticker)} onChange={(e) => change([a.ticker], e.target.checked)} className="h-4 w-4 shrink-0 accent-[var(--color-saffron)]" />
+                      <span className="w-14 shrink-0 font-bold">{a.ticker}</span>
+                      <span className="min-w-0 truncate text-ink-2">{a.name}</span>
+                    </label>
+                  ))}
+                </section>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-between gap-3 text-[13px]">
+            <span className={picked.size < MIN_COMPANIES ? 'text-down' : 'text-ink-2'} role="status">
+              {picked.size} chosen{picked.size < MIN_COMPANIES ? `, pick at least ${MIN_COMPANIES}` : ''}
+            </span>
+            <button type="button" onClick={() => setPicked(new Set())} className="font-semibold text-ink-3 underline underline-offset-4 hover:text-ink">Clear all</button>
+          </div>
+        </div>
+      )}
+    </fieldset>
+  );
+}
 
 function CreateRoom() {
   const [name, setName] = useState('');
@@ -29,6 +101,19 @@ function CreateRoom() {
   const [publicResults, setPublicResults] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [all, setAll] = useState<AssetInfo[]>([]);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [listFailed, setListFailed] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/market')
+      .then((r) => (r.ok ? (r.json() as Promise<{ assets: AssetInfo[] }>) : Promise.reject(new Error())))
+      .then(({ assets }) => {
+        setAll(assets);
+        setPicked(new Set(assets.filter((a) => a.core).map((a) => a.ticker)));
+      })
+      .catch(() => setListFailed(true));
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +121,7 @@ function CreateRoom() {
     setError(null);
     try {
       const r = await post<{ code: string }>('/api/rooms', {
+        tickers: all.length ? [...picked] : undefined,
         name, description: description || undefined, visibility, durationMinutes: minutes, startingCash: purse, maxPlayers,
         startAt: start === 'time' && startAt ? new Date(startAt).getTime() : undefined, lateJoin, peek, reveal, publicResults,
       });
@@ -59,7 +145,7 @@ function CreateRoom() {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4 rounded-lg bg-night-2 p-5" aria-labelledby="create-title">
-      <h2 id="create-title" className="panel-title">Open a room</h2>
+      <h2 id="create-title" className="panel-title">Set up a custom game</h2>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="room-name" className={label}>Room name</label>
         <input id="room-name" required maxLength={40} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Friday desk" className={field} />
@@ -94,6 +180,7 @@ function CreateRoom() {
           <input id="room-at" type="datetime-local" required value={startAt} onChange={(e) => setStartAt(e.target.value)} className={field} />
         </div>
       )}
+      <CompanyPicker all={all} failed={listFailed} picked={picked} setPicked={setPicked} />
       <details className="group rounded-md border border-rule">
         <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2.5 text-[14px] font-semibold text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
           <ChevronRight size={15} className="transition-transform group-open:rotate-90 motion-reduce:transition-none" aria-hidden />
@@ -123,16 +210,16 @@ function CreateRoom() {
         </div>
       </details>
       <p className={`text-sm ${error ? 'text-down' : 'text-ink-3'}`} role={error ? 'alert' : undefined}>
-        {error ?? `Same market and news as everyone else, your own leaderboard. Everyone starts with ${moneyWhole(purse * 100)}.`}
+        {error ?? `Your own leaderboard on the shared market. Everyone starts with ${moneyWhole(purse * 100)}, trading ${all.length ? picked.size : 75} companies.`}
       </p>
-      <button type="submit" disabled={busy || !name.trim()} className="h-12 rounded-md bg-saffron text-[16px] font-bold text-night hover:brightness-110 disabled:opacity-40">
-        {busy ? 'Opening' : 'Open the room'}
+      <button type="submit" disabled={busy || !name.trim() || (all.length > 0 && picked.size < MIN_COMPANIES)} className="h-12 rounded-md bg-saffron text-[16px] font-bold text-night hover:brightness-110 disabled:opacity-40">
+        {busy ? 'Opening' : 'Create the game'}
       </button>
     </form>
   );
 }
 
-function JoinByCode() {
+export function JoinByCode() {
   const [code, setCode] = useState('');
   const clean = code.toUpperCase().replace(/[^A-Z2-9]/g, '').slice(0, 8);
   return (
@@ -152,7 +239,7 @@ function JoinByCode() {
   );
 }
 
-export function RoomsPage({ signedIn }: { signedIn: boolean }) {
+export function RoomsPage({ signedIn, onJoined }: { signedIn: boolean; onJoined: () => void }) {
   const [rooms, setRooms] = useState<RoomListing[] | null>(null);
   const t = useNow(0, 1000);
   useEffect(() => {
@@ -169,17 +256,17 @@ export function RoomsPage({ signedIn }: { signedIn: boolean }) {
           <SimulatedChip />
         </header>
         <div>
-          <h1 className="font-display text-[clamp(2.5rem,8vw,4.5rem)] font-black uppercase leading-[0.9]">Rooms</h1>
-          <p className="mt-2 max-w-xl text-ink-2">Your own competition on the shared market: your rules, your roster, your results.</p>
+          <h1 className="font-display text-[clamp(2.5rem,8vw,4.5rem)] font-black uppercase leading-[0.9]">Custom games</h1>
+          <p className="mt-2 max-w-xl text-ink-2">Play with friends: your rules, your companies, your leaderboard. Share the invite code to bring them in.</p>
         </div>
         <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
           <section aria-labelledby="open-rooms" className="flex min-w-0 flex-col gap-4">
             <JoinByCode />
-            <h2 id="open-rooms" className="panel-title">Open rooms</h2>
+            <h2 id="open-rooms" className="panel-title">Open games</h2>
             {rooms === null ? (
               <p className="text-ink-3" role="status">Loading rooms</p>
             ) : rooms.length === 0 ? (
-              <p className="rounded-lg bg-night-2 p-5 text-ink-2">No public rooms right now. Open one, or join the main market.</p>
+              <p className="rounded-lg bg-night-2 p-5 text-ink-2">No public games right now. Create one, or join the main market.</p>
             ) : (
               <ul className="flex flex-col divide-y divide-rule/60 rounded-lg bg-night-2">
                 {rooms.map((r) => (
@@ -188,7 +275,7 @@ export function RoomsPage({ signedIn }: { signedIn: boolean }) {
                       <span className="min-w-0">
                         <span className="block truncate font-semibold">{r.name}</span>
                         <span className="block text-[13px] text-ink-3">
-                          {r.host ? `${r.host} · ` : ''}{moneyWhole(r.startingCash)} purse · {Math.round((r.closesAt - r.opensAt) / 60_000)} min
+                          {r.host ? `${r.host} · ` : ''}{moneyWhole(r.startingCash)} purse · {Math.round((r.closesAt - r.opensAt) / 60_000)} min · {r.companies} companies
                         </span>
                       </span>
                       <span className="text-right text-[13px]">
@@ -202,10 +289,10 @@ export function RoomsPage({ signedIn }: { signedIn: boolean }) {
                 ))}
               </ul>
             )}
-            <a href="/" className="text-[14px] font-semibold text-ink-2 underline decoration-ink-3 underline-offset-4 hover:text-ink">Back to the main market</a>
+            <a href="/" className="text-[14px] font-semibold text-ink-2 underline decoration-ink-3 underline-offset-4 hover:text-ink">Back to the home page</a>
           </section>
           {signedIn ? <CreateRoom /> : (
-            <p className="rounded-lg bg-night-2 p-5 text-ink-2"><a href="/" className="font-semibold text-saffron underline underline-offset-4">Pick a trader name</a> to open a room.</p>
+            <div className="flex flex-col gap-3 rounded-lg bg-night-2 p-5"><p className="text-ink-2">Pick a trader name to create a game.</p><TraderName onJoined={onJoined} action="Continue" /></div>
           )}
         </div>
       </div>

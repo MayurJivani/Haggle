@@ -5,7 +5,7 @@
 //
 // Runs independent ten-year episodes from a fresh market (seeds 1000, 1001, ...) and averages their
 // statistics: about the horizon a persistent game market lives through (a hundred competitions is
-// some 25 simulated years), and short enough that the fixed 75-company listing does not drift into
+// some 25 simulated years), and short enough that the fixed listing does not drift into
 // an index of two or three winners.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { measure, simulateEpisodes } from './simulate.js';

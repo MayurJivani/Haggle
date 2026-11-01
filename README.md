@@ -2,7 +2,7 @@
 
 ![Stack](https://img.shields.io/badge/stack-React%20%C2%B7%20Node%20%C2%B7%20Postgres-ffb020) ![Realtime](https://img.shields.io/badge/realtime-WebSockets-7c83ff) ![Players](https://img.shields.io/badge/players-1000%20per%20session-3ddc84)
 
-A live stock market for the whole room. Up to 1,000 players join with a nickname, get €10,000 of virtual money at the opening bell, research and trade 75 real companies (five in each of 15 sectors) at simulated prices in one market that carries on from round to round, read news that hits every screen at once, and finish ranked by portfolio value. A full round runs in about 15 minutes. Anyone can also open a custom room at `/rooms`, with its own rules, roster and results on the same shared market.
+A live stock market for the whole room. Up to 1,000 players join with a nickname, get €10,000 of virtual money at the opening bell, research and trade 75 real companies (five in each of 15 sectors) at simulated prices in one market that carries on from round to round, read news that hits every screen at once, and finish ranked by portfolio value. A full round runs in about 15 minutes. Anyone can also set up a custom game with friends at `/rooms`: its own rules, leaderboard and choice of up to 150 companies, on the same shared market.
 
 Virtual money only. Company names are real; every price, headline, financial report and euro is simulated.
 
@@ -15,7 +15,7 @@ cp .env.example .env    # set POSTGRES_PASSWORD and ADMIN_TOKEN
 docker compose up --build
 ```
 
-Open http://localhost:4371. The first lobby opens on boot and sessions loop by themselves.
+Open http://localhost:4371 for the home page; the main market is at `/play`. The first lobby opens on boot and sessions loop by themselves.
 
 **Local development** (Node 22+, any Postgres 14+):
 

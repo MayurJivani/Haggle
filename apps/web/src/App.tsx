@@ -10,6 +10,7 @@ import { Feed, NewsStrip, Roster } from './components/side';
 import { clock } from './lib/format';
 import { game, ROOM, roomQuery, useGame, type SessionInfo } from './lib/game';
 import { RoomBar, RoomsPage } from './components/rooms';
+import { Home } from './components/home';
 
 type Tab = 'market' | 'stock' | 'portfolio' | 'news' | 'board';
 const TABS: { id: Tab; label: string; Icon: typeof Store }[] = [
@@ -260,12 +261,13 @@ export function App() {
   const share = location.pathname.match(/^\/r\/([0-9a-f-]{36})$/i);
   const isHost = location.pathname.replace(/\/$/, '') === '/host';
   const isRooms = location.pathname.replace(/\/$/, '') === '/rooms';
+  const isPlay = location.pathname.replace(/\/$/, '') === '/play' || !!ROOM;
   const badRoom = location.pathname.startsWith('/room/') && !ROOM;
-  const [me, setMe] = useState<{ user: unknown; session: SessionInfo | null; offset: number } | 'loading' | 'error' | 'noroom'>('loading');
+  const [me, setMe] = useState<{ user: { nickname: string } | null; session: SessionInfo | null; offset: number } | 'loading' | 'error' | 'noroom'>('loading');
 
   const load = useCallback(() => {
     Promise.all([
-      fetch(`/api/me${roomQuery}`).then((r) => r.json() as Promise<{ user: unknown; session: SessionInfo | null; serverNow: number }>),
+      fetch(`/api/me${roomQuery}`).then((r) => r.json() as Promise<{ user: { nickname: string } | null; session: SessionInfo | null; serverNow: number }>),
       ROOM ? fetch(`/api/rooms/${ROOM}`).then((r) => r.ok) : true,
     ])
       .then(([m, found]) => setMe(found ? { user: m.user, session: m.session, offset: m.serverNow - Date.now() } : 'noroom'))
@@ -288,7 +290,7 @@ export function App() {
       </div>
     );
   else if (me === 'loading') body = <Splash />;
-  else if (isRooms && me !== 'error') body = <RoomsPage signedIn={!!me.user} />;
+  else if (isRooms && me !== 'error') body = <RoomsPage signedIn={!!me.user} onJoined={load} />;
   else if (me === 'error')
     body = (
       <div className="grid min-h-dvh place-items-center px-6 text-center">
@@ -300,6 +302,7 @@ export function App() {
         </div>
       </div>
     );
+  else if (!isPlay) body = <Home nickname={me.user?.nickname ?? null} session={me.session} offset={me.offset} />;
   else if (!me.user) body = <Join session={me.session} offset={me.offset} onJoined={load} />;
   else body = <Game />;
 

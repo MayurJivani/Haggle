@@ -1,7 +1,7 @@
 import { randomInt } from 'node:crypto';
 import type { Logger } from 'pino';
 import type { Sql } from '../db/db.js';
-import { ASSETS, SECTORS } from '../market/assets.js';
+import { ASSETS, CORE_TICKERS, SECTORS } from '../market/assets.js';
 import { QUIET_REPORT, quietReports, schedule, type Context } from '../market/events.js';
 import { noteId, noteStory } from '../market/notes.js';
 import { seedReports, summarize, type Report, type Summary } from '../market/fundamentals.js';
@@ -73,6 +73,8 @@ interface Window {
 export interface Live {
   row: store.SessionRow;
   cfg: store.SessionConfig;
+  /** The companies this competition lists, in market order. */
+  listed: Set<string>;
   /** Where this competition's sockets are filed: HOUSE or the session id. */
   key: string;
   opensAt: number;
@@ -156,6 +158,8 @@ export interface RoomInput {
   peek: boolean;
   reveal: boolean;
   publicResults: boolean;
+  /** The companies the room lists. */
+  tickers: string[];
 }
 
 type Buffer = Omit<store.Checkpoint, 'prevSeq' | 'state'>;
@@ -383,6 +387,7 @@ export class Engine {
       maxTick: live.cfg.totalTicks,
       at: (tick) => opensAt + tick * tickMs,
       value: (i) => this.market.value(i),
+      listed: new Set(ASSETS.flatMap((a, i) => (live.listed.has(a.ticker) ? [i] : []))),
     };
     const stories = schedule(Number(live.row.seed), ctx, live.cfg.totalTicks);
     // Every other company files its quarter quietly during the competition.
@@ -580,6 +585,7 @@ export class Engine {
     };
     return {
       row, cfg,
+      listed: new Set(row.config.tickers ?? CORE_TICKERS),
       key: row.code ? row.id : HOUSE,
       opensAt: row.opens_at.getTime(),
       closesAt: row.closes_at.getTime(),
@@ -785,6 +791,7 @@ export class Engine {
       peek: input.peek,
       reveal: input.reveal,
       publicResults: input.publicResults,
+      tickers: input.tickers,
     };
     let row: store.SessionRow | null = null;
     for (let attempt = 0; !row; attempt++) {
@@ -823,7 +830,7 @@ export class Engine {
       .filter((l) => l.row.code && l.row.visibility === 'public' && l.finishedAt === null)
       .map((l) => ({
         code: l.row.code!, name: l.row.name ?? 'Room', host: l.hostName, phase: l.phase, players: l.players.size, maxPlayers: l.cfg.maxPlayers,
-        startingCash: l.cfg.startingCash, opensAt: l.opensAt, closesAt: l.closesAt, manualStart: !!l.cfg.manualStart,
+        startingCash: l.cfg.startingCash, opensAt: l.opensAt, closesAt: l.closesAt, manualStart: !!l.cfg.manualStart, companies: l.listed.size,
       }))
       .sort((a, b) => a.opensAt - b.opensAt);
   }
@@ -839,7 +846,7 @@ export class Engine {
     this.marketJson ??= JSON.stringify({
       assets: ASSETS.map((a, i) => ({
         ticker: a.ticker, name: a.name, exchange: a.exchange, sector: a.sector, industry: a.industry, description: a.description,
-        beta: a.beta, risk: risk(a.vol), fund: this.summaries[i]!,
+        beta: a.beta, risk: risk(a.vol), core: a.core, fund: this.summaries[i]!,
       })),
     });
     return this.marketJson;
@@ -866,12 +873,13 @@ export class Engine {
   }
 
   /** The observed move after each recent story; stories without a recorded tape are left out. */
-  reactions(): Reaction[] {
+  reactions(live: Live | null = this.house): Reaction[] {
     const now = this.market.prices;
+    const listed = ASSETS.filter((a) => (live?.listed ?? new Set(CORE_TICKERS)).has(a.ticker));
     return this.news.flatMap((ev) => {
       const tape = this.tapes.get(ev.id);
       if (!tape) return [];
-      const { subject, tickers } = reactionMembers(ev, ASSETS);
+      const { subject, tickers } = reactionMembers(ev, listed);
       const after = tape.after ?? now;
       const price = (row: ArrayLike<number>) => (t: string) => row[TICKER_INDEX.get(t)!];
       const r = reactionBps(tickers, price(tape.before), price(after));
@@ -1009,7 +1017,7 @@ export class Engine {
       return reject('market_closed');
     }
     const idx = TICKER_INDEX.get(msg.ticker);
-    if (idx === undefined) return reject('unknown_asset');
+    if (idx === undefined || !live.listed.has(msg.ticker)) return reject('unknown_asset');
 
     const fill = quote(p.book, msg.side, msg.ticker, msg.qty, this.market.prices[idx]!);
     if (!fill.ok) return reject(fill.reason);
@@ -1081,6 +1089,7 @@ export class Engine {
     return {
       code: row.code, name: row.name ?? 'Room', description: row.description, visibility: row.visibility, hostId: row.host_user_id, host: live.hostName,
       settings: { manualStart: !!cfg.manualStart, lateJoin: cfg.lateJoin !== false, peek: !!cfg.peek, reveal: cfg.reveal !== false, publicResults: !!cfg.publicResults },
+      companies: live.listed.size,
     };
   }
 
@@ -1138,6 +1147,8 @@ export class Engine {
       you: { userId: c.userId, nickname: c.nickname },
       session: this.sessionInfo(live),
       tickers: TICKERS,
+      listed: TICKERS.filter((t) => live.listed.has(t)),
+      sectors: [...new Set(ASSETS.filter((a) => live.listed.has(a.ticker)).map((a) => a.sector))],
       seq: this.market.seq,
       at: this.lastAt,
       prices: Array.from(this.market.prices),

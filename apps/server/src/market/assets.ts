@@ -49,6 +49,8 @@ export interface Asset {
   growth: number;
   /** Seed valuation multiple: trailing P/E when profitable, price-to-sales when not. Sets the share count. */
   mult: number;
+  /** Listed in the house competition. The others trade on the same market, but only in custom rooms that pick them. */
+  core: boolean;
 }
 
 const SECTOR_SENS: Record<Sector, Partial<Record<Factor, number>>> = {
@@ -209,9 +211,123 @@ const ROWS: Record<Sector, Row[]> = {
   ],
 };
 
-export const ASSETS: Asset[] = SECTORS.flatMap((sector) =>
-  ROWS[sector].map(([ticker, name, exchange, industry, base, vol, beta, revenueBn, margin, growth, mult, description, sens]) => ({
-    ticker, name, exchange, sector, industry, description, base, vol, beta, revenueBn, margin, growth, mult,
+/** Five more per sector, offered only to custom rooms. */
+const EXTRA_ROWS: Record<Sector, Row[]> = {
+  Technology: [
+    ['ORCL', 'Oracle', 'NYSE', 'Databases and cloud', 15_640, 0.0036, 1.05, 54, 0.2, 0.08, 30, 'Databases, business software and a fast-growing cloud.', { datacenter: 0.9 }],
+    ['ADBE', 'Adobe', 'NASDAQ', 'Creative software', 39_820, 0.0038, 1.15, 21, 0.28, 0.1, 25, 'Photoshop, Acrobat and the subscriptions around them.'],
+    ['CRM', 'Salesforce', 'NYSE', 'Business software', 24_310, 0.0038, 1.15, 37, 0.17, 0.09, 38, 'Customer-management software sold by subscription.'],
+    ['IBM', 'IBM', 'NYSE', 'Enterprise IT', 19_760, 0.0026, 0.8, 62, 0.11, 0.02, 24, 'Mainframes, hybrid cloud and consulting for large companies.'],
+    ['NOW', 'ServiceNow', 'NYSE', 'Workflow software', 76_450, 0.0044, 1.2, 11, 0.16, 0.2, 90, 'Software that runs IT and back-office workflows.'],
+  ],
+  Semiconductors: [
+    ['AVGO', 'Broadcom', 'NASDAQ', 'Chips and infrastructure software', 15_120, 0.0048, 1.25, 50, 0.22, 0.2, 55, 'Networking chips, custom accelerators and enterprise software.', { datacenter: 1.3 }],
+    ['QCOM', 'Qualcomm', 'NASDAQ', 'Mobile chips', 14_230, 0.0042, 1.2, 38, 0.26, 0.06, 16, 'The chips and patents inside most smartphones.', { consumer: 0.5 }],
+    ['MU', 'Micron', 'NASDAQ', 'Memory chips', 9_540, 0.0056, 1.4, 28, 0.13, 0.15, 24, 'DRAM and flash memory, one of the most cyclical chip businesses.', { datacenter: 1.1 }],
+    ['IFX', 'Infineon', 'XETRA', 'Power and automotive chips', 3_480, 0.0044, 1.25, 16, 0.1, 0.03, 28, 'Power chips for cars, factories and renewable energy.', { chips: 0.2 }],
+    ['ARM', 'Arm Holdings', 'NASDAQ', 'Chip designs', 10_860, 0.0062, 1.5, 3.8, 0.17, 0.22, 160, 'Licenses the processor designs inside nearly every phone.'],
+  ],
+  Healthcare: [
+    ['MRK', 'Merck & Co', 'NYSE', 'Pharmaceuticals', 8_460, 0.0026, 0.55, 58, 0.25, 0.05, 15, 'Cancer immunotherapy, vaccines and animal health.'],
+    ['NOVN', 'Novartis', 'SIX Swiss', 'Pharmaceuticals', 9_780, 0.0024, 0.55, 46, 0.24, 0.07, 18, 'Prescription medicines across heart, cancer and immunology.', { euro: -0.2 }],
+    ['ROG', 'Roche', 'SIX Swiss', 'Pharmaceuticals and diagnostics', 27_340, 0.0024, 0.55, 62, 0.15, 0.03, 18, 'Cancer drugs and the world\'s largest diagnostics business.', { euro: -0.2 }],
+    ['ABBV', 'AbbVie', 'NYSE', 'Pharmaceuticals', 16_890, 0.0028, 0.6, 52, 0.15, 0.06, 28, 'Immunology and neuroscience medicines, Botox among them.'],
+    ['ISRG', 'Intuitive Surgical', 'NASDAQ', 'Surgical robots', 47_520, 0.004, 1.1, 8.5, 0.27, 0.15, 65, 'Da Vinci surgical robots and the instruments they consume.'],
+  ],
+  Finance: [
+    ['BAC', 'Bank of America', 'NYSE', 'Diversified bank', 3_970, 0.0032, 1.2, 98, 0.26, 0.04, 13, 'American consumer banking, wealth and markets.'],
+    ['MS', 'Morgan Stanley', 'NYSE', 'Investment bank', 11_240, 0.0034, 1.2, 58, 0.2, 0.08, 15, 'Wealth management, investment banking and trading.', { credit: 1.3 }],
+    ['MA', 'Mastercard', 'NYSE', 'Payments', 44_680, 0.0026, 0.95, 26, 0.45, 0.11, 35, 'The second great card payments network.', { rates: 0.2, consumer: 0.7, credit: 0.3 }],
+    ['ALV', 'Allianz', 'XETRA', 'Insurance', 28_950, 0.0024, 0.85, 110, 0.09, 0.04, 12, 'Europe\'s largest insurer, and owner of asset manager PIMCO.', { rates: -0.5, credit: 0.7 }],
+    ['SAN', 'Santander', 'BME Madrid', 'Diversified bank', 540, 0.0034, 1.15, 58, 0.2, 0.05, 7, 'Retail banking across Spain, Britain and Latin America.'],
+  ],
+  Energy: [
+    ['CVX', 'Chevron', 'NYSE', 'Integrated oil and gas', 13_870, 0.003, 0.8, 180, 0.09, -0.02, 15, 'Oil and gas production from the Permian to Kazakhstan.'],
+    ['BP', 'BP', 'LSE', 'Integrated oil and gas', 480, 0.0034, 0.85, 190, 0.03, -0.05, 14, 'Oil and gas major rebalancing its renewables plans.'],
+    ['ENI', 'Eni', 'Borsa Italiana', 'Integrated oil and gas', 1_420, 0.003, 0.8, 90, 0.04, -0.04, 11, 'Italian oil and gas major with deep ties to North Africa.'],
+    ['EQNR', 'Equinor', 'Oslo Bors', 'Oil, gas and offshore wind', 2_360, 0.0034, 0.8, 95, 0.09, -0.06, 8, 'Norway\'s North Sea oil and gas producer.'],
+    ['ENPH', 'Enphase Energy', 'NASDAQ', 'Solar equipment', 5_730, 0.0064, 1.5, 1.3, 0.1, 0.02, 60, 'Microinverters and batteries for home solar.', { oil: -0.3, rates: 1.2 }],
+  ],
+  Automotive: [
+    ['F', 'Ford', 'NYSE', 'Mass-market carmaker', 960, 0.0036, 1.15, 170, 0.03, 0.02, 9, 'Pickups, vans and a costly electric pivot.'],
+    ['GM', 'General Motors', 'NYSE', 'Mass-market carmaker', 4_670, 0.0036, 1.15, 175, 0.04, 0.03, 7, 'Chevrolet, Cadillac and America\'s biggest truck franchise.'],
+    ['STLA', 'Stellantis', 'Euronext Milan', 'Mass-market carmaker', 1_180, 0.004, 1.2, 160, 0.02, -0.08, 10, 'Jeep, Peugeot, Fiat and a dozen more brands.'],
+    ['RACE', 'Ferrari', 'Euronext Milan', 'Luxury sports cars', 39_860, 0.0032, 0.9, 7, 0.23, 0.11, 46, 'Scarce red cars with a waiting list.', { consumer: 0.3, chips: 0.3 }],
+    ['MBG', 'Mercedes-Benz', 'XETRA', 'Premium cars', 5_520, 0.003, 1.0, 145, 0.07, -0.04, 6, 'Premium cars and vans from Stuttgart.'],
+  ],
+  Consumer: [
+    ['COST', 'Costco', 'NASDAQ', 'Warehouse clubs', 86_230, 0.0024, 0.65, 270, 0.03, 0.07, 50, 'Membership warehouses that sell in bulk at thin margins.', { consumer: 0.4 }],
+    ['HD', 'Home Depot', 'NYSE', 'Home improvement', 34_560, 0.0028, 0.95, 160, 0.09, 0.03, 24, 'DIY and trade supplies, tied to the housing market.', { rates: 0.7 }],
+    ['ADS', 'adidas', 'XETRA', 'Sportswear', 19_420, 0.0038, 1.05, 24, 0.05, 0.1, 30, 'Three stripes on boots, trainers and kits.'],
+    ['ITX', 'Inditex', 'BME Madrid', 'Fast fashion', 4_680, 0.003, 0.95, 39, 0.15, 0.07, 24, 'Zara and its sisters, with stores restocked within weeks.'],
+    ['RMS', 'Hermes', 'Euronext Paris', 'Luxury goods', 221_400, 0.003, 0.85, 16, 0.3, 0.1, 48, 'Silk scarves and handbags with waiting lists.'],
+  ],
+  'E-commerce': [
+    ['MELI', 'MercadoLibre', 'NASDAQ', 'Online marketplaces', 178_300, 0.0052, 1.35, 22, 0.09, 0.3, 50, 'Latin America\'s largest online marketplace and payments app.', { euro: 0 }],
+    ['EBAY', 'eBay', 'NASDAQ', 'Online marketplaces', 6_240, 0.0036, 1.05, 10, 0.2, 0.01, 15, 'Second-hand goods and collectibles at auction.'],
+    ['PDD', 'PDD Holdings', 'NASDAQ', 'Online marketplaces', 10_380, 0.0058, 1.25, 52, 0.25, 0.2, 11, 'Pinduoduo in China and Temu everywhere else.', { techreg: 1.2, euro: 0 }],
+    ['ABNB', 'Airbnb', 'NASDAQ', 'Home rentals', 11_920, 0.0046, 1.25, 11, 0.24, 0.1, 28, 'Rooms and homes rented out by their owners.', { oil: -0.3 }],
+    ['ZAL', 'Zalando', 'XETRA', 'Online fashion', 2_860, 0.0056, 1.4, 11, 0.03, 0.05, 28, 'Europe\'s largest online fashion store.'],
+  ],
+  Telecom: [
+    ['T', 'AT&T', 'NYSE', 'Telecom operator', 2_140, 0.0022, 0.5, 122, 0.1, 0.01, 12, 'American wireless and fibre.'],
+    ['CMCSA', 'Comcast', 'NASDAQ', 'Cable and broadband', 3_380, 0.0026, 0.7, 124, 0.12, 0.01, 9, 'Cable broadband, NBC and Universal theme parks.', { consumer: 0.3 }],
+    ['TEF', 'Telefonica', 'BME Madrid', 'Telecom operator', 410, 0.0026, 0.6, 40, 0.03, -0.01, 18, 'Spanish operator, known as O2 and Movistar.'],
+    ['BTA', 'BT Group', 'LSE', 'Telecom operator', 150, 0.0028, 0.6, 24, 0.05, -0.01, 12, 'Britain\'s largest broadband and mobile provider.'],
+    ['NTT', 'Nippon Telegraph and Telephone', 'Tokyo SE', 'Telecom operator', 92, 0.0022, 0.45, 86, 0.08, 0.01, 11, 'Japan\'s former phone monopoly, now also a data-centre giant.', { euro: 0.2, datacenter: 0.3 }],
+  ],
+  'Aerospace & Defence': [
+    ['RTX', 'RTX', 'NYSE', 'Engines and missiles', 11_460, 0.0028, 0.8, 75, 0.07, 0.07, 30, 'Pratt & Whitney engines and Raytheon missiles.', { oil: -0.3 }],
+    ['GE', 'GE Aerospace', 'NYSE', 'Aircraft engines', 21_780, 0.0036, 1.1, 40, 0.13, 0.12, 45, 'The engines on most of the world\'s narrow-body jets.', { oil: -0.5 }],
+    ['NOC', 'Northrop Grumman', 'NYSE', 'Defence systems', 45_670, 0.0024, 0.5, 39, 0.08, 0.04, 20, 'Stealth bombers, missile systems and space hardware.', { oil: 0, growth: -0.2 }],
+    ['BAE', 'BAE Systems', 'LSE', 'Defence systems', 1_780, 0.0032, 0.55, 33, 0.07, 0.12, 24, 'Warships, armoured vehicles and fighter jet parts.', { oil: 0, growth: -0.2 }],
+    ['LDO', 'Leonardo', 'Borsa Italiana', 'Defence and helicopters', 3_150, 0.004, 0.75, 19, 0.06, 0.1, 25, 'Helicopters, defence electronics and aircraft structures.', { oil: 0, growth: -0.2 }],
+  ],
+  Industrials: [
+    ['ABB', 'ABB', 'SIX Swiss', 'Electrification and robots', 4_930, 0.0028, 1.0, 31, 0.12, 0.05, 24, 'Electrical gear and factory robots.', { datacenter: 0.6, euro: -0.1 }],
+    ['MMM', '3M', 'NYSE', 'Diversified industrial', 12_360, 0.003, 0.95, 23, 0.14, -0.01, 20, 'Post-it notes, abrasives and thousands of industrial materials.'],
+    ['ETN', 'Eaton', 'NYSE', 'Electrical equipment', 29_180, 0.0034, 1.1, 25, 0.15, 0.09, 30, 'Power distribution equipment for grids and data centres.', { datacenter: 1 }],
+    ['HIT', 'Hitachi', 'Tokyo SE', 'Industrial conglomerate', 2_340, 0.003, 1.05, 60, 0.07, 0.04, 26, 'Power grids, rail systems and industrial software.', { euro: 0.2 }],
+    ['ALO', 'Alstom', 'Euronext Paris', 'Trains and rail signalling', 2_180, 0.0042, 1.1, 18, 0.02, 0.04, 30, 'High-speed trains, metros and rail signalling.'],
+  ],
+  Materials: [
+    ['VALE', 'Vale', 'NYSE', 'Iron ore mining', 920, 0.0044, 1.15, 38, 0.17, -0.03, 6, 'Brazil\'s iron ore giant, tied to Chinese steel demand.', { euro: 0 }],
+    ['LIN', 'Linde', 'NASDAQ', 'Industrial gases', 41_230, 0.0024, 0.85, 31, 0.21, 0.03, 30, 'Oxygen, hydrogen and other gases on long contracts.'],
+    ['NEM', 'Newmont', 'NYSE', 'Gold mining', 4_760, 0.0048, 0.6, 18, 0.15, 0.07, 18, 'The world\'s largest gold miner, a favourite in uneasy markets.', { growth: -0.3, rates: 0.6 }],
+    ['AAL', 'Anglo American', 'LSE', 'Diversified mining', 2_840, 0.0042, 1.2, 28, 0.05, -0.03, 24, 'Copper, iron ore and diamonds.'],
+    ['NUE', 'Nucor', 'NYSE', 'Steel', 12_930, 0.0038, 1.2, 30, 0.08, -0.04, 13, 'America\'s largest steelmaker, melting scrap in electric furnaces.'],
+  ],
+  'Food & Beverage': [
+    ['MDLZ', 'Mondelez', 'NASDAQ', 'Snacks', 6_080, 0.002, 0.5, 36, 0.11, 0.03, 20, 'Oreo, Cadbury and Milka.', { consumer: 0.4 }],
+    ['DGE', 'Diageo', 'LSE', 'Spirits', 2_680, 0.0026, 0.65, 19, 0.17, -0.01, 18, 'Johnnie Walker, Guinness and Smirnoff.'],
+    ['SBUX', 'Starbucks', 'NASDAQ', 'Coffee chains', 8_740, 0.0032, 0.9, 34, 0.1, 0.02, 28, 'Green aprons in more than eighty countries.', { consumer: 0.7 }],
+    ['BN', 'Danone', 'Euronext Paris', 'Dairy and water', 7_120, 0.002, 0.5, 28, 0.07, 0.02, 22, 'Yoghurt, baby formula and Evian water.', { consumer: 0.3 }],
+    ['HEIA', 'Heineken', 'Euronext Amsterdam', 'Brewing', 7_460, 0.0026, 0.7, 30, 0.07, 0.02, 20, 'Green bottles and the world\'s second-largest brewer.'],
+  ],
+  Media: [
+    ['WBD', 'Warner Bros. Discovery', 'NASDAQ', 'Entertainment', 1_090, 0.0054, 1.3, 38, -0.03, -0.04, 0.7, 'Warner films, HBO and a heavy load of debt.', { credit: 1 }],
+    ['EA', 'Electronic Arts', 'NASDAQ', 'Video games', 14_260, 0.003, 0.75, 7.2, 0.15, 0.03, 34, 'EA Sports football, The Sims and Battlefield.'],
+    ['UMG', 'Universal Music Group', 'Euronext Amsterdam', 'Recorded music', 2_420, 0.0032, 0.85, 12, 0.13, 0.07, 28, 'The largest record label, Taylor Swift\'s among them.'],
+    ['WPP', 'WPP', 'LSE', 'Advertising agencies', 620, 0.0042, 1.15, 16, 0.03, -0.04, 14, 'A holding company of advertising and media agencies.'],
+    ['TTWO', 'Take-Two', 'NASDAQ', 'Video games', 18_840, 0.0042, 1.05, 5.8, -0.1, 0.1, 5, 'Grand Theft Auto and NBA 2K.'],
+  ],
+  Logistics: [
+    ['DAL', 'Delta Air Lines', 'NYSE', 'Airlines', 4_780, 0.0044, 1.3, 58, 0.07, 0.05, 8, 'America\'s most profitable large airline.', { oil: -1.2, consumer: 0.8 }],
+    ['UNP', 'Union Pacific', 'NYSE', 'Railroads', 21_450, 0.0024, 0.9, 23, 0.28, 0.02, 20, 'Freight rail across the western United States.', { oil: -0.2 }],
+    ['KNIN', 'Kuehne+Nagel', 'SIX Swiss', 'Freight forwarding', 19_680, 0.003, 0.95, 24, 0.05, 0.01, 22, 'Books space on ships and planes for other people\'s goods.', { supply: -0.3 }],
+    ['LHA', 'Lufthansa', 'XETRA', 'Airlines', 690, 0.0042, 1.25, 38, 0.03, 0.04, 7, 'Germany\'s flag carrier and a big cargo operator.', { oil: -1.2, consumer: 0.8 }],
+    ['XPO', 'XPO', 'NYSE', 'Road freight', 11_250, 0.005, 1.35, 7.5, 0.05, 0.03, 34, 'Less-than-truckload freight across North America.'],
+  ],
+};
+
+const build = (sector: Sector, rows: Row[], core: boolean): Asset[] =>
+  rows.map(([ticker, name, exchange, industry, base, vol, beta, revenueBn, margin, growth, mult, description, sens]) => ({
+    ticker, name, exchange, sector, industry, description, base, vol, beta, revenueBn, margin, growth, mult, core,
     sens: { ...SECTOR_SENS[sector], ...sens },
-  })),
-);
+  }));
+
+/** Every company on the market. They all tick on the one tape; a competition lists a subset of them. */
+export const ASSETS: Asset[] = SECTORS.flatMap((sector) => [...build(sector, ROWS[sector], true), ...build(sector, EXTRA_ROWS[sector], false)]);
+
+/** The house competition's listing, and a custom room's unless its host picks otherwise. */
+export const CORE_TICKERS = ASSETS.filter((a) => a.core).map((a) => a.ticker);

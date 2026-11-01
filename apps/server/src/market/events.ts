@@ -243,6 +243,8 @@ export interface Context {
    * quarterly reports every other company files.
    */
   value?: (asset: number) => number;
+  /** Asset indexes this competition lists: its stories pick their subject from these. Unset = every asset. */
+  listed?: Set<number>;
 }
 
 const pickWeighted = <T extends { weight: number }>(next: () => number, items: T[]): T => {
@@ -280,7 +282,9 @@ export function instantiate(t: EventTemplate, ctx: Context, next: () => number, 
 
   if (t.scope === 'asset') {
     const pool = assets.map((a, i) => ({ a, i })).filter(({ a }) => !t.sectors || t.sectors.includes(a.sector));
-    const { a, i } = forAsset !== undefined ? { a: assets[forAsset]!, i: forAsset } : pick(next, pool);
+    // A template nothing listed can carry (a drug trial in a room of banks) lands off-screen rather than failing.
+    const mine = pool.filter(({ i }) => !ctx.listed || ctx.listed.has(i));
+    const { a, i } = forAsset !== undefined ? { a: assets[forAsset]!, i: forAsset } : pick(next, mine.length ? mine : pool);
     target = a.ticker;
     related = [a.ticker];
     vars = { name: a.name, ticker: a.ticker, sector: a.sector, industry: a.industry.toLowerCase() };
@@ -304,7 +308,8 @@ export function instantiate(t: EventTemplate, ctx: Context, next: () => number, 
     }
   } else if (t.scope === 'sector') {
     const sectors = [...new Set(assets.map((a) => a.sector))].filter((s) => !t.sectors || t.sectors.includes(s));
-    const sector = pick(next, sectors);
+    const mine = sectors.filter((s) => assets.some((a, i) => a.sector === s && (!ctx.listed || ctx.listed.has(i))));
+    const sector = pick(next, mine.length ? mine : sectors);
     target = sector;
     vars = { sector };
     effects = assets.flatMap((a, i) => (a.sector === sector ? [{ asset: i, pct: impact * jitter() }] : []));

@@ -132,7 +132,7 @@ export const SIM = {
   idioInfo: 0.5,
   /** Gameplay: company growth prospects drift slowly; their spread sets stock-level momentum (measured: 6.4% a year). */
   growthHalfLife: months(12),
-  growthVol: 0.00000035,
+  growthVol: 0.0000009,
   /** Measured: the size factor (SMB) has annual sd 8.7% and is nearly uncorrelated with the market. */
   sizeVol: perTick(0.0869),
   /** Gameplay: how much harder stress raises a small company's own volatility (thin liquidity). */
@@ -153,6 +153,17 @@ export const SIM = {
   maxAnchorGap: 1,
   floorCents: 50,
   ceilCents: 100_000_000,
+  /**
+   * Gameplay: a share stays in a range a fixed purse can trade, however many rounds the market lives. Past
+   * levelBand (log, 3x either way from its seed price) a gentle pull with a two-year time constant, at most
+   * 30% a year, offsets the long-run drift. Real companies keep share prices tradeable by splitting them;
+   * this needs no change to anybody's holdings. levelCeilCents and levelFloorCents bound the range outright.
+   */
+  levelBand: Math.log(3),
+  levelRate: 1 / (2 * TICKS_PER_YEAR),
+  levelMax: drift(0.3),
+  levelCeilCents: 600_000,
+  levelFloorCents: 75,
   /** Long-run variance multiples that the regime label (calm, nervous, stressed) is read from. */
   nervousVar: 1.6,
   stressedVar: 3,
@@ -300,6 +311,8 @@ export class MarketSim {
   private readonly sectorExposure: Float64Array;
   private readonly specExposure: Float64Array;
   private readonly weight: Float64Array;
+  private readonly levelLo: Float64Array;
+  private readonly levelHi: Float64Array;
   private readonly demand: Float64Array;
   private readonly spec: Float64Array;
   private readonly trend: Float64Array;
@@ -354,6 +367,8 @@ export class MarketSim {
     const caps = assets.map((a) => sharesOf(a) * a.base);
     const totals = SECTORS.map((sec) => assets.reduce((t, a, i) => t + (a.sector === sec ? caps[i]! : 0), 0));
     this.weight = Float64Array.from(assets, (a, i) => caps[i]! / totals[SECTORS.indexOf(a.sector)]!);
+    this.levelLo = Float64Array.from(assets, (a) => Math.max(Math.log(a.base) - SIM.levelBand, Math.log(SIM.levelFloorCents)));
+    this.levelHi = Float64Array.from(assets, (a) => Math.min(Math.log(a.base) + SIM.levelBand, Math.log(SIM.levelCeilCents)));
     const sec = (k: number) => state.sectors?.[SECTORS[k]!];
     this.demand = Float64Array.from(SECTORS, (_, k) => sec(k)?.demand ?? 0);
     this.spec = Float64Array.from(SECTORS, (_, k) => sec(k)?.spec ?? 0);
@@ -543,8 +558,10 @@ export class MarketSim {
       const liquid = 1 + SIM.liquidity * Math.max(0, this.size[i]!) * Math.max(0, vol - 1);
       const noise = a.vol * own[i]!.z * liquid;
       const beta = a.beta * (1 + SIM.sizeBeta * this.size[i]!);
+      const outside = Math.max(0, this.logP[i]! - this.levelHi[i]!) - Math.max(0, this.levelLo[i]! - this.logP[i]!);
+      const level = -clamp(SIM.levelRate * outside, -SIM.levelMax, SIM.levelMax);
       const info =
-        beta * (driftM + marketShock + SIM.creditMarket * dCredit) +
+        level + beta * (driftM + marketShock + SIM.creditMarket * dCredit) +
         this.sectorExposure[i]! * (SIM.demandDrift * this.demand[k]! + sectorShock[k]!) +
         this.size[i]! * sizeShock + SIM.creditExposed * this.creditExposure[i]! * dCredit +
         this.growth[i]! + SIM.idioInfo * noise;
@@ -599,7 +616,8 @@ export class MarketSim {
    * which fades over sentimentHalfLife, so the price drifts toward what the new numbers justify.
    */
   setFair(i: number, cents: number) {
-    const l = Math.log(Math.max(1, cents));
+    // Inside the long-run range, or reports would undo its pull. Value below the reports reads as a miss, which steadies them too.
+    const l = clamp(Math.log(Math.max(1, cents)), this.levelLo[i]!, this.levelHi[i]!);
     this.sentiment[i] = this.sentiment[i]! - (l - this.fairLog[i]!);
     this.fairLog[i] = l;
   }

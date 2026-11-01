@@ -15,6 +15,13 @@ export const ROOM = globalThis.location?.pathname.match(/^\/room\/([A-Z2-9]{8})\
 /** `?room=CODE` for every request that is about this page's competition. */
 export const roomQuery = ROOM ? `?room=${ROOM}` : '';
 
+/** Whether a story belongs on this competition's screens: the shared tape also carries news about companies it does not list. */
+export function concernsListing(ev: EventInfo, tickers: Set<string>, sectors: Set<string>) {
+  if (ev.scope === 'sector') return sectors.has(ev.target ?? '');
+  if (ev.scope === 'asset' || ev.scope === 'basket') return ev.related.some((t) => tickers.has(t)) || tickers.has(ev.target ?? '');
+  return true;
+}
+
 export type Conn = 'connecting' | 'open' | 'reconnecting';
 
 export interface Toast {
@@ -133,6 +140,10 @@ class Game {
   private started = false;
   private stopped = false;
   private tickers: string[] = [];
+  /** Where each listed company sits in the market's full price array; everything past receive() sees only these. */
+  private picks: number[] = [];
+  private listedSet = new Set<string>();
+  private sectors = new Set<string>();
   private newsOpen = false;
 
   subscribe = (fn: () => void) => {
@@ -205,27 +216,36 @@ class Game {
       .catch(() => {});
   }
 
+  private listedPrices(p: number[]) {
+    return this.picks.map((i) => p[i]!);
+  }
+
   private receive(m: ServerMsg) {
     const s = this.state;
     switch (m.t) {
       case 'hello': {
         const isNewSession = s.session?.id !== m.session?.id;
-        const changed = m.tickers.join() !== this.tickers.join();
-        this.tickers = m.tickers;
+        const changed = m.listed.join() !== this.tickers.join();
+        this.tickers = m.listed;
+        this.picks = m.listed.map((t) => m.tickers.indexOf(t));
+        this.listedSet = new Set(m.listed);
+        this.sectors = new Set(m.sectors);
+        const events = m.events.filter((e) => concernsListing(e, this.listedSet, this.sectors));
+        const prices = this.listedPrices(m.prices);
         // A reconnect starts the chart buffer over: the gap is fetched from the server, never guessed.
         this.ticks.length = 0;
         const known = new Set(s.events.map((e) => e.id));
         this.set({
           conn: 'open', signedOut: false, offset: m.serverNow - Date.now(), you: m.you, session: m.session,
-          prices: m.prices, prev: m.prices, open: m.open, seq: m.seq, at: m.at, receivedAt: Date.now(), regime: m.regime, credit: m.credit,
-          events: m.events, book: m.book, spectating: m.spectating, board: m.board, results: m.results,
+          prices, prev: prices, open: this.listedPrices(m.open), seq: m.seq, at: m.at, receivedAt: Date.now(), regime: m.regime, credit: m.credit,
+          events, book: m.book, spectating: m.spectating, board: m.board, results: m.results,
           bellAt: isNewSession ? null : s.bellAt,
           // Stories from before this tab existed are not news to it; ones missed while away are.
-          unread: s.events.length ? s.unread + m.events.filter((e) => !known.has(e.id)).length : 0,
+          unread: s.events.length ? s.unread + events.filter((e) => !known.has(e.id)).length : 0,
           trades: isNewSession ? [] : s.trades,
         });
         if (changed || !s.assets.length) {
-          this.loadMarket(m.tickers).catch(() => this.toast('warn', 'Company data did not load. Reconnecting will retry.'));
+          this.loadMarket(m.listed).catch(() => this.toast('warn', 'Company data did not load. Reconnecting will retry.'));
         }
         if (m.book) this.loadTrades();
         // Orders sent just before a drop are resent with the same id: the server executes each id once.
@@ -242,10 +262,10 @@ class Game {
       case 'tick': {
         // Ticks carry the market's sequence number: a duplicate or a late one is dropped, not replayed.
         if (m.k <= s.seq) break;
-        const t = { seq: m.k, at: m.at, p: m.p };
+        const t = { seq: m.k, at: m.at, p: this.listedPrices(m.p) };
         this.ticks.push(t);
         if (this.ticks.length > TICKS_KEPT) this.ticks.splice(0, this.ticks.length - TICKS_KEPT);
-        this.set({ prev: s.prices, prices: m.p, seq: m.k, at: m.at, receivedAt: Date.now(), session: s.session && { ...s.session, tick: s.session.tick + 1 } });
+        this.set({ prev: s.prices, prices: t.p, seq: m.k, at: m.at, receivedAt: Date.now(), session: s.session && { ...s.session, tick: s.session.tick + 1 } });
         for (const fn of this.tickListeners) fn(t);
         break;
       }
@@ -254,13 +274,13 @@ class Game {
         this.set({
           offset: m.serverNow - Date.now(),
           session: m.session,
-          open: m.open,
+          open: this.listedPrices(m.open),
           bellAt: wasLobby && m.session.phase === 'trading' && s.session?.id === m.session.id ? Date.now() : s.bellAt,
         });
         break;
       }
       case 'event': {
-        if (s.events.some((e) => e.id === m.ev.id)) break;
+        if (s.events.some((e) => e.id === m.ev.id) || !concernsListing(m.ev, this.listedSet, this.sectors)) break;
         clearTimeout(this.breakingTimer);
         this.breakingTimer = setTimeout(() => this.set({ breaking: null }), BREAKING_MS);
         this.set({ events: [m.ev, ...s.events].slice(0, 60), breaking: m.ev, unread: this.newsOpen ? 0 : s.unread + 1 });

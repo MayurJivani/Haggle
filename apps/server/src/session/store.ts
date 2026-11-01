@@ -43,6 +43,8 @@ export interface SessionConfig {
   reveal?: boolean;
   /** A private room's results are visible to people outside it. Missing = false. */
   publicResults?: boolean;
+  /** The companies this competition lists. Missing = the core listing. */
+  tickers?: string[];
 }
 
 const COLS = 'id, code, name, description, host_user_id, visibility, awards, seed, status, config, opens_at, closes_at, finished_at, start_seq, opening_prices';

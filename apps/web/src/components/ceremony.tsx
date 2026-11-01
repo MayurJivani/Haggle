@@ -12,7 +12,7 @@ const ease = [0.16, 1, 0.3, 1] as const;
 const AWNINGS = Object.values(SECTOR_COLOR);
 
 /** A row of awning panels in every sector colour: the market's flag. */
-function AwningRow({ className = '', grow = false }: { className?: string; grow?: boolean }) {
+export function AwningRow({ className = '', grow = false }: { className?: string; grow?: boolean }) {
   return (
     <div className={`flex ${className}`} aria-hidden>
       {AWNINGS.map((c, i) => (
@@ -41,11 +41,11 @@ export function Splash({ text = 'Opening the market' }: { text?: string }) {
   );
 }
 
-export function Join({ session, offset, onJoined }: { session: SessionInfo | null; offset: number; onJoined: () => void }) {
+/** Picks a trader name and signs in: the one way in, from the market and from the custom games page. */
+export function TraderName({ onJoined, action = 'Enter the market' }: { onJoined: () => void; action?: string }) {
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const t = useNow(offset, 1000);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +63,39 @@ export function Join({ session, offset, onJoined }: { session: SessionInfo | nul
     }
   };
 
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-3">
+      <label htmlFor="nick" className="text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-2">
+        Your trader name
+      </label>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <input
+          id="nick"
+          autoFocus
+          required
+          minLength={2}
+          maxLength={20}
+          autoComplete="nickname"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          aria-invalid={!!error}
+          aria-describedby="nick-help"
+          placeholder="e.g. Saffron Sam"
+          className="h-14 min-w-0 flex-1 rounded-md border border-rule bg-night-2 px-4 text-xl font-semibold placeholder:font-normal placeholder:text-ink-3 focus:border-saffron/70 focus:outline-none"
+        />
+        <button type="submit" disabled={busy || name.trim().length < 2} className="h-14 rounded-md bg-saffron px-6 text-lg font-bold text-night hover:brightness-110 disabled:opacity-40">
+          {busy ? 'Joining' : action}
+        </button>
+      </div>
+      <p id="nick-help" className={`text-sm ${error ? 'text-down' : 'text-ink-3'}`} role={error ? 'alert' : undefined}>
+        {error ?? 'This device remembers you, so you can reconnect any time during the session.'}
+      </p>
+    </form>
+  );
+}
+
+export function Join({ session, offset, onJoined }: { session: SessionInfo | null; offset: number; onJoined: () => void }) {
+  const t = useNow(offset, 1000);
   const purse = moneyWhole(session?.startingCash ?? STARTING_CASH);
   const status = !session
     ? null
@@ -90,33 +123,7 @@ export function Join({ session, offset, onJoined }: { session: SessionInfo | nul
             </p>
           )}
         </div>
-        <form onSubmit={submit} className="flex flex-col gap-3">
-          <label htmlFor="nick" className="text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-2">
-            Your trader name
-          </label>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <input
-              id="nick"
-              autoFocus
-              required
-              minLength={2}
-              maxLength={20}
-              autoComplete="nickname"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              aria-invalid={!!error}
-              aria-describedby="nick-help"
-              placeholder="e.g. Saffron Sam"
-              className="h-14 min-w-0 flex-1 rounded-md border border-rule bg-night-2 px-4 text-xl font-semibold placeholder:font-normal placeholder:text-ink-3 focus:border-saffron/70 focus:outline-none"
-            />
-            <button type="submit" disabled={busy || name.trim().length < 2} className="h-14 rounded-md bg-saffron px-6 text-lg font-bold text-night hover:brightness-110 disabled:opacity-40">
-              {busy ? 'Joining' : 'Enter the market'}
-            </button>
-          </div>
-          <p id="nick-help" className={`text-sm ${error ? 'text-down' : 'text-ink-3'}`} role={error ? 'alert' : undefined}>
-            {error ?? 'This device remembers you, so you can reconnect any time during the session.'}
-          </p>
-        </form>
+        <TraderName onJoined={onJoined} />
         {status && (
           <p className="flex items-center gap-2 text-sm text-ink-2">
             <span className="h-2 w-2 animate-pulse rounded-full bg-up" aria-hidden />
@@ -126,7 +133,7 @@ export function Join({ session, offset, onJoined }: { session: SessionInfo | nul
         <p className="flex flex-wrap items-center gap-2 text-[13px] text-ink-3">
           <SimulatedChip /> Virtual money only. Company names are real; every price and headline is simulated.
         </p>
-        {!session?.room && <a href="/rooms" className="text-[14px] font-semibold text-ink-2 underline decoration-ink-3 underline-offset-4 hover:text-ink">Or open a room of your own</a>}
+        {!session?.room && <a href="/" className="text-[14px] font-semibold text-ink-2 underline decoration-ink-3 underline-offset-4 hover:text-ink">Back to the home page</a>}
       </div>
     </main>
   );
@@ -151,7 +158,7 @@ export function Lobby() {
         <AwningRow className="h-10 sm:h-14" />
         <div className="flex flex-1 flex-col justify-center gap-8 px-5 py-10 sm:px-10">
           <div className="flex items-center justify-between gap-4">
-            <Wordmark className="text-4xl" />
+            <a href="/" aria-label="Haggle home"><Wordmark className="text-4xl" /></a>
             <SimulatedChip />
           </div>
           {room && (
@@ -190,6 +197,7 @@ export function Lobby() {
             <dl className="grid max-w-2xl grid-cols-2 gap-x-6 gap-y-2 text-[14px] sm:grid-cols-4" aria-label="Room rules">
               <div><dt className="text-ink-3">Who can join</dt><dd>{room.visibility === 'private' ? 'Invite code' : 'Anyone'}{room.settings.lateJoin ? ', also after the bell' : ', before the bell'}</dd></div>
               <div><dt className="text-ink-3">Most traders</dt><dd>{session.maxPlayers}</dd></div>
+              <div><dt className="text-ink-3">Companies</dt><dd>{room.companies}</dd></div>
               <div><dt className="text-ink-3">Portfolios</dt><dd>{room.settings.peek ? 'Open while trading' : 'Private while trading'}</dd></div>
               <div><dt className="text-ink-3">Results</dt><dd>{room.settings.reveal ? 'Every portfolio shown' : 'Standings only'}</dd></div>
             </dl>

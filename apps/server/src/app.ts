@@ -11,7 +11,7 @@ import type { Env } from './env.js';
 import { logger } from './logger.js';
 import { metrics, renderMetrics } from './metrics.js';
 import { HOUSE, type Engine } from './session/engine.js';
-import { ASSETS, SECTORS } from './market/assets.js';
+import { ASSETS, CORE_TICKERS, SECTORS } from './market/assets.js';
 import type { IndexHistory, PlayerResult, PriceHistory, Range } from './protocol.js';
 import {
   firstPrices, indexBars, participantId, priceBars, priceSpan, resultFor, sessionById, sessionByCode, sessionResults, sessionsBetween, tradesFor,
@@ -24,6 +24,8 @@ const RANGE_MS: Record<Exclude<Range, 'all'>, number> = {
 };
 /** Most bars one history response carries; the bucket grows with the range to stay under it. */
 const MAX_BARS = 600;
+/** Fewest companies a room may list: fewer leaves nothing to choose between. */
+const MIN_COMPANIES = 5;
 const rangeSchema = z.enum(['1m', '5m', '15m', '1h', '1d', '1w', '1mo', 'all']);
 const tickerSchema = z.string().regex(/^[A-Z0-9]{1,10}$/);
 
@@ -56,7 +58,8 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
       },
     }),
   );
-  app.use(express.json({ limit: '2kb' }));
+  // Room settings can name every company on the market; nothing else comes close to this.
+  app.use(express.json({ limit: '4kb' }));
 
   // CSRF: every state-changing request must come from our own origin (see originAllowed).
   app.use((req, res, next) => {
@@ -184,14 +187,19 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
     const sector = z.enum(SECTORS).optional().safeParse(req.query.sector || undefined);
     if (!range.success || !sector.success) return void res.status(400).json({ error: 'Unknown sector or range' });
     const subject = sector.data ?? 'market';
-    const key = `index:${subject}:${range.data}`;
+    // The index of what this competition lists. A room that has left memory falls back to the core listing.
+    const code = codeSchema.safeParse(req.query.room);
+    const listed = (code.success ? engine.liveByCode(code.data) : engine.house)?.listed ?? new Set(CORE_TICKERS);
+    const key = `index:${code.success ? code.data : ''}:${subject}:${range.data}`;
     const hit = cache.get(key);
     if (hit && hit.until > Date.now()) return void res.json(hit.body);
     const all = await indexBase();
-    const base = Object.fromEntries(ASSETS.filter((a) => !sector.data || a.sector === sector.data).flatMap((a) => (all[a.ticker] ? [[a.ticker, all[a.ticker]!]] : [])));
+    const base = Object.fromEntries(ASSETS.filter((a) => listed.has(a.ticker) && (!sector.data || a.sector === sector.data)).flatMap((a) => (all[a.ticker] ? [[a.ticker, all[a.ticker]!]] : [])));
     const members = Object.keys(base);
-    // Every company ticks together, so any member's span is the index's span.
-    const span = members.length ? await priceSpan(sql, members[0]!) : null;
+    // Every company ticks together. The span starts at the youngest member, so a room mixing old and newly listed
+    // companies never shows a false step where the new ones joined the average. Core companies are listed first.
+    const youngest = members.find((t) => !CORE_TICKERS.includes(t)) ?? members[0];
+    const span = youngest ? await priceSpan(sql, youngest) : null;
     const body: IndexHistory = { ...(await history(subject, range.data, span, (from, bucketMs) => indexBars(sql, base, from, bucketMs))), base };
     // Long ranges aggregate the whole tape; the client folds live ticks in, so they can be cached longer.
     remember(key, body, Math.min(30_000, Math.max(1000, body.bucketMs)));
@@ -206,8 +214,9 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
     res.setHeader('Cache-Control', 'no-cache').json(await engine.activity(live ?? null));
   });
 
-  app.get('/api/reactions', researchLimiter, (_req, res) => {
-    res.setHeader('Cache-Control', 'no-cache').json({ reactions: engine.reactions() });
+  app.get('/api/reactions', researchLimiter, (req, res) => {
+    const code = codeSchema.safeParse(req.query.room);
+    res.setHeader('Cache-Control', 'no-cache').json({ reactions: engine.reactions(code.success ? engine.liveByCode(code.data) : engine.house) });
   });
 
   // The player's own trades in the house competition, or in a room (live or finished) by its code.
@@ -248,6 +257,8 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
     peek: z.boolean().default(false),
     reveal: z.boolean().default(true),
     publicResults: z.boolean().default(false),
+    /** The companies the room lists; omitted = the core listing. */
+    tickers: z.array(z.string().max(10)).min(MIN_COMPANIES, `Pick at least ${MIN_COMPANIES} companies`).max(ASSETS.length).optional(),
   });
 
   app.post('/api/rooms', roomLimiter, async (req, res) => {
@@ -260,10 +271,14 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
     if (r.startAt !== undefined && (r.startAt < now + 30_000 || r.startAt > now + 7 * 86_400_000)) {
       return void res.status(400).json({ error: 'Schedule the bell between 30 seconds and 7 days from now' });
     }
+    const known = new Set(ASSETS.map((a) => a.ticker));
+    if (r.tickers && (new Set(r.tickers).size !== r.tickers.length || r.tickers.some((t) => !known.has(t)))) {
+      return void res.status(400).json({ error: 'That company list is not valid' });
+    }
     const made = await engine.createRoom(user, {
       name: r.name, description: r.description, visibility: r.visibility, maxPlayers: r.maxPlayers, startingCash: r.startingCash * 100,
       durationSeconds: r.durationMinutes * 60, startAt: r.startAt ?? null, lateJoin: r.lateJoin, peek: r.peek, reveal: r.reveal,
-      publicResults: r.visibility === 'public' || r.publicResults,
+      publicResults: r.visibility === 'public' || r.publicResults, tickers: r.tickers ?? CORE_TICKERS,
     });
     if ('error' in made) return void res.status(409).json(made);
     res.status(201).json(made);

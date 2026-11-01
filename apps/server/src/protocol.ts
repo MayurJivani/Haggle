@@ -50,6 +50,8 @@ export interface RoomInfo {
   hostId: string | null;
   host: string | null;
   settings: RoomSettings;
+  /** How many companies the room lists. */
+  companies: number;
 }
 
 /** GET /api/rooms: public rooms still open to join or watch. */
@@ -64,6 +66,7 @@ export interface RoomListing {
   opensAt: number;
   closesAt: number;
   manualStart: boolean;
+  companies: number;
 }
 
 export interface AssetInfo {
@@ -76,6 +79,8 @@ export interface AssetInfo {
   /** Market sensitivity, as a research figure. */
   beta: number;
   risk: 'low' | 'medium' | 'high';
+  /** In the house listing; the others are only offered to custom rooms. */
+  core: boolean;
   fund: Summary;
 }
 
@@ -258,6 +263,10 @@ export type ServerMsg =
       session: SessionInfo | null;
       /** Tickers in the order every price array uses. */
       tickers: string[];
+      /** The companies this competition lists: a client shows these and only these. */
+      listed: string[];
+      /** The sectors those companies belong to. */
+      sectors: string[];
       /** The market's sequence number and time, and every price at it. */
       seq: number;
       at: number;

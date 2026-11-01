@@ -3,7 +3,7 @@ import { useId, useMemo, useState } from 'react';
 import { indexLevel } from '../../../server/src/market/dashboard';
 import { eps, money, ordinal, pct, points, ratio, SECTOR_COLOR, tone, when } from '../lib/format';
 import { marketStats, summarize, usePoll, type MarketStats } from '../lib/dashboard';
-import { roomQuery, useGame, type EventInfo } from '../lib/game';
+import { ROOM, roomQuery, useGame, type EventInfo } from '../lib/game';
 import { usePortfolio } from '../lib/portfolio';
 import { peText, useResearch, type Metrics } from '../lib/research';
 import { marginOf, NO_FILTERS, screen, sortRows, type Column, type Filters, type ScreenRow } from '../lib/screener';
@@ -106,7 +106,7 @@ function useIndexSubject(sector: string | null): ChartSubject {
     return {
       key: `index:${sector ?? 'market'}`,
       label: sector ? `${sector} index, equal-weighted, simulated` : 'Haggle market index, equal-weighted, simulated',
-      url: (range) => `/api/index?range=${range}${sector ? `&sector=${encodeURIComponent(sector)}` : ''}`,
+      url: (range) => `/api/index?range=${range}${sector ? `&sector=${encodeURIComponent(sector)}` : ''}${ROOM ? `&room=${ROOM}` : ''}`,
       value: (p, s) => level(p, s.base),
       baseline: (s) => (s ? level(open, s.base) : undefined),
       format: points,
@@ -308,7 +308,7 @@ function Timeline({ onSelect }: { onSelect: Pick }) {
   const events = useGame((s) => s.events);
   const tickMs = useGame((s) => s.session?.tickMs ?? 1000);
   const latest = events[0]?.id ?? 0;
-  const { data, failed } = usePoll<{ reactions: Reaction[] }>('/api/reactions', 5000, latest);
+  const { data, failed } = usePoll<{ reactions: Reaction[] }>(`/api/reactions${roomQuery}`, 5000, latest);
   const byId = useMemo(() => new Map((data?.reactions ?? []).map((r) => [r.id, r])), [data]);
   const [open, setOpen] = useState<number | null>(null);
   return (

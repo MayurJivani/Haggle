@@ -160,7 +160,7 @@ export function TopBar() {
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-rule bg-night-2 px-3 sm:px-4">
       <div className="flex min-w-0 items-center gap-3">
-        <Wordmark className="hidden whitespace-nowrap text-[26px] lg:inline" />
+        <a href="/" aria-label="Haggle home" className="hidden lg:inline"><Wordmark className="whitespace-nowrap text-[26px]" /></a>
         <span className="flex flex-col items-start gap-0.5">
           <SimulatedChip />
           <span className={`hidden text-[11px] sm:block ${stale ? 'font-semibold text-saffron' : 'text-ink-3'}`} role="status">

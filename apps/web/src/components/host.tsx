@@ -93,7 +93,7 @@ function Console({ code, onLock }: { code: string; onLock: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const t = useNow(offset);
-  const joinUrl = `${location.origin}/`;
+  const joinUrl = `${location.origin}/play`;
 
   const load = useCallback(async () => {
     try {

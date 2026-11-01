@@ -8,7 +8,7 @@ import { connect, migrate, type Sql } from '../src/db/db.js';
 import type { ServerMsg } from '../src/protocol.js';
 import { Engine, HOUSE, type Client } from '../src/session/engine.js';
 import { STARTING_CASH } from '../src/trading/portfolio.js';
-import { ASSETS } from '../src/market/assets.js';
+import { ASSETS, CORE_TICKERS } from '../src/market/assets.js';
 import { seedReports, summarize } from '../src/market/fundamentals.js';
 import { MarketSim, type MarketState } from '../src/market/sim.js';
 import { liveEvents } from '../src/session/store.js';
@@ -261,11 +261,11 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
     await engine.start();
     const room = (over: Partial<Parameters<Engine['createRoom']>[1]>) => ({
       name: 'Room', description: null, visibility: 'public' as const, maxPlayers: 5, startingCash: 500_000, durationSeconds: 2, startAt: null,
-      lateJoin: true, peek: false, reveal: true, publicResults: false, ...over,
+      lateJoin: true, peek: false, reveal: true, publicResults: false, tickers: CORE_TICKERS, ...over,
     });
     const hostA = await makeClient('host a');
     const hostB = await makeClient('host b');
-    const a = await engine.createRoom({ id: hostA.client.userId, nickname: 'host a' }, room({ name: 'Short' }));
+    const a = await engine.createRoom({ id: hostA.client.userId, nickname: 'host a' }, room({ name: 'Short', tickers: ['KO', 'PEP', 'NFLX', 'ORCL', 'ZAL'] }));
     const b = await engine.createRoom({ id: hostB.client.userId, nickname: 'host b' }, room({ name: 'Long', visibility: 'private', durationSeconds: 4, lateJoin: false }));
     if ('error' in a || 'error' in b) throw new Error('room refused');
     const roomA = engine.liveByCode(a.code)!;
@@ -304,6 +304,14 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
     expect(fills(dana.inbox)).toHaveLength(1);
     expect(fills(danaB)).toHaveLength(0);
     expect(engine.portfolioOf(roomB, engine.participantOf(dana.client.userId, roomB.row.id)!)!.cash).toBe(500_000);
+    // A room trades what it lists, and only that: ZAL here, NVDA nowhere near it, and ZAL is not in B's core listing.
+    expect(dana.inbox[0]).toMatchObject({ t: 'hello', listed: ['ORCL', 'NFLX', 'ZAL', 'KO', 'PEP'].sort((x, y) => ASSETS.findIndex((a) => a.ticker === x) - ASSETS.findIndex((a) => a.ticker === y)) });
+    await engine.order(dana.client, { t: 'order', id: randomUUID(), side: 'buy', ticker: 'ZAL', qty: 1 });
+    expect(fills(dana.inbox).at(-1)?.ticker).toBe('ZAL');
+    await engine.order(dana.client, { t: 'order', id: randomUUID(), side: 'buy', ticker: 'NVDA', qty: 1 });
+    expect(rejects(dana.inbox).at(-1)?.reason).toBe('unknown_asset');
+    await engine.order(danaInB.client, { t: 'order', id: randomUUID(), side: 'buy', ticker: 'ZAL', qty: 1 });
+    expect(rejects(danaB).at(-1)?.reason).toBe('unknown_asset');
     // B allows no late joiners: someone arriving after its bell watches.
     const late = await makeClient('late', roomB.row.id);
     await engine.attach(late.client);

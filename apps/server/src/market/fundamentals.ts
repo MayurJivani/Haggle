@@ -72,6 +72,19 @@ export function seedReports(a: Asset): Report[] {
   return out;
 }
 
+/** Growth a mature company settles at, and how many quarters its seed growth takes to fade halfway there. */
+const LONG_RUN_GROWTH = 0.06;
+const GROWTH_FADE_QUARTERS = 8;
+
+/**
+ * The trend consensus expects after `quarters` reports. No company grows 60% or shrinks 15% a year for
+ * decades: compounding the seed rate forever carried prices to the ceiling and the floor within 100 rounds.
+ */
+export function trendGrowth(a: Asset, quarters: number): number {
+  const reported = Math.max(0, quarters - SEED_QUARTERS);
+  return LONG_RUN_GROWTH + (a.growth - LONG_RUN_GROWTH) * 2 ** (-reported / GROWTH_FADE_QUARTERS);
+}
+
 /**
  * The next quarter after `reports`, for an earnings event. Consensus expects last year's same quarter
  * grown at the company's trend; `surprise` is how far actual EPS lands from it (0.08 = 8% beat).
@@ -82,9 +95,10 @@ export function nextReport(a: Asset, reports: Report[], surprise: number, revenu
   const per = nextPeriod(last.fiscalYear, last.fiscalQuarter);
   const yearAgo = reports.find((r) => r.fiscalYear === per.fiscalYear - 1 && r.fiscalQuarter === per.fiscalQuarter) ?? last;
   const shares = sharesOf(a);
-  const revenue = yearAgo.revenue * (1 + a.growth) * (1 + revenueSurprise);
+  const growth = trendGrowth(a, reports.length);
+  const revenue = yearAgo.revenue * (1 + growth) * (1 + revenueSurprise);
   // A loss-maker's consensus is last year's loss, narrowing with growth; a beat means a smaller loss.
-  const expected = yearAgo.eps >= 0 ? yearAgo.eps * (1 + a.growth) : yearAgo.eps * (1 - Math.max(0, a.growth));
+  const expected = yearAgo.eps >= 0 ? yearAgo.eps * (1 + growth) : yearAgo.eps * (1 - Math.max(0, growth));
   const eps = expected + Math.abs(expected || 0.01) * surprise;
   return {
     ticker: a.ticker, ...per, periodEnd: periodEnd(per.fiscalYear, per.fiscalQuarter), reportedAt: at,

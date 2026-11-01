@@ -23,7 +23,7 @@ const now = () => valuation(game.get(), game.get().session!.startingCash);
 describe('portfolio state after a trade', () => {
   it('updates cash, the position and P/L from the fill alone, then follows live prices', async () => {
     receive({
-      t: 'hello', serverNow: Date.now(), you: { userId: 'u', nickname: 'me' }, session, tickers: ['AAA', 'BBB'], seq: 1, at: 0, prices: [10_000, 5_000],
+      t: 'hello', serverNow: Date.now(), you: { userId: 'u', nickname: 'me' }, session, tickers: ['AAA', 'BBB'], listed: ['AAA', 'BBB'], sectors: ['Energy'], seq: 1, at: 0, prices: [10_000, 5_000],
       open: [10_000, 5_000], regime: 'calm', credit: 2, events: [], book: book(1_000_000, []), spectating: null, board: { top: [], count: 1, me: null, at: 0 }, results: null,
     });
     await vi.waitFor(() => expect(game.get().assets).toHaveLength(2));

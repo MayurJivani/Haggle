@@ -6,7 +6,7 @@ A modular monolith in one npm workspace, following the FRC "app shape":
 
 ```
 apps/server   Node + TypeScript: Express for a handful of routes, one WebSocket server, Postgres
-  src/market    assets.ts (75 companies, five per sector, sector profiles), fundamentals.ts (simulated reports, fair value, P/E),
+  src/market    assets.ts (150 companies, ten per sector, five of them in the main market's listing; sector profiles), fundamentals.ts (simulated reports, fair value, P/E),
                 events.ts (news templates, the competition schedule, quiet quarterly filings), notes.ts (news the market makes),
                 sim.ts (price model)
   src/trading   portfolio.ts (pure accounting in integer cents)
@@ -20,6 +20,10 @@ apps/web      React + Vite + Tailwind, Lightweight Charts, Motion
 One Node process owns the market. That is deliberate: a single authority for the clock, the prices and every order is what makes the market fair and the ranking exact, and one process comfortably carries 1,000 players (see Load testing). Postgres is the durable truth; Redis is not used, because there is no second process to coordinate with, and nothing durable may live only in a cache anyway. A second process on the same database refuses to start (see The persistent market).
 
 There are two lifetimes. **The market** lives forever: one set of prices, one news history, one set of financial reports, carried across every competition and restart. **A competition** (a "session" in the code) lives ten minutes or so: its players, their cash and positions, its leaderboard and results. Starting a competition resets the players' accounts, never the market.
+
+## Pages
+
+`/` is the home page and joins nothing. `/play` is the main market, `/rooms` lists and creates custom games, `/room/CODE` is one game, `/host` is the organiser's console and `/r/ID` a shared result. A socket opens only on `/play` and `/room/CODE`, so looking at the home page never deals anyone in. The host console's QR code points at `/play`.
 
 ## Session loop
 
@@ -58,6 +62,7 @@ anchor     = value of the business + sentiment + froth + transient
   - a quiet tick moves at most 5%;
   - stacked shocks move a company at most 35% per tick and per 60-tick window (the anchor moves only by what landed, so a clipped shock leaves no catch-up drift);
   - a price stays within e^1 of its anchor, and between €0.50 and €1,000,000;
+  - past three times either side of its seed price (and past €6,000 or under €0.75), a share feels a pull of at most 30% a year, and a report cannot lift value out of that range, so prices stay tradeable with a fixed purse however many rounds the market lives (docs/calibration.md);
   - variance and credit stay within fixed ranges.
 - **Trading never moves prices.** Nothing about orders reaches `MarketSim`. Every player trades the same tape, so buying a stock hard cannot push it up.
 
@@ -140,7 +145,7 @@ A client that falls 512 KB behind skips ticks rather than queueing them; ticks c
 
 - Nickname-only accounts: a random 32-byte token in an `HttpOnly`, `SameSite=Lax` cookie (`Secure` behind TLS with `TRUST_PROXY=true`); only its SHA-256 digest is stored.
 - CSRF and cross-site WebSocket hijacking: every POST and every WebSocket upgrade must carry an `Origin` matching the host or `ALLOWED_ORIGINS`.
-- Helmet with an explicit CSP; JSON bodies capped at 2 KB, WebSocket frames at 1 KB.
+- Helmet with an explicit CSP; JSON bodies capped at 4 KB, WebSocket frames at 1 KB.
 - Join rate limit per IP (generous by default, because a hosted event puts a room behind one NAT).
 - Admin token compared with `timingSafeEqual`; unset disables the admin routes.
 - Config is validated at startup with Zod and the process exits on bad config.
@@ -157,6 +162,7 @@ A competition: `sessions` (one live house competition at a time, enforced by a p
 
 A custom room is a competition like the house one, with a host and its own rules: name and description, public (listed at `/rooms`) or private (reached only by its eight-letter code), most traders, starting purse, trading length, a scheduled bell or one the host rings, whether people may join after the bell, whether traders may open each other's portfolios while trading, and whether every portfolio is shown on the results page. A private room's standings and results are shown only to its own traders unless the host makes them public. Everything is validated on the server (`POST /api/rooms`, Zod), creation is rate limited per player, a host may run three rooms at once and `MAX_ROOMS` caps them all.
 
+- **Companies.** Every company ticks on the one tape, 150 in all. A competition lists a subset: the main market always the 75 core companies, a room those its host picks (the core 75, all 150, or at least five by hand; `tickers` in its config). `hello` carries the full price order and the listing, and the client narrows every price array and the news to the listing at the door, so nothing past `game.ts` knows the rest exists. The server refuses orders outside the listing. Company and sector stories a competition schedules are about what it lists; market-wide stories still move everyone, so the tape stays one tape. The room's index starts where its youngest member's history starts.
 - **One market, many competitions.** Prices, news and reports stay global; cash, positions, trades, leaderboards and results stay per competition, because each room is a row in `sessions` and every book hangs off its `participants`. The market ticks while any competition is trading. The first one to open on an idle market anchors the tick grid; a room that opens while it runs is aligned to the same grid, so every room trades exactly the same tape. Each room's news schedule is added to that tape, so overlapping rooms see each other's stories (the news is denser while several rooms trade at once, noted in code).
 - **Frozen results.** A room's last tick captures every price on that tick. From then on its orders are refused and its ranking, results and closing prices use only those prices, however long the market keeps running for other rooms. A restart after a room's last tick but before its results reads the close back from `market_prices`.
 - **Sockets.** A socket joins one competition (`/ws?room=CODE`, none = the house). Ticks, news, reports and the regime go to every socket; phase, board, results and fills go only to that competition's sockets, so a second tab in another room never sees them.
@@ -212,4 +218,4 @@ What was wrong before the persistent market, and what replaced it.
 - **Restart after an early close changed the news.** The schedule was regenerated from the seed with the shortened length, so a restart between the early bell and the results replayed a different tape. Schedules are now stored when the bell rings and never regenerated.
 - **Charts lost and invented history.** `hello` down-sampled the session to 150 points and the client interpolated between them, and a chart only ever showed the current session. History now comes from stored bars, live ticks only extend it, and gaps stay gaps.
 - **The crier covered the order ticket.** The banner was an absolute overlay on the trading floor; on phones it sat over whatever tab was open. It is now a reserved row of the layout.
-- **The universe.** 40 companies in 8 sectors became 120 in 15, with exchanges, industries and simulated financials, then exactly five per sector (75), enforced by a test.
+- **The universe.** 40 companies in 8 sectors became 120 in 15, with exchanges, industries and simulated financials, then exactly five per sector (75), enforced by a test. Custom rooms later gained five more per sector to pick from.
