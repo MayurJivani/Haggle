@@ -38,7 +38,11 @@ How the market model is checked. All tests run with `npm test` (the Postgres tes
 - prices carry across competitions;
 - a new fair value never jumps the price.
 
-`apps/server/test/realism.test.ts` covers what a player would call absurd, on the whole market over 160 simulated years: no price near the hard limits or outside EUR 20,000, the typical share staying within 0.5 to 8 times its seed, believable daily and per-round moves for companies and the market, fading growth, seed prices near fundamentals, and news in rooms that list part of the market.
+`apps/server/test/realism.test.ts` separates hard invariants (every price finite and inside its limits, which must never fail) from statistical targets (limits set outside what the lab measured over 200 seeds). It also fails if any mechanical strategy beats the market too reliably, or if lead changes, comebacks, close finishes or news fall away, or one bot personality takes over a third of wins.
+
+`apps/server/test/tape.test.ts` holds the tape to its promise: the same seed gives the same tape, a restart from any tick replays it, a pause changes nothing, an upgrade mid-epoch plans once, and market phases come from the economy. The Postgres test stores what an engine with overlapping and closing rooms played and compares it with a tape that has no rooms.
+
+The lab (`scripts/lab`) is for changing the model: run it, compare with the baseline, and reject changes that improve a statistic but open an exploit or weaken the game.
 
 `apps/server/test/fundamentals.test.ts` covers reports, trailing EPS, fair value and P/E.
 

@@ -8,9 +8,9 @@
     "market": {
       "dailySd": 0.0098,
       "annualSd": 0.1559,
-      "annualMean": 0.0629,
-      "skew": -0.6152,
-      "excessKurtosis": 10.0803,
+      "annualMean": 0.0627,
+      "skew": -0.6145,
+      "excessKurtosis": 10.0699,
       "acfReturnLag1": 0.0034,
       "acfAbsLag": {
         "1": 0.2455,
@@ -55,37 +55,37 @@
     },
     "cycle": {
       "recessionShareOfDays": 0.1683,
-      "annualMeanInRecession": -0.0834,
-      "annualMeanOutsideRecession": 0.0924,
+      "annualMeanInRecession": -0.0835,
+      "annualMeanOutsideRecession": 0.0923,
       "annualSdInRecession": 0.1782,
       "annualSdOutsideRecession": 0.151
     },
     "sectors": {
       "avgPairwiseCorr": 0.5879,
       "avgPairwiseCorrCalm": 0.4127,
-      "avgPairwiseCorrStressed": 0.8728
+      "avgPairwiseCorrStressed": 0.8729
     },
     "size": {
       "monthlyAnnualSdSmallThird": 0.208,
       "monthlyAnnualSdBigThird": 0.16,
-      "monthlyBetaSmallThird": 0.983,
-      "monthlyBetaBigThird": 0.9591
+      "monthlyBetaSmallThird": 0.9829,
+      "monthlyBetaBigThird": 0.9593
     },
     "momentum": {
-      "annualMean": 0.0744,
-      "annualSd": 0.0869,
-      "skew": -0.0305
+      "annualMean": 0.0742,
+      "annualSd": 0.0868,
+      "skew": -0.0347
     },
     "industryMomentum": {
-      "past12mRelVsNextMonthRelCorr": 0.1003,
-      "top3MinusBottom3MonthlyMean": 0.0053,
-      "shareOfMonthsPositive": 0.5532
+      "past12mRelVsNextMonthRelCorr": 0.0997,
+      "top3MinusBottom3MonthlyMean": 0.0052,
+      "shareOfMonthsPositive": 0.5536
     },
     "runups": {
       "sectorMonths": 71280,
-      "baseRateCrash": 0.0833,
-      "runupMonths": 2139,
-      "crashGivenRunup": 0.1795
+      "baseRateCrash": 0.0832,
+      "runupMonths": 2133,
+      "crashGivenRunup": 0.18
     },
     "notes": {
       "sector-crash": 0.2525,
@@ -99,14 +99,14 @@
     },
     "headlineTrade": {
       "hold12Days": {
-        "trades": 8357,
+        "trades": 8356,
         "winRate": 0.4896,
         "meanExcess": -0.0008
       },
       "hold60Days": {
-        "trades": 8357,
-        "winRate": 0.4792,
-        "meanExcess": -0.0045
+        "trades": 8356,
+        "winRate": 0.4794,
+        "meanExcess": -0.0044
       }
     }
   }

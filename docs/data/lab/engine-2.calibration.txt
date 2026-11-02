@@ -1,26 +1,24 @@
-npm notice run haggle@1.0.0 npx
-npm notice run 'tsx' scripts/calibration/run-sim.ts 400
-400 simulated years in 103s
+400 simulated years in 93s
 | Statistic | History | Simulation |
 | --- | --- | --- |
 | market annual sd | 0.1626 | 0.1559 |
-| market annual mean (log) | 0.1033 | 0.0629 |
-| daily excess kurtosis | 18.0762 | 10.0803 |
-| daily skew | -0.7747 | -0.6152 |
+| market annual mean (log) | 0.1033 | 0.0627 |
+| daily excess kurtosis | 18.0762 | 10.0699 |
+| daily skew | -0.7747 | -0.6145 |
 | acf r lag 1 | 0.0157 | 0.0034 |
 | acf |r| lag 1 / 20 / 120 | 0.2625 / 0.2031 / 0.0904 | 0.2455 / 0.1407 / 0.0185 |
 | leverage effect | -0.0899 | -0.0596 |
 | share of days beyond 3 sd | 0.0143 | 0.0151 |
-| industry corr all / calm / stressed | 0.6754 / 0.639 / 0.8773 | 0.5879 / 0.4127 / 0.8728 |
-| recession mean / outside | -0.0383 / 0.1212 | -0.0834 / 0.0924 |
+| industry corr all / calm / stressed | 0.6754 / 0.639 / 0.8773 | 0.5879 / 0.4127 / 0.8729 |
+| recession mean / outside | -0.0383 / 0.1212 | -0.0835 / 0.0923 |
 | recession sd / outside | 0.2626 / 0.1451 | 0.1782 / 0.151 |
 | monthly sd small / big | 0.22 / 0.1479 | 0.208 / 0.16 |
-| monthly beta small / big | 1.1186 / 0.9336 | 0.983 / 0.9591 |
-| momentum (WML) mean / sd / skew | 0.0636 / 0.1261 / -1.436 | 0.0744 / 0.0869 / -0.0305 |
-| industry momentum corr / top-bottom / share + | 0.0583 / 0.0059 / 0.582 | 0.1003 / 0.0053 / 0.5532 |
-| 40% crash in 2y: base / after doubling | 0.0674 / 0.2992 | 0.0833 / 0.1795 |
-| doubling months share | 0.0345 | 0.03 |
+| monthly beta small / big | 1.1186 / 0.9336 | 0.9829 / 0.9593 |
+| momentum (WML) mean / sd / skew | 0.0636 / 0.1261 / -1.436 | 0.0742 / 0.0868 / -0.0347 |
+| industry momentum corr / top-bottom / share + | 0.0583 / 0.0059 / 0.582 | 0.0997 / 0.0052 / 0.5536 |
+| 40% crash in 2y: base / after doubling | 0.0674 / 0.2992 | 0.0832 / 0.18 |
+| doubling months share | 0.0345 | 0.0299 |
 
-Buying after a positive company story, excess return over the market: {"hold12Days":{"trades":8357,"winRate":0.4896,"meanExcess":-0.0008},"hold60Days":{"trades":8357,"winRate":0.4792,"meanExcess":-0.0045}}
+Buying after a positive company story, excess return over the market: {"hold12Days":{"trades":8356,"winRate":0.4896,"meanExcess":-0.0008},"hold60Days":{"trades":8356,"winRate":0.4794,"meanExcess":-0.0044}}
 
 Drawdowns per 100 years: over 25% 8, over 40% 4.5; notes per year {"sector-crash":0.2525,"panic":0.1175,"recession":0.155,"credit-tight":0.125}; credit {"mean":2.1982,"max":5.803}
