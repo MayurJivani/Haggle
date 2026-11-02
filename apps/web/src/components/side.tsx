@@ -73,12 +73,12 @@ function Severity({ level }: { level: 1 | 2 | 3 }) {
   );
 }
 
-const SOURCE_LABEL: Record<NonNullable<EventInfo['source']>, string> = {
+export const SOURCE_LABEL: Record<NonNullable<EventInfo['source']>, string> = {
   official: 'Official', earnings: 'Earnings', preliminary: 'Preliminary', analyst: 'Analysts', rumour: 'Rumour', breaking: 'Reported',
 };
 
 /** How solid a story is. An unconfirmed one looks unconfirmed: a dashed outline, never a fill. */
-function SourceTag({ source }: { source: EventInfo['source'] }) {
+export function SourceTag({ source }: { source: EventInfo['source'] }) {
   if (!source) return null;
   const soft = source === 'rumour' || source === 'analyst' || source === 'preliminary';
   return <span className={`rounded-sm border px-1 text-[11px] font-semibold ${soft ? 'border-dashed border-ink-3 text-ink-2' : 'border-rule text-ink-3'}`}>{SOURCE_LABEL[source]}</span>;

@@ -6,7 +6,7 @@ import { money } from './format';
 import { uuid } from './uuid';
 
 export type {
-  AssetInfo, Board, BoardRow, BookInfo, EventInfo, FullBoard, HoldingResult, PlayerResult, PortfolioView, PriceHistory, Range, Regime, Report, Results,
+  AssetInfo, Board, BoardRow, BookInfo, EventInfo, FloorInfo, FullBoard, HoldingResult, PlayerResult, PortfolioView, PriceHistory, Range, Regime, Report, Results,
   RoomInfo, RoomListing, SessionInfo, Summary, TradeInfo,
 } from '../../../server/src/protocol';
 

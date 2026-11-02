@@ -27,7 +27,7 @@ The design and its trade-offs are in [docs/engine-2-design.md](docs/engine-2-des
 
 ## Pages
 
-`/` is the home page and joins nothing. `/play` is the main market, `/rooms` lists and creates custom games, `/room/CODE` is one game, `/host` is the organiser's console and `/r/ID` a shared result. A socket opens only on `/play` and `/room/CODE`, so looking at the home page never deals anyone in. The host console's QR code points at `/play`.
+`/` is the home page and joins nothing; it reads the public `GET /api/floor` (prices, moves over the last 600 ticks, latest news, round timings), built at most every three seconds. `/play` is the main market, `/rooms` lists and creates custom games, `/room/CODE` is one game, `/host` is the organiser's console and `/r/ID` a shared result. A socket opens only on `/play` and `/room/CODE`, so looking at the home page never deals anyone in. The host console's QR code points at `/play`.
 
 ## Session loop
 

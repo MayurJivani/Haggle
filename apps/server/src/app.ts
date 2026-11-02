@@ -155,6 +155,10 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
     res.setHeader('Cache-Control', 'no-cache').type('application/json').send(engine.marketJsonBody());
   });
 
+  app.get('/api/floor', async (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache').json(await engine.floor());
+  });
+
   app.get('/api/quotes', researchLimiter, (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache').json({ quotes: engine.quotes() });
   });

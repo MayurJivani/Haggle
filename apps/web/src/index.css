@@ -120,6 +120,12 @@
 .flash-down { animation: flash-down 0.9s var(--ease-out-expo); }
 .struck { animation: struck 1.6s ease-out 3; }
 
+@keyframes tape {
+  to { transform: translateX(-50%); }
+}
+.tape { animation: tape 150s linear infinite; }
+.tape[data-paused='true'] { animation-play-state: paused; }
+
 @media (prefers-reduced-motion: reduce) {
-  .flash-up, .flash-down, .struck { animation: none; }
+  .flash-up, .flash-down, .struck, .tape { animation: none; }
 }

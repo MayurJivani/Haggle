@@ -91,6 +91,16 @@ export interface MarketInfo {
   assets: AssetInfo[];
 }
 
+/** GET /api/floor: the main market at a glance, for the home page. Same for every visitor. */
+export interface FloorInfo {
+  /** The main market's listing against its prices one round's worth of ticks ago, in listing order. */
+  quotes: { ticker: string; sector: string; price: number; bps: number }[];
+  /** Latest stories about the main market, newest first. */
+  news: EventInfo[];
+  /** How long each part of a main-market round runs, in seconds. */
+  round: { lobby: number; trading: number; closing: number; results: number };
+}
+
 /** One published story. */
 export interface EventInfo {
   id: number;

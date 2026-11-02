@@ -6,11 +6,11 @@ import { QUIET_REPORT } from '../market/events.js';
 import { noteId, noteStory } from '../market/notes.js';
 import { seedReports, summarize, type Report } from '../market/fundamentals.js';
 import { companyTraits, initialState, type MarketSim, type SimNote } from '../market/sim.js';
-import { ENGINE_VERSION, Tape } from '../market/tape.js';
+import { ENGINE_VERSION, EPOCH_TICKS, Tape } from '../market/tape.js';
 import { metrics } from '../metrics.js';
 import { reactionBps, reactionMembers } from '../market/dashboard.js';
 import type {
-  Activity, Reaction, AssetInfo, BoardRow, BookInfo, ClientMsg, EventInfo, FullBoard, HoldingResult, PlayerResult, PortfolioView, Regime, Results, RoomInfo,
+  Activity, FloorInfo, Reaction, AssetInfo, BoardRow, BookInfo, ClientMsg, EventInfo, FullBoard, HoldingResult, PlayerResult, PortfolioView, Regime, Results, RoomInfo,
   RoomListing, ServerMsg, SessionInfo,
 } from '../protocol.js';
 import { apply, pnlByTicker, quote, returnBps, STARTING_CASH, valueOf, type Book } from '../trading/portfolio.js';
@@ -186,6 +186,7 @@ export class Engine {
   private news: EventInfo[] = [];
   private readonly tapes = new Map<number, ReactionTape>();
   private readonly activityCache = new Map<string, { until: number; body: Activity }>();
+  private floorCache: { until: number; body: FloorInfo } | null = null;
   private regime: Regime = 'calm';
   private lastAt = Date.now();
   private savedSeq = 0;
@@ -889,6 +890,27 @@ export class Engine {
       if (this.activityCache.size > 200) this.activityCache.clear();
       this.activityCache.set(id, { until: Date.now() + 5000, body });
     }
+    return body;
+  }
+
+  /** The home page's view of the main market, built at most every few seconds however many visitors ask. */
+  async floor(): Promise<FloorInfo> {
+    if (this.floorCache && this.floorCache.until > Date.now()) return this.floorCache.body;
+    // Measured over a round's worth of ticks: a main-market bell can be old while custom games keep the tape moving.
+    const opening = await store.pricesAt(this.sql, Math.max(0, this.market.seq - EPOCH_TICKS));
+    const core = new Set(CORE_TICKERS);
+    const sectors = new Set(ASSETS.filter((a) => a.core).map((a) => a.sector as string));
+    const body: FloorInfo = {
+      quotes: ASSETS.flatMap((a, i) => {
+        if (!a.core) return [];
+        const price = this.market.prices[i]!;
+        const from = opening[a.ticker] ?? price;
+        return [{ ticker: a.ticker, sector: a.sector, price, bps: Math.round(((price - from) * 10_000) / from) }];
+      }),
+      news: this.news.filter((e) => (e.scope === 'sector' ? sectors.has(e.target ?? '') : e.scope === 'asset' || e.scope === 'basket' ? e.related.some((t) => core.has(t)) : true)).slice(0, 5),
+      round: { lobby: this.cfg.lobbySeconds, trading: this.cfg.tradingSeconds, closing: this.cfg.closingSeconds, results: this.cfg.resultsSeconds },
+    };
+    this.floorCache = { until: Date.now() + 3000, body };
     return body;
   }
 

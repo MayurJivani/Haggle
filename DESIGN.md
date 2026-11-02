@@ -309,6 +309,9 @@ The company header is ticker, name, sector awning, industry, exchange and risk o
 ### Roster
 Ranked rows with a display numeral (saffron for first, ink for second and third, ink-3 after), nickname, biggest holding, value and change. The player's row sits on saffron-deep; if they are outside the top list, a pinned saffron-deep row with a 30% saffron outline follows.
 
+### Home page
+The front door, and the one screen in Persuade mode. Awning flag, a price tape (pauses on hover and with its button, still under reduced motion), wordmark with both ways in beside the floor's biggest movers, then one clock drawn to scale, the kinds of news, the fifteen sectors and custom games, all live data. Sections reveal once as they scroll in; the round bar draws left to right, and sector awnings drop in.
+
 ### Host console
 A two-panel screen for the organiser's laptop or the room's big screen, behind a host-code gate. Left on night: the phase label and a saffron display clock at up to 12rem (red in last calls), the room count, one primary action at 64px (saffron to open the bell or start the next round, red to close the market, with a confirm), then roster and latest headlines; on results, the awards in saffron display caps and the final roster. Right on night-2: "Scan to join" in display caps, a QR code in night on an ink tile (8px radius, crier lift), the join address in display type and one line of rules. Stacks to one column on phones.
 
