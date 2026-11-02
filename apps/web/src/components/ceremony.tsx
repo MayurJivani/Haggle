@@ -290,7 +290,10 @@ function CountUp({ cents, delay = 0 }: { cents: number; delay?: number }) {
   return <motion.span>{text}</motion.span>;
 }
 
-const AWARD_COPY: Record<string, string> = { winner: 'Top of the market', steady: 'Steadiest hand', crier: 'Read the crier' };
+const AWARD_COPY: Record<string, string> = {
+  winner: 'Top of the market', steady: 'Steadiest hand', crier: 'Read the crier', call: 'Call of the day', comeback: 'Back from the brink', closer: 'Last-call hero',
+  patient: 'Patient money', busy: 'Busiest stall', bazaar: 'Tour of the bazaar', bonfire: 'Biggest bonfire', spoon: 'Wooden spoon', mattress: 'Under the mattress',
+};
 
 export function ResultCard({ r, share = true }: { r: PlayerResult; share?: boolean }) {
   const [copied, setCopied] = useState(false);
@@ -506,6 +509,7 @@ function RosterRow({ r, you, start }: { r: PlayerResult; you: boolean; start: nu
 /** The final roster: the top of it arrives with the results, the rest on request. */
 function FinalRoster({ results, start }: { results: ResultsInfo; start: number }) {
   const me = results.me?.participantId;
+  const inRoom = useGame((s) => !!s.session?.room);
   const of = results.top[0]?.of ?? 0;
   const [all, setAll] = useState<PlayerResult[] | null>(null);
   const [state, setState] = useState<'idle' | 'loading' | 'error'>('idle');
@@ -542,7 +546,7 @@ function FinalRoster({ results, start }: { results: ResultsInfo; start: number }
         </button>
       )}
       <p className="mt-3 text-[13px] text-ink-3">
-        Every purse valued at the same closing prices, frozen at the final bell. {results.portfolios ? 'Open a trader to see what they held.' : 'This room shows each trader only their own holdings.'} Ties go to whoever joined first.
+        {inRoom && 'These results stay in this room and do not count toward the main market. '}Every purse valued at the same closing prices, frozen at the final bell. {results.portfolios ? 'Open a trader to see what they held.' : 'This room shows each trader only their own holdings.'} Ties go to whoever joined first.
       </p>
     </div>
   );

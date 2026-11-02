@@ -14,7 +14,8 @@ import type {
   RoomListing, ServerMsg, SessionInfo,
 } from '../protocol.js';
 import { apply, pnlByTicker, quote, returnBps, STARTING_CASH, valueOf, type Book } from '../trading/portfolio.js';
-import { compareRank, phaseAt, sharpe, type Phase } from './ranking.js';
+import { pickAwards } from './awards.js';
+import { compareRank, phaseAt, type Phase } from './ranking.js';
 import * as store from './store.js';
 
 export interface EngineConfig {
@@ -102,7 +103,6 @@ export interface Live {
   boardCache: FullBoard | null;
 }
 
-const eur = (cents: number) => new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }).format(cents / 100);
 const SAMPLE_EVERY = 10;
 /** Market ticks between checkpoints. A crash loses nothing: the ticks since are replayed identically. */
 const CHECKPOINT_EVERY = 10;
@@ -661,17 +661,11 @@ export class Engine {
     const priceOf = this.pricer(live);
     const closing = Object.fromEntries(ASSETS.map((a) => [a.ticker, priceOf(a.ticker)]));
 
-    const scored = ranking.map((r) => ({ ...r, sharpe: r.p.trades > 0 ? sharpe(r.p.samples) : null }));
-    const awards: Results['awards'] = [];
-    const award = (id: string, label: string, pick: (typeof scored)[number] | undefined, detail: string) => {
-      if (pick) awards.push({ id, label, nickname: pick.p.nickname, detail });
-    };
-    const winner = scored[0];
-    if (winner) award('winner', 'Top of the market', winner, `finished with ${eur(winner.value)}`);
-    const steady = scored.filter((s) => s.sharpe !== null && s.value > start).sort((a, b) => b.sharpe! - a.sharpe!)[0];
-    award('steady', 'Steadiest hand', steady, 'best risk-adjusted return');
-    const eventer = scored.filter((s) => s.p.eventGain > 0).sort((a, b) => b.p.eventGain - a.p.eventGain || compareRank(a, b))[0];
-    if (eventer) award('crier', 'Read the crier', eventer, `+${eur(eventer.p.eventGain)} during major events`);
+    const scored = ranking;
+    const awards = pickAwards(
+      ranking.map((r) => ({ nickname: r.nickname, joinedAt: r.joinedAt, value: r.value, trades: r.p.trades, samples: r.p.samples, eventGain: r.p.eventGain, pnl: pnlByTicker(r.p.book, priceOf) })),
+      start, Math.ceil((live.cfg.closingSeconds * 1000) / live.cfg.tickMs / SAMPLE_EVERY),
+    );
 
     const all = new Map<string, PlayerResult>();
     for (const s of scored) {
@@ -692,7 +686,7 @@ export class Engine {
     live.results = { top: [...all.values()].slice(0, BOARD_SIZE), awards, all };
     live.finishedAt = finishedAt;
     live.phase = 'results';
-    this.log.info({ session: live.row.id, room: live.row.code, players: all.size, winner: winner?.p.nickname }, 'session finished');
+    this.log.info({ session: live.row.id, room: live.row.code, players: all.size, winner: ranking[0]?.nickname }, 'session finished');
     this.broadcastPhase(live);
     for (const set of this.clients.get(live.key)?.values() ?? []) for (const c of set) this.send(c, { t: 'results', results: this.resultsFor(live, c.userId)! });
   }

@@ -221,7 +221,7 @@ function CreateRoom() {
         </div>
       </details>
       <p className={`text-sm ${error ? 'text-down' : 'text-ink-3'}`} role={error ? 'alert' : undefined}>
-        {error ?? `Your own leaderboard on the shared market. Everyone starts with ${moneyWhole(purse * 100)}, trading ${all.length ? picked.size : 75} companies.`}
+        {error ?? `Your own leaderboard on the shared market: results stay in this game and do not count toward the main market. Everyone starts with ${moneyWhole(purse * 100)}, trading ${all.length ? picked.size : 75} companies.`}
       </p>
       <button type="submit" disabled={busy || !name.trim() || (all.length > 0 && picked.size < MIN_COMPANIES)} className="h-12 rounded-md bg-saffron text-[16px] font-bold text-night hover:brightness-110 disabled:opacity-40">
         {busy ? 'Opening' : 'Create the game'}

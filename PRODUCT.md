@@ -36,7 +36,7 @@ A shared live event, not a solo trading simulator: one market, one clock, one ev
 - All prices and market data are simulated and must be labelled as such; real company names never imply live quotes.
 - Trading does not move prices. News moves them once, on the tick it is published, so a headline is something to interpret, not a guaranteed trade.
 - Financial reports, fair values and P/E are simulated estimates and are labelled as such; never advice.
-- Main winner: highest final portfolio value. Secondary awards: risk-adjusted return and best performance during major events.
+- Main winner: highest final portfolio value. Secondary awards, such as best single call, biggest comeback and most trades, are detailed in HOW-IT-WORKS.md. A custom room's results stay in that room.
 - Undecided: account recovery across devices (not offered in v1).
 
 ## Brand Commitments

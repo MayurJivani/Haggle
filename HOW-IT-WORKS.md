@@ -117,7 +117,7 @@ Cost basis is average cost: a buy adds its cost, a sale removes the sold shares'
 
 ### Awards
 
-The winner is the highest final value. Two secondary awards: *Steadiest hand* (best mean-over-volatility of value samples every 10 ticks, among players who traded and finished up) and *Read the crier* (most value gained across the windows of severity 2 and 3 events). A "best percentage return" award is not offered: with everyone in a competition starting from the same purse it is always the winner.
+The winner is the highest final value. `session/awards.ts` picks the rest from that competition's players only, ties going to the higher rank: *Steadiest hand* (best mean-over-volatility of value samples every 10 ticks, among players who traded and finished up), *Read the crier* (most value gained across the windows of severity 2 and 3 events), *Call of the day* (best profit on one company), *Back from the brink* (biggest climb from a low at least 3% under the purse), *Last-call hero* (most gained in last calls), *Patient money* (best finish in profit from at most 3 trades), *Busiest stall* (most trades, at least 5), *Tour of the bazaar* (most companies traded, at least 5), *Biggest bonfire* (worst loss on one company), *Wooden spoon* (last of at least 3, if they traded and lost) and *Under the mattress* (never traded while others did). An award nobody earned is not given. A room's results and awards stay in that room and never count toward the main market. A restart loses the value samples before it, so the sample-based awards then cover only the time since. A "best percentage return" award is not offered: with everyone in a competition starting from the same purse it is always the winner.
 
 ## Realtime
 

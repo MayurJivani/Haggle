@@ -343,6 +343,11 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
     expect(engine.fullBoard(roomA).rows.map((r) => r.value)).toEqual(before);
     // Every trader in A appears in its results, including the one who never traded.
     expect(resA.results.top.map((r) => r.nickname).sort()).toEqual(['dana', 'host a']);
+    // A room's results stay in the room: nothing reaches the main market's roster or results.
+    const house = engine.house!;
+    expect(engine.fullBoard(house).rows.map((r) => r.nickname)).not.toContain('dana');
+    const [leak] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM results r JOIN participants p ON p.id = r.participant_id WHERE r.session_id = ${house.row.id} AND p.user_id = ${dana.client.userId}`;
+    expect(leak!.n).toBe(0);
     expect(resA.results.top.find((r) => r.nickname === 'host a')).toMatchObject({ trades: 0, holdings: [], value: 500_000 });
 
     await sleep(2000);
