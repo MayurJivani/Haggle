@@ -23,7 +23,7 @@ export const SIM = {
    * variance they add make up the rest, so the whole cap-weighted index lands on the measured figure.
    */
   marketVol: perTick(0.1626),
-  marketShare: 0.8,
+  marketShare: 0.87,
   /** Measured: monthly market beta is 1.12 for the smallest size decile and 0.93 for the largest. A company's beta tilts with its size loading. */
   sizeBeta: 0.12,
   /**
@@ -45,16 +45,16 @@ export const SIM = {
    * absolute daily returns 0.26 at one day, 0.20 at twenty and 0.09 at 120; a fall raises volatility
    * more than a rise (measured leverage effect: corr(r, r^2 next day) = -0.09).
    */
-  garchAlpha: 0.01,
-  garchGamma: 0.04,
-  garchBeta: 0.9695,
+  garchAlpha: 0.015,
+  garchGamma: 0.06,
+  garchBeta: 0.9545,
   /**
    * Volatility has two speeds (a component GARCH, Engle and Lee 1999): the fast part above reverts to a
    * slow level, and the slow level remembers months of stress. Keeps both the day-to-day clustering and
    * the 120-day memory that one component cannot carry at once.
    */
   varLongHalfLife: months(9),
-  varLongAlpha: 0.0012,
+  varLongAlpha: 0.004,
   /** A market in drawdown is an uncertain market: long-run variance target per unit of log drawdown. */
   drawdownVariance: 2.5,
   /** Rare outsized ticks: chance per tick, and how much a tick's market shock is scaled. The volatility update reads the shock clipped, so one tick cannot blow the variance up. */
@@ -159,7 +159,7 @@ export const SIM = {
   panicJump: [0.03, 0.09] as [number, number],
   // ---- company level
   /** Gameplay: share of a company's own noise that is news about its value (the rest reverts). */
-  idioInfo: 0.5,
+  idioInfo: 0.7,
   /** Gameplay: company growth prospects drift slowly; their spread sets stock-level momentum (measured: 6.4% a year). */
   growthHalfLife: months(12),
   growthVol: 0.0000009,
@@ -171,7 +171,7 @@ export const SIM = {
   fragility: 1,
   fragilityCap: 1,
   // ---- the anchor and the bounds (unchanged from the previous model)
-  reversion: 0.004,
+  reversion: 0.002,
   transientHalfLife: 3_000,
   sentimentHalfLife: 12_000,
   maxSentiment: 2,
@@ -190,7 +190,7 @@ export const SIM = {
    * this needs no change to anybody's holdings. levelCeilCents and levelFloorCents bound the range outright.
    */
   /** Share of the gap between hidden value and a new report that the report closes. */
-  reportTrust: 0.35,
+  reportTrust: 0.15,
   levelBand: Math.log(3),
   levelRate: 1 / (2 * TICKS_PER_YEAR),
   levelMax: drift(0.3),
