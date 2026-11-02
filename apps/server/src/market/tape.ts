@@ -29,7 +29,6 @@ export class Tape {
   readonly sim: MarketSim;
   readonly summaries: Summary[];
   private readonly events = new Map<number, TapeEvent>();
-  private plannedEpoch = -1;
 
   constructor(
     readonly assets: Asset[],
@@ -47,21 +46,21 @@ export class Tape {
   load(events: TapeEvent[]) {
     for (const ev of events) this.events.set(ev.id, ev);
     this.sim.load(events.map(toSim));
-    for (const ev of events) this.plannedEpoch = Math.max(this.plannedEpoch, Math.floor((ev.seq - 1) / EPOCH_TICKS));
   }
 
-  /** Plans the epoch starting at this tick, if one does, and returns its new stories. Call before step(). */
+  /** Plans the current epoch if it has not been yet, and returns its new stories. Call before step(). */
   prepare(): TapeEvent[] {
     const seq = this.sim.seq;
-    if (seq % EPOCH_TICKS !== 0) return [];
-    const epoch = seq / EPOCH_TICKS;
-    if (epoch <= this.plannedEpoch) return [];
-    this.plannedEpoch = epoch;
+    const epoch = Math.floor(seq / EPOCH_TICKS);
+    if (epoch <= this.sim.plannedEpoch) return [];
+    this.sim.plannedEpoch = epoch;
+    // Normally the whole epoch. A market upgraded part way through one plans what is left of it, so its news never goes quiet.
+    const ticks = EPOCH_TICKS - (seq % EPOCH_TICKS);
     const ctx: Context = {
-      assets: this.assets, reports: (i) => this.reports[i]!, ticksPerSecond: 1, maxTick: EPOCH_TICKS, at: (t) => t * 1000, value: (i) => this.sim.value(i),
+      assets: this.assets, reports: (i) => this.reports[i]!, ticksPerSecond: 1, maxTick: ticks, at: (t) => t * 1000, value: (i) => this.sim.value(i),
     };
     // Seed and epoch decide the news, whatever else has run: a separate stream from the prices.
-    const planned = planEpoch((Math.imul(this.seed >>> 0, 0x9e3779b1) ^ Math.imul(epoch + 1, 0x85ebca6b)) >>> 0, ctx, EPOCH_TICKS)
+    const planned = planEpoch((Math.imul(this.seed >>> 0, 0x9e3779b1) ^ Math.imul(epoch + 1, 0x85ebca6b)) >>> 0, ctx, ticks)
       .map((e, k) => ({ ...e, id: eventId(epoch, k), seq: seq + e.tick }));
     this.load(planned);
     return planned;

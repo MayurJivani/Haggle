@@ -95,6 +95,15 @@ describe('market simulation', () => {
     expect(follow).toBeDefined();
   });
 
+  it('never says one thing about guidance and files another', () => {
+    const all = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].flatMap((s) => schedule(s, CTX, 600)).filter((e) => e.report);
+    expect(all.length).toBeGreaterThan(0);
+    for (const e of all) {
+      const said = /raised its full-year/.test(e.body) ? 'raised' : /kept its full-year/.test(e.body) ? 'held' : /lowered/.test(e.body) ? 'cut' : null;
+      if (said) expect(e.report!.guidance).toBe(said);
+    }
+  });
+
   it('writes stories that report rather than prescribe', () => {
     const all = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((s) => schedule(s, CTX, 600));
     for (const e of all) {

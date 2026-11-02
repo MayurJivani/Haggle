@@ -137,11 +137,11 @@ export const TEMPLATES: EventTemplate[] = [
   { id: 'earnings-beat', category: 'company', scope: 'asset', impact: [0.05, 0.12], severity: 2, seconds: [20, 45], jump: 0.6, persistence: 0.6, weight: 5,
     report: { surprise: [0.05, 0.18], revenue: [0.0, 0.04] },
     headlines: ['{name} beats forecasts: EPS {eps} vs {est} expected', '{name} quarterly profit tops estimates'],
-    bodies: ['{period} revenue came in at {rev}, {yoy} year on year. Net income was {ni}. Management kept its full-year outlook.'] },
+    bodies: ['{period} revenue came in at {rev}, {yoy} year on year. Net income was {ni}. {outlook}'] },
   { id: 'earnings-miss', category: 'company', scope: 'asset', impact: [-0.13, -0.05], severity: 2, seconds: [20, 45], jump: 0.6, persistence: 0.6, weight: 5,
     report: { surprise: [-0.22, -0.06], revenue: [-0.05, 0.0] },
     headlines: ['{name} misses: EPS {eps} vs {est} expected', '{name} results fall short of estimates'],
-    bodies: ['{period} revenue was {rev}, {yoy} year on year. Net income came to {ni}. The company blamed weaker demand and higher costs.'] },
+    bodies: ['{period} revenue was {rev}, {yoy} year on year. Net income came to {ni}. The company blamed weaker demand and higher costs. {outlook}'] },
   { id: 'beat-guidance-cut', category: 'company', scope: 'asset', impact: [-0.09, -0.04], severity: 2, seconds: [20, 45], jump: 0.6, persistence: 0.7, weight: 2,
     report: { surprise: [0.03, 0.1], revenue: [0.0, 0.03] },
     headlines: ['{name} posts record profit but trims its outlook'],
@@ -328,11 +328,12 @@ export function instantiate(t: EventTemplate, ctx: Context, next: () => number, 
         : nextReport(a, history, surprise, surprise * 0.3, ctx.at(tick));
       // Guidance is its own information: mostly in line with the quarter, not always. A beat with a cut can fall.
       const lean = (surprise ?? 0) * 2 + between(next, -0.5, 0.5);
-      report.guidance = lean > 0.25 ? 'raised' : lean < -0.25 ? 'cut' : 'held';
+      report.guidance = t.id === 'beat-guidance-cut' ? 'cut' : lean > 0.25 ? 'raised' : lean < -0.25 ? 'cut' : 'held';
       if (report.guidance !== 'held') impact += (report.guidance === 'raised' ? 1 : -1) * STORY_SCALE * 0.03 * jitter();
       const yearAgo = history.find((r) => r.fiscalYear === report!.fiscalYear - 1 && r.fiscalQuarter === report!.fiscalQuarter);
       const yoy = yearAgo ? report.revenue / yearAgo.revenue - 1 : 0;
       Object.assign(vars, {
+        outlook: { raised: 'Management raised its full-year outlook.', held: 'Management kept its full-year outlook.', cut: 'Management lowered its full-year outlook.' }[report.guidance!],
         eps: eps(report.eps), est: eps(report.epsEstimate ?? report.eps), rev: eurM(report.revenue), ni: eurM(report.netIncome),
         yoy: `${yoy >= 0 ? 'up' : 'down'} ${pct1(Math.abs(yoy))}`, period: `Q${report.fiscalQuarter} FY${report.fiscalYear}`,
       });

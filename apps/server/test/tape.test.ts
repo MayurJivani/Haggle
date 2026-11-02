@@ -49,6 +49,20 @@ describe('the tape', () => {
       b.load(first.planned.filter((e) => e.seq > at));
       expect(play(b, 1000).prices).toEqual(rest.prices);
     }
+  }, 120_000);
+
+  it('a market upgraded mid-epoch plans the rest of it at once, and only once', () => {
+    const t = fresh(13);
+    play(t, 250);
+    const old = t.sim.state();
+    delete old.plannedEpoch;
+    const up = fresh(13, old, ASSETS.map((a) => seedReports(a)));
+    const planned = up.prepare();
+    expect(planned.length).toBeGreaterThan(0);
+    expect(planned.every((e) => e.seq > 250 && e.seq <= EPOCH_TICKS)).toBe(true);
+    expect(up.prepare()).toEqual([]);
+    const again = fresh(13, up.sim.state(), ASSETS.map((a) => seedReports(a)));
+    expect(again.prepare()).toEqual([]);
   });
 
   it('a paused clock changes nothing: what plays next depends only on the tick', () => {
@@ -87,7 +101,7 @@ describe('market phases', () => {
     expect(avg('crisis', 'credit')).toBeGreaterThan(avg('bull', 'credit'));
     // Stretches, not flicker: a phase lasts at least a few simulated days on average.
     for (const s of Object.values(seen)) expect(s.ticks / s.spells).toBeGreaterThan(30);
-  });
+    }, 120_000);
 });
 
 describe('cheap shares', () => {

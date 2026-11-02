@@ -261,6 +261,8 @@ export interface MarketState {
   peak?: number;
   mood?: number;
   phase?: Phase;
+  /** The last epoch whose news has been planned. Missing on a checkpoint from before the shared schedule. */
+  plannedEpoch?: number;
   recession?: boolean;
   /** Ticks since the cycle last turned, and whether that turn has been reported yet. */
   sinceTurn?: number;
@@ -352,6 +354,7 @@ export class MarketSim {
   peak: number;
   mood: number;
   private currentPhase: Phase;
+  plannedEpoch: number;
   recession: boolean;
   credit: number;
   readonly prices: Int32Array;
@@ -398,6 +401,7 @@ export class MarketSim {
     this.peak = state.peak ?? 0;
     this.mood = state.mood ?? 0;
     this.currentPhase = state.phase ?? 'sideways';
+    this.plannedEpoch = state.plannedEpoch ?? -1;
     this.recession = state.recession ?? false;
     this.sinceTurn = state.sinceTurn ?? 0;
     this.turnReported = state.turnReported ?? true;
@@ -755,6 +759,7 @@ export class MarketSim {
       peak: this.peak,
       mood: this.mood,
       phase: this.currentPhase,
+      plannedEpoch: this.plannedEpoch,
       recession: this.recession,
       sinceTurn: this.sinceTurn,
       turnReported: this.turnReported,
