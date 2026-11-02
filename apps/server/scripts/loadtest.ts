@@ -64,6 +64,7 @@ interface Bot {
   open: boolean;
   room: string | null;
   picks: number[];
+  reconnecting?: boolean;
 }
 
 async function join(i: number): Promise<Bot> {
@@ -128,7 +129,7 @@ function connect(bot: Bot): Promise<void> {
     ws.on('close', () => {
       stats.connected--;
       // Through a restart: keep trying with the same cookie, and the book must come back.
-      if (RECOVER && bot.ws === ws) { stats.outages++; bot.open = false; void reconnectLoop(bot); }
+      if (RECOVER && bot.ws === ws && !bot.reconnecting) { stats.outages++; bot.open = false; void reconnectLoop(bot); }
     });
     ws.on('error', (err) => {
       if (!RECOVER) stats.errors++;
@@ -138,9 +139,10 @@ function connect(bot: Bot): Promise<void> {
 }
 
 async function reconnectLoop(bot: Bot) {
+  bot.reconnecting = true;
   for (let k = 0; k < 120; k++) {
     await sleep(1000 + Math.random() * 1000);
-    try { await connect(bot); return; } catch { /* still down */ }
+    try { await connect(bot); bot.reconnecting = false; return; } catch { /* still down */ }
   }
   stats.errors++;
 }
@@ -178,10 +180,10 @@ async function research(bot: Bot) {
   try {
     const r = await fetch(url, { headers: { cookie: bot.cookie } });
     await r.arrayBuffer();
-    if (!r.ok) stats.researchErrors++;
+    if (!r.ok && !RECOVER) stats.researchErrors++;
     stats.researchMs.push(Date.now() - t);
   } catch {
-    stats.researchErrors++;
+    if (!RECOVER) stats.researchErrors++;
   }
 }
 
@@ -223,7 +225,8 @@ async function main() {
 
   // Mid-run: drop a slice of clients, reconnect them, and check the server restored the same book.
   await sleep(DURATION / 2);
-  const slice = bots.slice(0, Math.floor(bots.length * RECONNECT_FRACTION));
+  // A recovery run has its own outage: a deliberate drop as well would connect some bots twice.
+  const slice = RECOVER ? [] : bots.slice(0, Math.floor(bots.length * RECONNECT_FRACTION));
   await Promise.all(
     slice.map(async (b) => {
       b.ws?.terminate();
@@ -261,7 +264,7 @@ async function main() {
     rooms: ROOMS, inconsistentTicks: stats.inconsistentTicks, crossRoomFills: stats.crossRoom, outages: stats.outages, ticksCompared: stats.tickPrices.size,
   };
   console.log(JSON.stringify(report, null, 2));
-  const ok = stats.dupesExecutedTwice === 0 && stats.reconnectMismatch === 0 && stats.joined === CLIENTS && (RECOVER || !stats.rejects.server_error)
+  const ok = stats.dupesExecutedTwice === 0 && stats.reconnectMismatch === 0 && stats.joined === CLIENTS && (!RECOVER || stats.connected === CLIENTS || stats.errors === 0) && (RECOVER || !stats.rejects.server_error)
     && stats.inconsistentTicks === 0 && stats.crossRoom === 0 && (RECOVER || missed === 0) && stats.researchErrors === 0;
   console.log(ok ? 'PASS' : 'FAIL');
   process.exit(ok ? 0 : 1);

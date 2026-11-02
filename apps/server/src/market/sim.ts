@@ -195,6 +195,8 @@ export const SIM = {
   levelRate: 1 / (2 * TICKS_PER_YEAR),
   levelMax: drift(0.3),
   levelCeilCents: 600_000,
+  runawayRate: 1 / (0.25 * TICKS_PER_YEAR),
+  runawayMax: drift(3),
   levelFloorCents: 75,
   /** Long-run variance multiples that the regime label (calm, nervous, stressed) is read from. */
   nervousVar: 1.6,
@@ -637,7 +639,10 @@ export class MarketSim {
       const noise = a.vol * own[i]!.z * liquid;
       const beta = a.beta * (1 + SIM.sizeBeta * this.size[i]!);
       const outside = Math.max(0, this.logP[i]! - this.levelHi[i]!) - Math.max(0, this.levelLo[i]! - this.logP[i]!);
-      const level = -clamp(SIM.levelRate * outside, -SIM.levelMax, SIM.levelMax);
+      // Far past the range, the ceiling firms up: a rare runaway fades instead of reaching absurd prices. Upward only,
+      // so a collapsed share never gets a strong, predictable bounce to buy.
+      const runaway = Math.max(0, this.logP[i]! - this.levelHi[i]! - SIM.levelBand);
+      const level = -clamp(SIM.levelRate * outside, -SIM.levelMax, SIM.levelMax) - Math.min(SIM.runawayMax, SIM.runawayRate * runaway);
       const info =
         level + beta * (driftM + marketShock + SIM.creditMarket * dCredit) +
         this.sectorExposure[i]! * (SIM.demandDrift * this.demand[k]! + sectorShock[k]!) +

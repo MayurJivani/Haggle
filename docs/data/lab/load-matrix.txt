@@ -1,0 +1,58 @@
+== one room, 1000 players
+  {"clients":1000,"joined":1000,"fills":20216,"rejects":{"duplicate":785,"insufficient_shares":264,"insufficient_cash":121},"orderLatencyMs":{"p50":2,"p95":5,"p99":21},"helloMs":{"p50":23,"p95":61},"tickFanoutSkewMs":{"p50":15,"p95":25,"ticks":77},"duplicates":{"sent":1064,"executedTwice":0},"reconnects":{"done":100,"bookMismatches":0},"news":{"stories":4,"storiesSomeoneMissed":0},"research":{"requests":4977,"errors":0,"p50":2,"p95":5,"p99":15},"socketErrors":0,"rooms":0,"inconsistentTicks":0,"crossRoomFills":0,"outages":0,"ticksCompared":77}
+  PASS
+  hg_tick_lag_ms 0
+  hg_db_errors_total 0
+  hg_checkpoint_failures_total 0
+  hg_event_loop_delay_p99_ms 30.16
+  ledger mismatches: 0
+  duplicate trades in db: 0
+  negative positions: 0
+  peak rss MB: 274
+== ten rooms, 100 players each
+  {"clients":1000,"joined":1000,"fills":20170,"rejects":{"duplicate":750,"insufficient_shares":272,"insufficient_cash":133},"orderLatencyMs":{"p50":2,"p95":6,"p99":18},"helloMs":{"p50":18,"p95":37},"tickFanoutSkewMs":{"p50":14,"p95":23,"ticks":77},"duplicates":{"sent":1042,"executedTwice":0},"reconnects":{"done":100,"bookMismatches":0},"news":{"stories":4,"storiesSomeoneMissed":0},"research":{"requests":4970,"errors":0,"p50":2,"p95":5,"p99":16},"socketErrors":0,"rooms":10,"inconsistentTicks":0,"crossRoomFills":0,"outages":0,"ticksCompared":77}
+  PASS
+  hg_tick_lag_ms 36
+  hg_db_errors_total 0
+  hg_checkpoint_failures_total 0
+  hg_event_loop_delay_p99_ms 29.80
+  ledger mismatches: 0
+  duplicate trades in db: 0
+  negative positions: 0
+  peak rss MB: 272
+== twenty rooms, 50 players each
+  {"clients":1000,"joined":1000,"fills":20097,"rejects":{"duplicate":712,"insufficient_shares":238,"insufficient_cash":119},"orderLatencyMs":{"p50":2,"p95":6,"p99":19},"helloMs":{"p50":17,"p95":44},"tickFanoutSkewMs":{"p50":16,"p95":23,"ticks":77},"duplicates":{"sent":961,"executedTwice":0},"reconnects":{"done":100,"bookMismatches":0},"news":{"stories":4,"storiesSomeoneMissed":0},"research":{"requests":4995,"errors":0,"p50":2,"p95":5,"p99":19},"socketErrors":0,"rooms":20,"inconsistentTicks":0,"crossRoomFills":0,"outages":0,"ticksCompared":77}
+  PASS
+  hg_tick_lag_ms 0
+  hg_db_errors_total 0
+  hg_checkpoint_failures_total 0
+  hg_event_loop_delay_p99_ms 32.49
+  ledger mismatches: 0
+  duplicate trades in db: 0
+  negative positions: 0
+  peak rss MB: 271
+== hard kill and restart, 300 players in 5 rooms
+loadtest:300clientsagainsthttp://localhost:4391for90sjoined300connected300,hellop9546ms5roomsopenedAggregateError[ECONNREFUSED]:atinternalConnectMultiple(node:net:1430:18)atafterConnectMultiple(node:net:2099:7){code:'ECONNREFUSED',[errors]:[Error:connectECONNREFUSED::1:4391atcreateConnectionError(node:net:2062:14)atafterConnectMultiple(node:net:2092:16){errno:-111,code:'ECONNREFUSED',syscall:'connect',address:'::1',port:4391},Error:connectECONNREFUSED127.0.0.1:4391atcreateConnectionError(node:net:2062:14)atafterConnectMultiple(node:net:2092:16){errno:-111,code:'ECONNREFUSED',syscall:'connect',address:'127.0.0.1',port:4391}]}
+  ledger mismatches: 0
+  duplicate trades in db: 0
+  negative positions: 0
+== database paused 15s, 300 players
+  {"clients":300,"joined":300,"fills":8310,"rejects":{"duplicate":294,"insufficient_shares":134,"insufficient_cash":64},"orderLatencyMs":{"p50":3,"p95":10099,"p99":14075},"helloMs":{"p50":23,"p95":8910},"tickFanoutSkewMs":{"p50":7,"p95":12,"ticks":100},"duplicates":{"sent":374,"executedTwice":421},"reconnects":{"done":30,"bookMismatches":0},"news":{"stories":4,"storiesSomeoneMissed":0},"research":{"requests":1999,"errors":0,"p50":4,"p95":11296,"p99":14495},"socketErrors":0,"rooms":0,"inconsistentTicks":0,"crossRoomFills":421,"outages":30,"ticksCompared":100}
+  FAIL
+{"ok":true,"db":true,"tickLagMs":0,"checkpointLagTicks":0,"fenced":false,"session":"trading"}
+  ledger mismatches: 0
+  duplicate trades in db: 0
+  negative positions: 0
+== hard kill and restart, 300 players in 5 rooms
+  {"clients":300,"joined":300,"fills":6380,"rejects":{"duplicate":238,"insufficient_shares":69,"insufficient_cash":37},"orderLatencyMs":{"p50":3,"p95":6,"p99":10},"helloMs":{"p50":14,"p95":37},"tickFanoutSkewMs":{"p50":7,"p95":11,"ticks":85},"duplicates":{"sent":313,"executedTwice":0},"reconnects":{"done":0,"bookMismatches":0},"news":{"stories":4,"storiesSomeoneMissed":0},"research":{"requests":1752,"errors":0,"p50":3,"p95":6,"p99":9},"socketErrors":0,"rooms":5,"inconsistentTicks":0,"crossRoomFills":0,"outages":300,"ticksCompared":86}
+  PASS
+  ledger mismatches: 0
+  duplicate trades in db: 0
+  negative positions: 0
+== database paused 15s, 300 players
+  {"clients":300,"joined":300,"fills":7163,"rejects":{"duplicate":262,"insufficient_shares":125,"insufficient_cash":67},"orderLatencyMs":{"p50":3,"p95":10783,"p99":14201},"helloMs":{"p50":24,"p95":42},"tickFanoutSkewMs":{"p50":6,"p95":12,"ticks":91},"duplicates":{"sent":348,"executedTwice":0},"reconnects":{"done":0,"bookMismatches":0},"news":{"stories":4,"storiesSomeoneMissed":0},"research":{"requests":1901,"errors":0,"p50":3,"p95":11577,"p99":14447},"socketErrors":0,"rooms":0,"inconsistentTicks":0,"crossRoomFills":0,"outages":0,"ticksCompared":91}
+  PASS
+{"ok":true,"db":true,"tickLagMs":0,"checkpointLagTicks":0,"fenced":false,"session":"trading"}
+  ledger mismatches: 0
+  duplicate trades in db: 0
+  negative positions: 0

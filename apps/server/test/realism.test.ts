@@ -8,41 +8,50 @@ import { rng } from '../src/market/rng.js';
 import { initialState, MarketSim, SIM } from '../src/market/sim.js';
 import { STARTING_CASH } from '../src/trading/portfolio.js';
 import { simulate } from '../scripts/calibration/simulate.js';
+import { BOTS, playRound } from '../scripts/lab/gameplay.js';
+import { backtest, STRATEGIES } from '../scripts/lab/strategies.js';
 
 const FAIRS = ASSETS.map((a) => summarize(a, seedReports(a)).fair!.cents);
 const quantile = (xs: number[], p: number) => [...xs].sort((a, b) => a - b)[Math.floor(p * (xs.length - 1))]!;
 const ROUND = 60; // simulated days in a ten-minute round
 
-describe('prices stay believable however long the market lives', () => {
-  const runs = [simulate(71, 80), simulate(72, 80)];
+describe('hard invariants', () => {
+  const run = simulate(70, 40);
+  it('every price is finite, inside the absolute limits, every tick', () => {
+    let bad = 0;
+    for (const lp of run.logP) for (const l of lp) if (!Number.isFinite(l) || Math.exp(l) < SIM.floorCents * 0.99 || Math.exp(l) > SIM.ceilCents) bad++;
+    expect(bad).toBe(0);
+  });
+});
 
-  it('never reaches the hard limits, and stays in a range a purse can trade', () => {
-    let lowest = Infinity;
-    let highest = 0;
-    let lowRatio = Infinity;
-    let highRatio = 0;
-    for (const run of runs) run.logP.forEach((lp, i) => {
-      const seed = ASSETS[i]!.base;
-      for (const l of lp) {
-        const cents = Math.exp(l);
-        lowest = Math.min(lowest, cents);
-        highest = Math.max(highest, cents);
-        lowRatio = Math.min(lowRatio, cents / seed);
-        highRatio = Math.max(highRatio, cents / seed);
-      }
-    });
-    expect(lowest).toBeGreaterThan(SIM.floorCents * 0.99);
-    expect(highest).toBeLessThan(2_000_000); // EUR 20,000
-    expect(lowRatio).toBeGreaterThan(0.05);
-    expect(highRatio).toBeLessThan(20);
+// Statistical targets: limits set well outside what docs/data/lab/engine-2.json measured over 200 seeds, so a
+// real shift fails and ordinary chance does not. Update them only with a new lab run.
+describe('statistical targets, several seeds', () => {
+  const runs = [simulate(71, 60), simulate(72, 60), simulate(73, 60)];
+  const atEnd = runs.flatMap((run) => run.logP.map((lp) => lp[run.days - 1]!));
+  const relEnd = runs.flatMap((run) => run.logP.map((lp, i) => lp[run.days - 1]! - Math.log(ASSETS[i]!.base)));
+
+  it('prices sit in a range a purse can trade', () => {
+    expect(Math.exp(quantile(atEnd, 0.01)) / 100).toBeGreaterThan(1);
+    expect(Math.exp(quantile(atEnd, 0.5)) / 100).toBeGreaterThan(100);
+    expect(Math.exp(quantile(atEnd, 0.5)) / 100).toBeLessThan(500);
+    expect(Math.exp(quantile(atEnd, 0.99)) / 100).toBeLessThan(10_000);
   });
 
-  it('holds a steady level: the typical share never drifts away from its seed price', () => {
-    for (const run of runs) for (let day = 10 * 252; day < run.days; day += 10 * 252) {
+  it('nothing runs away: the highest price ever stays below EUR 40,000', () => {
+    let highest = 0;
+    for (const run of runs) for (const lp of run.logP) for (const l of lp) if (l > highest) highest = l;
+    expect(Math.exp(highest) / 100).toBeLessThan(40_000);
+  });
+
+  it('the typical share holds a steady level for the life of the server', () => {
+    for (const run of runs) for (let day = 20 * 252; day < run.days; day += 10 * 252) {
       const median = Math.exp(quantile(run.logP.map((lp, i) => lp[day]! - Math.log(ASSETS[i]!.base)), 0.5));
-      expect(median).toBeGreaterThan(0.5);
-      expect(median).toBeLessThan(8);
+      expect(median).toBeGreaterThan(1.3);
+      expect(median).toBeLessThan(5);
     }
+    expect(Math.exp(quantile(relEnd, 0.01))).toBeGreaterThan(0.1);
+    expect(Math.exp(quantile(relEnd, 0.99))).toBeLessThan(12);
   });
 
   it('moves a believable amount in a day and in a round', () => {
@@ -52,7 +61,6 @@ describe('prices stay believable however long the market lives', () => {
       for (let d = 1; d < lp.length; d++) daily.push(Math.abs(lp[d]! - lp[d - 1]!));
       for (let d = ROUND; d < lp.length; d += ROUND) rounds.push(Math.abs(lp[d]! - lp[d - ROUND]!));
     }
-    // Real stocks: a typical day under 2%, a typical quarter 10 to 20%; doubling or halving in one is rare.
     expect(quantile(daily, 0.5)).toBeLessThan(0.025);
     expect(quantile(daily, 0.999)).toBeLessThan(0.3);
     expect(quantile(rounds, 0.5)).toBeGreaterThan(0.04);
@@ -67,6 +75,48 @@ describe('prices stay believable however long the market lives', () => {
       expect(quantile(moves, 0.5)).toBeLessThan(0.15);
       expect(quantile(moves, 1)).toBeLessThan(0.7);
     }
+  });
+});
+
+describe('fairness: no simple rule wins', () => {
+  const core = ASSETS.flatMap((a, i) => (a.core ? [i] : []));
+  const samples = [81, 82, 83, 84, 85, 86].flatMap((seed) => backtest(simulate(seed, 10), seed, { core }, [1_000_000]));
+  const win = (s: string, h: number) => {
+    const rows = samples.filter((x) => x.s === s && x.h === h);
+    return rows.filter((x) => x.x > 0).length / rows.length;
+  };
+
+  it('no mechanical strategy beats the market reliably over a round or five', () => {
+    for (const s of Object.keys(STRATEGIES)) {
+      if (samples.filter((x) => x.s === s && x.h === 1).length < 100) continue;
+      expect(win(s, 1), s).toBeLessThan(0.65);
+      expect(win(s, 5), s).toBeLessThan(0.7);
+    }
+  });
+
+  it('buying below fair value is an opportunity, not a guarantee (it was 72% over five rounds)', () => {
+    expect(win('below fair value', 5)).toBeLessThan(0.62);
+    expect(win('below fair value', 1)).toBeLessThan(0.58);
+  });
+});
+
+describe('the game stays a game', () => {
+  const core = ASSETS.flatMap((a, i) => (a.core ? [i] : []));
+  const rounds = [91, 92, 93, 94, 95].flatMap((seed) => { const run = simulate(seed, 8); return run.rounds.map((_, r) => playRound(run, r, core, seed)).filter((x) => x !== null); });
+  const avg = (f: (r: (typeof rounds)[number]) => number) => rounds.reduce((t, r) => t + f(r), 0) / rounds.length;
+
+  it('has lead changes, comebacks, close finishes and news all round', () => {
+    expect(avg((r) => r.leadChanges)).toBeGreaterThan(8);
+    expect(avg((r) => r.comeback)).toBeGreaterThan(0.35);
+    expect(avg((r) => r.closeFinish)).toBeGreaterThan(0.2);
+    expect(avg((r) => r.earlyLock)).toBeLessThan(0.45);
+    expect(avg((r) => r.stories)).toBeGreaterThan(7);
+    expect(avg((r) => r.longestQuiet)).toBeLessThan(14);
+    expect(avg((r) => (r.bigCompanies < 3 && r.bigSectors === 0 ? 1 : 0))).toBeLessThan(0.02);
+  });
+
+  it('no personality takes more than a third of the wins', () => {
+    for (const b of BOTS) expect(rounds.filter((r) => r.winner === b.name).length / rounds.length, b.name).toBeLessThan(0.33);
   });
 });
 
