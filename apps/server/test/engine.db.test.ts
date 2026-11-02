@@ -12,7 +12,7 @@ import { ASSETS, CORE_TICKERS } from '../src/market/assets.js';
 import { seedReports, summarize } from '../src/market/fundamentals.js';
 import { initialState, type MarketState } from '../src/market/sim.js';
 import { ENGINE_VERSION, Tape } from '../src/market/tape.js';
-import { liveEvents, loadReports } from '../src/session/store.js';
+import { foldOldPrices, liveEvents, loadReports, priceBars } from '../src/session/store.js';
 
 const ADMIN_URL = process.env.TEST_DATABASE_URL;
 const SEED = 4242;
@@ -382,5 +382,25 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
     expect(events.map((e) => [Number(e.id), e.headline])).toEqual(planned.map((e) => [e.id, e.headline]).sort((a, b) => (a[0] as number) - (b[0] as number)).filter(([id]) => events.some((e) => Number(e.id) === id)));
     expect(events.every((e) => e.engine_version === ENGINE_VERSION)).toBe(true);
     expect(events.length).toBeGreaterThan(0);
+  });
+
+  it('folds old ticks into minute bars without losing the chart or anything a live game needs', async () => {
+    const [{ n: before }] = (await sql`SELECT count(*)::int AS n FROM market_prices`) as unknown as [{ n: number }];
+    const [{ hi }] = (await sql`SELECT max(seq) AS hi FROM market_prices`) as unknown as [{ hi: string }];
+    const keep = Number(hi) - 5;
+    const bars = async () => (await priceBars(sql, 'KO', new Date(0), 3_600_000));
+    const chart = await bars();
+    let folded = 0;
+    // Twice with a small batch: a minute split across batches must merge into one correct bar.
+    for (let k = 0; k < 2; k++) folded += await foldOldPrices(sql, new Date(Date.now() + 86_400_000), keep, 700);
+    expect(folded).toBe(Math.min(1400, before));
+    const [{ n: after }] = (await sql`SELECT count(*)::int AS n FROM market_prices`) as unknown as [{ n: number }];
+    expect(after).toBe(before - folded);
+    const left = await sql`SELECT 1 FROM market_prices WHERE seq >= ${keep}`;
+    expect(left.length).toBeGreaterThan(0);
+    const now = await bars();
+    expect(now.map((b) => [b.at, b.o, b.h, b.l, b.c, b.seq])).toEqual(chart.map((b) => [b.at, b.o, b.h, b.l, b.c, b.seq]));
+    // A retention window that has not passed touches nothing.
+    expect(await foldOldPrices(sql, new Date(0), keep, 700)).toBe(0);
   });
 });

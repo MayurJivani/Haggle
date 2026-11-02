@@ -65,7 +65,7 @@ export const SIM = {
   moodHalfLife: months(5),
   moodVol: 0.011,
   moodFromReturn: 2.2,
-  moodFromCredit: -0.0012,
+  moodFromCredit: -0.003,
   /** Expansion drift is scaled by 1 + moodDrift * mood, so sideways stretches come and go without any schedule. */
   moodDrift: 0.9,
   /** Recession hazard per point of credit stress and per unit of market froth, and recovery's reliance on credit easing. */
@@ -232,6 +232,8 @@ export interface SimNote {
   tickers: string[];
 }
 
+export type Phase = 'bull' | 'bear' | 'sideways' | 'crisis';
+
 export interface AssetState {
   logP: number;
   /** Log premium (or discount) over fair value that the market currently holds, and the part of it that is temporary. */
@@ -258,6 +260,7 @@ export interface MarketState {
   level?: number;
   peak?: number;
   mood?: number;
+  phase?: Phase;
   recession?: boolean;
   /** Ticks since the cycle last turned, and whether that turn has been reported yet. */
   sinceTurn?: number;
@@ -348,6 +351,7 @@ export class MarketSim {
   level: number;
   peak: number;
   mood: number;
+  private currentPhase: Phase;
   recession: boolean;
   credit: number;
   readonly prices: Int32Array;
@@ -393,6 +397,7 @@ export class MarketSim {
     this.level = state.level ?? 0;
     this.peak = state.peak ?? 0;
     this.mood = state.mood ?? 0;
+    this.currentPhase = state.phase ?? 'sideways';
     this.recession = state.recession ?? false;
     this.sinceTurn = state.sinceTurn ?? 0;
     this.turnReported = state.turnReported ?? true;
@@ -655,8 +660,9 @@ export class MarketSim {
     const levelMove = driftM + marketShock + panic;
     this.level += levelMove;
     this.peak = Math.max(this.peak, this.level);
+    this.currentPhase = this.nextPhase();
     const keepMood = keepFor(SIM.moodHalfLife);
-    this.mood = clamp(keepMood * this.mood + SIM.moodFromReturn * (1 - keepMood) * levelMove * SIM.window + SIM.moodFromCredit * Math.max(0, this.credit - SIM.creditExpansion) + SIM.moodVol * zMood, -1, 1);
+    this.mood = clamp(keepMood * this.mood + SIM.moodFromReturn * (1 - keepMood) * levelMove * SIM.window + SIM.moodFromCredit * Math.max(0, this.credit - SIM.creditTightAt) + SIM.moodVol * zMood, -1, 1);
 
     // Enthusiasm follows a sector's own recent return over the market's (extrapolation), and fades.
     let marketReturn = 0;
@@ -712,10 +718,21 @@ export class MarketSim {
    * The market's hidden phase, read from its state rather than switched at random. Never sent to players;
    * they read it from prices, reports and the news. The lab's reports break results down by it.
    */
-  phase(): 'bull' | 'bear' | 'sideways' | 'crisis' {
-    if (this.variance >= SIM.stressedVar && (this.credit >= SIM.creditTightAt || this.peak - this.level > 0.2)) return 'crisis';
-    if (this.recession || this.peak - this.level > 0.2) return 'bear';
-    return this.mood > 0.15 ? 'bull' : 'sideways';
+  phase(): Phase {
+    return this.currentPhase;
+  }
+
+  /** Enter on a clear signal, leave on a clear signal the other way, so a value near a line does not flicker. */
+  private nextPhase(): Phase {
+    const down = this.peak - this.level;
+    const p = this.currentPhase;
+    if (this.variance >= SIM.stressedVar && (this.credit >= SIM.creditTightAt || down > 0.2)) return 'crisis';
+    if (p === 'crisis' && this.variance >= SIM.nervousVar) return 'crisis';
+    if (this.recession || down > 0.2) return 'bear';
+    if (p === 'bear' && down > 0.1) return 'bear';
+    if (this.mood > 0.25) return 'bull';
+    if (this.mood < 0.05) return 'sideways';
+    return p === 'bull' ? 'bull' : 'sideways';
   }
 
   /** An earnings surprise changes the company's prospects for a while. */
@@ -737,6 +754,7 @@ export class MarketSim {
       level: this.level,
       peak: this.peak,
       mood: this.mood,
+      phase: this.currentPhase,
       recession: this.recession,
       sinceTurn: this.sinceTurn,
       turnReported: this.turnReported,

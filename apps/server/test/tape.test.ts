@@ -62,3 +62,54 @@ describe('the tape', () => {
     expect([...first.prices, ...play(a, 700).prices]).toEqual(whole);
   });
 });
+
+describe('market phases', () => {
+  it('come from the economy: all four appear, for stretches, with stress where it should be', () => {
+    const seen: Record<string, { ticks: number; variance: number; credit: number; spells: number }> = {};
+    for (const seed of [21, 22, 23, 24]) {
+      const t = fresh(seed);
+      let last = '';
+      for (let k = 0; k < 2520 * 20; k++) {
+        t.prepare();
+        t.step();
+        const p = t.sim.phase();
+        const s = (seen[p] ??= { ticks: 0, variance: 0, credit: 0, spells: 0 });
+        s.ticks++;
+        s.variance += t.sim.variance;
+        s.credit += t.sim.credit;
+        if (p !== last) s.spells++;
+        last = p;
+      }
+    }
+    expect(Object.keys(seen).sort()).toEqual(['bear', 'bull', 'crisis', 'sideways']);
+    const avg = (p: string, k: 'variance' | 'credit') => seen[p]![k] / seen[p]!.ticks;
+    expect(avg('crisis', 'variance')).toBeGreaterThan(avg('bull', 'variance'));
+    expect(avg('crisis', 'credit')).toBeGreaterThan(avg('bull', 'credit'));
+    // Stretches, not flicker: a phase lasts at least a few simulated days on average.
+    for (const s of Object.values(seen)) expect(s.ticks / s.spells).toBeGreaterThan(30);
+  });
+});
+
+describe('cheap shares', () => {
+  it('rounding is display only: the model keeps full precision, so a cent is never a real move', () => {
+    const i = ASSETS.findIndex((a) => a.ticker === 'VOD');
+    const t = fresh(31);
+    let moved = 0;
+    let unchanged = 0;
+    let prev = t.sim.prices[i]!;
+    let prevLog = t.sim.state().assets.VOD!.logP;
+    for (let k = 0; k < 3000; k++) {
+      t.prepare();
+      t.step();
+      const now = t.sim.state().assets.VOD!.logP;
+      expect(t.sim.prices[i]).toBe(Math.round(Math.exp(now)));
+      if (now !== prevLog) moved++;
+      if (t.sim.prices[i] === prev) unchanged++;
+      prev = t.sim.prices[i]!;
+      prevLog = now;
+    }
+    // The true price moves every tick even while the displayed cents stand still.
+    expect(moved).toBe(3000);
+    expect(unchanged).toBeGreaterThan(300);
+  });
+});
