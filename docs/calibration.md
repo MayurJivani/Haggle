@@ -44,7 +44,7 @@ npx tsx scripts/calibration/run-sim.ts 400                     # writes docs/dat
 | `reportTrust` | 0.15 | Tuned | How far a report moves hidden value. At 1 the fair-value exploit was 82% over ten rounds |
 | `growthFromNews`, `demandFromShock`, `surpriseGrowth` | 1.5e-4, 5e-5, 3e-6 | Tuned | Persistence of company, sector and earnings news. Eight times larger made recent winners beat the market 78% a round |
 | `garchAlpha`, `garchGamma`, `garchBeta`, `varLongAlpha`, `marketShare` | 0.015, 0.06, 0.9545, 0.004, 0.87 | Tuned | Short-term clustering, leverage effect, market volatility |
-| `runawayRate`, `runawayMax` | a quarter-year constant, 300% a year | Gameplay | Upper limit on rare runaways: beyond 9x seed or so |
+| `runawayRate`, `runawayMax` | a quarter-year constant, 300% a year | Gameplay | Firm upper limit on rare runaways, past 3x the normal range ceiling |
 | `growthHalfLife`, `growthVol` | 12 months, 9e-7 | Tuned | Stock momentum (measured: 6.4% a year) |
 | `specThreshold`, `specFeedback`, `specMax` | 20% lead, 0.0035, 100% a year | Tuned | Crash risk after a doubling (measured: 30% against a 6.7% base), without inflating momentum |
 | `specHalfLife`, `trendHalfLife`, `frothHalfLife` | 3, 3, 30 months | Gameplay | Enthusiasm fades within a few quarters; the premium it built fades over years |
@@ -96,96 +96,20 @@ History's mean is total return and Haggle has no dividends, so the like-for-like
 
 Worse than engine 1: volatility memory at 20 and 120 days, the market mean, and how often sectors crash without a run-up. The first is the known cost of tuning to short-term clustering and the leverage effect, and matters least in rounds of minutes.
 
-### Prices over the life of a server
-
-All 150 companies, 200 markets. One round is about a quarter of a simulated year. An earlier "EUR 3 to EUR 8,000" in this file was measured before the final tuning and was wrong.
-
-| Years | 1st pct | Median | Mean | 99th pct | Lowest ever | Highest ever | Hit floor | Hit ceiling |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 10 | 1.57 | 166 | 418 | 5,028 | 0.50 | 21,436 | 0.30% | 0 |
-| 25 | 2.39 | 228 | 534 | 5,942 | 0.50 | 24,955 | 0.41% | 0 |
-| 50 | 2.65 | 246 | 558 | 6,172 | 0.50 | 24,955 | 0.46% | 0 |
-| 100 | 2.56 | 233 | 531 | 5,709 | 0.50 | 24,955 | 0.60% | 0 |
-| 160 | 2.49 | 227 | 516 | 5,350 | 0.50 | 24,955 | 0.79% | 0 |
-
-Prices are in EUR at the end of each span; "lowest" and "highest ever" cover the whole path. The level is stationary: the typical share settles near 2.7 times its seed price and stays there. Small, mid and large companies land in the same place.
-
-**Outliers.** BKNG stays lowest against its seed (median 1.2x) because its EUR 4,105 seed is close to the EUR 6,000 ceiling. BYD fell furthest (6% of seed at worst): high beta, thin margins and an EV sector exposed to speculation. FCX ran highest (10.7x at best), the same mechanics upward on a volatile copper miner. Cheap shares (VOD, NTT, BTA) make up the floor hits. Drawdowns are common over a server's life: 60% of companies halve at some point within 10 years, as real stocks do.
-
-### Fairness
-
-Excess over the equal-weighted listing, whole shares, EUR 10,000, the 75 main-market companies.
-
-| Beats the market | 1 round | 5 rounds | 10 rounds |
-| --- | --- | --- | --- |
-| Below fair value, engine 1 | 60% | 72% | 82% |
-| Below fair value, engine 2 | 52% | 55% | 61% |
-| Momentum + reversal, engine 1 | 52% | 52% | 44% |
-| Momentum + reversal, engine 2 | 59% | 61% | 54% |
-| Recent winners, engine 2 | 52% | 58% | 54% |
-| Biggest losers, engine 2 | 46% | 38% | 40% |
-| After good company news, engine 2 | 47% | 43% | 41% |
-| After bad company news, engine 2 | 49% | 47% | 48% |
-| Random five, engine 2 | 47% | 46% | 44% |
-
-Over one round, which is what players play, the strongest simple rule is momentum + reversal at 59% with a worst 5% of -12%: an edge, not a guarantee. Its long-run form beats the market about 60% of the time in every phase over five rounds, and is the rule to watch. Buying a stock because it fell, or because of a headline, does not pay.
-
-**The anchor.** Buying below published fair value no longer beats the market by much except in the deepest bucket: over 100% below, it wins 55% over one round and 69% over five, with a worst 5% of -61% log, and such stocks are about 1% of the sample. Below the hidden anchor by 10 to 25% still beats the market 88% over five rounds, but that happens in 0.25% of cases and players cannot see the anchor.
-
-Over ten rounds several rules exceed 60%, including buying after a market crash (66%, thin sample). Ten rounds is about two and a half hours of continuous play with the same holdings, which no competition allows, since accounts reset each round.
-
-### Gameplay
-
-Ten bots with different personalities, 16,000 rounds of the main market.
-
-| Measure | Engine 1 | Engine 2 |
-| --- | --- | --- |
-| Lead changes per round | 11.2 | 11.1 |
-| Close finishes (within 2% of the purse) | 31% | 32% |
-| Leader at a quarter wins | 31% | 31% |
-| A bottom-half player at halftime reaches the top three | 50% | 50% |
-| Longest top-five freeze, simulated days | 4.5 | 4.6 |
-| Stories per round | 10.2 | 10.9 |
-| Longest quiet stretch, simulated days | 8.1 | 8.0 |
-| Companies moving over 15% in a round | 12.6 | 15.1 |
-| Dull rounds | 0.03% | 0.01% |
-
-Win share by bot, engine 2: opportunist 23%, aggressive 13%, contrarian 13%, news trader 10%, random 10%, sector specialist 9%, momentum 8%, chaser 6%, inactive 6%, conservative 3%. In engine 1 the contrarian averaged +4.5% a round against +1.7% for random; now +2.0% against +1.8%. The conservative bot rarely wins but has the mildest losses, and the opportunist's wins come from holding one stock at a time, with a worst 5% of -23%.
-
-These are bots, not people. They show the market still creates swings and comebacks; only real games can show it is fun.
-
-### Load
-
-`scripts/lab/load-matrix.sh` on a production build, one process, with 150 companies on the tape. Full output in [data/lab/load-matrix.txt](data/lab/load-matrix.txt).
-
-| Scenario | Order p99 | Double executions | Inconsistent prices | Ledger mismatches | Peak RSS |
-| --- | --- | --- | --- | --- | --- |
-| One room, 1,000 players, 75 s | 21 ms | 0 | 0 | 0 | 274 MB |
-| Ten rooms, 100 each | 18 ms | 0 | 0 | 0 | 272 MB |
-| Twenty rooms, 50 each | 19 ms | 0 | 0 | 0 | 271 MB |
-| `kill -9` mid-trading, 300 players, 5 rooms | 10 ms | 0 | 0 | 0 | not measured |
-| Database paused 15 s, 300 players | 14 s (during the pause) | 0 | 0 | 0 | not measured |
-
-Not covered: a market crash or a burst of news forced during full load, long soak runs for memory growth, and a real network.
-
-## Prices over the life of a server
-
-`test/realism.test.ts` runs the full market with news for 160 simulated years (about 640 rounds). Before the long-run fixes, within 100 rounds Nvidia reached the EUR 1,000,000 ceiling and Deere fell to 1% of its seed price: reports compounded each company's seed growth forever. Trend growth now fades to 6% a year (half-way in eight quarters), and past three times either side of its seed price a share feels a gentle pull of at most 30% a year (`levelBand`, `levelRate`, `levelMax`; gameplay, standing in for the stock splits a fixed purse cannot follow). Measured at 100 simulated years, company prices run from about EUR 3 to EUR 8,000, with the same range at 25 years.
-
-### Headline trade
+#### Headline trade
 
 Buying a company at the close of the simulated day a positive story about it landed, against the market:
 
 | Hold | Trades | Won | Mean excess return |
 | --- | --- | --- | --- |
-| 12 days (a fifth of a competition) | 3,611 | 50.8% | −0.06% |
-| 60 days (a competition) | 3,611 | 50.2% | −0.62% |
+| 12 days (a fifth of a competition) | 8,356 | 49.0% | -0.08% |
+| 60 days (a competition) | 8,356 | 47.9% | -0.44% |
 
 The move lands on the headline tick, so reading the news is no edge on its own; momentum and hidden demand did not reopen the old exploit.
 
 ## Known gaps
 
-- **Tails and memory:** kurtosis, skew, the leverage effect and the long memory of volatility are all present but weaker than history. One GARCH component cannot carry both short and long memory (a two-component model would). Fat-tailed per-tick draws made the variance unstable, so tails come from jumps instead.
+- **Tails and memory:** kurtosis, skew, the leverage effect and the long memory of volatility are all present but weaker than history. The two-component volatility model gained short-term clustering and leverage, and lost memory at 20 and 120 days. Fat-tailed per-tick draws made the variance unstable, so tails come from jumps instead.
 - **Crash dynamics:** momentum crashes and deep (over 40%) market crashes are rarer and milder than history.
 - **Small caps:** the listing's companies are all large. Size effects use size relative to the listing, so they are weaker than the decile comparison.
 - **Recessions:** the realised recession return varies a lot between seed sets, because recessions are rare. The measured drift is used as is rather than tuned to noise.
