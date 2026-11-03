@@ -4,7 +4,7 @@ import type { Category, Figure, ScheduledEvent, Scope } from '../market/events.j
 import { sharesOf, type Report } from '../market/fundamentals.js';
 import type { MarketState } from '../market/sim.js';
 import { ENGINE_VERSION, type TapeEvent } from '../market/tape.js';
-import type { EventInfo, PlayerResult, Results, TradeInfo } from '../protocol.js';
+import type { EventInfo, PlayerResult, Replay, Results, TradeInfo } from '../protocol.js';
 import type { Fill, Position } from '../trading/portfolio.js';
 
 export interface SessionRow {
@@ -237,6 +237,41 @@ export async function resultForUser(sql: Sql, sessionId: string, userId: string)
 export async function sessionResults(sql: Sql, sessionId: string, limit: number): Promise<PlayerResult[]> {
   const rows = await sql<{ stats: PlayerResult }[]>`SELECT stats FROM results WHERE session_id = ${sessionId} ORDER BY rank LIMIT ${limit}`;
   return rows.map((r) => r.stats);
+}
+
+/** The race of a finished competition: the given traders through every standings snapshot, and its big news. */
+export async function replayOf(sql: Sql, row: SessionRow, ids: string[]): Promise<Replay> {
+  const snaps = await sql<{ tick: number; rows: { id: string; rank: number; value: number }[] }[]>`
+    SELECT s.tick, coalesce(jsonb_agg(jsonb_build_object('id', e.r->>'participantId', 'rank', e.i, 'value', e.r->'value')) FILTER (WHERE e.r IS NOT NULL), '[]') AS rows
+    FROM leaderboard_snapshots s
+    LEFT JOIN LATERAL jsonb_array_elements(s.ranking) WITH ORDINALITY e(r, i) ON e.r->>'participantId' = ANY(${ids})
+    WHERE s.session_id = ${row.id} GROUP BY s.tick ORDER BY s.tick`;
+  const players = await sql<{ participant_id: string; rank: number; nickname: string }[]>`
+    SELECT participant_id, rank, stats->>'nickname' AS nickname FROM results WHERE session_id = ${row.id} AND participant_id = ANY(${ids}) ORDER BY rank`;
+  const start = row.config.startingCash;
+  const ticks = [0, ...snaps.map((s) => s.tick).filter((t) => t > 0)];
+  const at = (s: (typeof snaps)[number] | undefined, id: string) => s?.rows.find((r) => r.id === id);
+  const bySnap = new Map(snaps.map((s) => [s.tick, s]));
+  const end = ticks.at(-1)!;
+  const tickers = row.config.tickers;
+  const news = row.start_seq === null ? [] : await sql<{ seq: number; headline: string; severity: 1 | 2 | 3; id: number; target: string | null; scope: Scope }[]>`
+    SELECT market_seq AS seq, headline, severity, id, target, scope FROM market_events
+    WHERE status = 'published' AND template <> 'quiet-report' AND (severity >= 2 OR id < 0)
+      AND market_seq > ${row.start_seq} AND market_seq <= ${Number(row.start_seq) + end} ORDER BY market_seq, id`;
+  return {
+    ticks, tickMs: row.config.tickMs, opensAt: row.opens_at.getTime(), start,
+    closingTicks: Math.round((row.config.closingSeconds * 1000) / row.config.tickMs),
+    players: players.map((p) => ({
+      participantId: p.participant_id, nickname: p.nickname, rank: p.rank,
+      // Before the first snapshot everyone holds the purse they were dealt.
+      values: ticks.map((t) => (t === 0 ? start : at(bySnap.get(t), p.participant_id)?.value ?? null)),
+      ranks: ticks.map((t) => (t === 0 ? null : at(bySnap.get(t), p.participant_id)?.rank ?? null)),
+    })),
+    // A room trading a few companies only hears about those, the market and the sectors.
+    news: news
+      .filter((n) => !tickers || n.scope !== 'asset' || (n.target !== null && tickers.includes(n.target)))
+      .map((n) => ({ tick: Number(n.seq) - Number(row.start_seq), headline: n.headline, severity: n.severity, market: n.id < 0 })),
+  };
 }
 
 // ---------------------------------------------------------------- the persistent market

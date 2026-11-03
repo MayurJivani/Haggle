@@ -14,7 +14,7 @@ import { HOUSE, type Engine } from './session/engine.js';
 import { ASSETS, CORE_TICKERS, SECTORS } from './market/assets.js';
 import type { IndexHistory, PlayerResult, PriceHistory, Range } from './protocol.js';
 import {
-  firstPrices, indexBars, participantId, priceBars, priceSpan, resultFor, sessionById, sessionByCode, sessionResults, sessionsBetween, tradesFor,
+  firstPrices, indexBars, participantId, priceBars, priceSpan, replayOf, resultFor, sessionById, sessionByCode, sessionResults, sessionsBetween, tradesFor,
   type PricePoint,
 } from './session/store.js';
 import { ROOM_CODE } from './ws.js';
@@ -354,19 +354,42 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
   // (results do not exist before), so nobody can copy a rival's book while trading is open. A private
   // room shows it to its own traders only, unless the host made the results public; a room that keeps
   // portfolios private shows each trader only their own holdings.
-  app.get('/api/sessions/:id/results', researchLimiter, async (req, res) => {
+  /** A competition's row and the viewer's participant id, or null once a 404 or 403 is sent. */
+  const resultsAccess = async (req: Request, res: Response) => {
     const id = z.uuid().safeParse(req.params.id);
-    const limit = z.coerce.number().int().min(1).max(5000).default(100).safeParse(req.query.limit);
     const row = id.success ? await sessionById(sql, id.data) : null;
-    if (!row || !limit.success) return void res.status(404).json({ error: 'Unknown session' });
+    if (!row) return void res.status(404).json({ error: 'Unknown session' });
     const user = await userOf(req);
     const mine = user ? await participantId(sql, row.id, user.id) : null;
     if (row.visibility === 'private' && !row.config.publicResults && !mine) return void res.status(403).json({ error: 'This room is private' });
+    return { row, mine };
+  };
+
+  app.get('/api/sessions/:id/results', researchLimiter, async (req, res) => {
+    const limit = z.coerce.number().int().min(1).max(5000).default(100).safeParse(req.query.limit);
+    if (!limit.success) return void res.status(404).json({ error: 'Unknown session' });
+    const access = await resultsAccess(req, res);
+    if (!access) return;
+    const { row, mine } = access;
     let results: PlayerResult[] = await sessionResults(sql, row.id, limit.data);
     if (row.config.reveal === false) results = results.map((r) => (r.participantId === mine ? r : { ...r, holdings: undefined }));
     // A finished competition's results never change; who may see them depends on the cookie.
     res.setHeader('Cache-Control', row.visibility === 'private' || row.config.reveal === false ? 'private, max-age=300' : 'public, max-age=300');
     res.json({ results });
+  });
+
+  // The race behind the results: the top ten and the viewer through the snapshots. Values only, never
+  // holdings, so it follows the results' visibility and nothing more.
+  app.get('/api/sessions/:id/replay', researchLimiter, async (req, res) => {
+    const access = await resultsAccess(req, res);
+    if (!access) return;
+    const { row, mine } = access;
+    if (row.status !== 'finished') return void res.status(404).json({ error: 'That competition has not finished' });
+    const ids = (await sessionResults(sql, row.id, 10)).map((r) => r.participantId);
+    if (mine && !ids.includes(mine)) ids.push(mine);
+    // The viewer's own line rides along, so no shared cache may keep it.
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    res.json(await replayOf(sql, row, ids));
   });
 
   // Organiser routes: Bearer ADMIN_TOKEN, used by the /host console and by curl. Unset token = 404.

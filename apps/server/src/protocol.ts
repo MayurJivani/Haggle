@@ -261,6 +261,21 @@ export interface PlayerResult {
   finishedAt: number;
 }
 
+/** GET /api/sessions/:id/replay: the race, from the standings snapshots of a finished competition. */
+export interface Replay {
+  /** Local ticks of the snapshots, ascending; 0 is the bell, every purse at the start. */
+  ticks: number[];
+  tickMs: number;
+  opensAt: number;
+  /** Ticks of last calls before the close. */
+  closingTicks: number;
+  start: number;
+  /** The final top ten and the viewer, in final rank order. Null where a snapshot did not hold them. */
+  players: { participantId: string; nickname: string; rank: number; values: (number | null)[]; ranks: (number | null)[] }[];
+  /** Major stories (severity 2 and 3) and the market's own calls, during trading. */
+  news: { tick: number; headline: string; severity: 1 | 2 | 3; market: boolean }[];
+}
+
 export interface Results {
   sessionId: string;
   top: PlayerResult[];

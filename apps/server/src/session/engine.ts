@@ -106,7 +106,8 @@ export interface Live {
 const SAMPLE_EVERY = 10;
 /** Market ticks between checkpoints. A crash loses nothing: the ticks since are replayed identically. */
 const CHECKPOINT_EVERY = 10;
-const SNAPSHOT_EVERY = 30;
+/** Ticks between standings snapshots, the points of the results page replay. */
+const SNAPSHOT_EVERY = 10;
 const BOARD_MS = 2000;
 const BOARD_SIZE = 10;
 const NEWS_KEPT = 40;
@@ -476,7 +477,9 @@ export class Engine {
         for (const p of live.players.values()) p.samples.push(this.valueOf(live, p));
       }
       if (tick % SNAPSHOT_EVERY === 0) {
-        this.background(store.recordSnapshot(this.sql, live.row.id, tick, this.ranking(live).slice(0, 50).map((r) => this.row(live, r))), 'snapshot');
+        // Everyone, so any trader's own line can be drawn; just id and value keeps it small.
+        // shortcut: about 60 bytes a player a snapshot (3.6 MB for 1000 players over 600 ticks); thin out old games if that grows.
+        this.background(store.recordSnapshot(this.sql, live.row.id, tick, this.ranking(live).map((r) => ({ participantId: r.p.id, value: r.value }))), 'snapshot');
       }
       if (end) {
         live.frozen = Array.from(this.market.prices);

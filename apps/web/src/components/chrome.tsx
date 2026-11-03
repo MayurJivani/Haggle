@@ -1,7 +1,7 @@
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { ArrowDownRight, ArrowUpRight, WifiOff } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { changeBps, clock, money, ordinal, pct, signedMoney, tone } from '../lib/format';
+import { changeBps, clock, lattice, money, ordinal, pct, signedMoney, tone } from '../lib/format';
 import { game, now, useGame, type SessionInfo } from '../lib/game';
 import { usePortfolio } from '../lib/portfolio';
 
@@ -57,6 +57,32 @@ export function Wordmark({ className = '' }: { className?: string }) {
     <span className={`font-display font-black uppercase leading-none tracking-[0.02em] ${className}`}>
       Ha<span className="text-saffron">gg</span>le
     </span>
+  );
+}
+
+/**
+ * A trader's face: a carved bazaar screen with lamplight through its windows, unique to the nickname.
+ * Saffron for the player's own, ink for everyone else. `light` lets the windows come on one by one.
+ */
+export function Lattice({ nickname, size = 24, you = false, light = 0, x, y }: { nickname: string; size?: number; you?: boolean; light?: number; x?: number; y?: number }) {
+  const still = useReducedMotion();
+  const cells = useMemo(() => lattice(nickname), [nickname]);
+  const lamp = you ? 'var(--color-saffron)' : 'var(--color-ink-2)';
+  return (
+    <svg viewBox="0 0 22 22" width={size} height={size} x={x} y={y} className="shrink-0" aria-hidden>
+      <rect x={0.5} y={0.5} width={21} height={21} rx={4} fill={you ? 'var(--color-saffron-deep)' : 'var(--color-night-3)'} stroke="var(--color-rule)" />
+      {cells.map((lit, i) => {
+        const cx = 3 + (i % 5) * 4;
+        const cy = 3 + Math.floor(i / 5) * 4;
+        const d = `M${cx},${cy - 1.8}L${cx + 1.8},${cy}L${cx},${cy + 1.8}L${cx - 1.8},${cy}Z`;
+        if (!lit) return <circle key={i} cx={cx} cy={cy} r={0.55} fill="var(--color-night-4)" />;
+        return light && !still ? (
+          <motion.path key={i} d={d} fill={lamp} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: light + ((i * 7) % 25) * 0.03, duration: 0.35, ease: [0.16, 1, 0.3, 1] }} />
+        ) : (
+          <path key={i} d={d} fill={lamp} />
+        );
+      })}
+    </svg>
   );
 }
 

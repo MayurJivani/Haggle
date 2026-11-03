@@ -2,10 +2,13 @@
 // recovery and the close. Set TEST_DATABASE_URL to any database the user may CREATE DATABASE from;
 // a throwaway database is created and dropped around the run. Skipped when unset.
 import { randomUUID } from 'node:crypto';
+import type { AddressInfo } from 'node:net';
 import pino from 'pino';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { COOKIE, createUser } from '../src/auth.js';
 import { connect, migrate, type Sql } from '../src/db/db.js';
-import type { ServerMsg } from '../src/protocol.js';
+import type { Env } from '../src/env.js';
+import type { Replay, ServerMsg } from '../src/protocol.js';
 import { Engine, HOUSE, type Client } from '../src/session/engine.js';
 import { STARTING_CASH } from '../src/trading/portfolio.js';
 import { ASSETS, CORE_TICKERS } from '../src/market/assets.js';
@@ -28,10 +31,10 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
   const config = { lobbySeconds: 600, tradingSeconds: 4, closingSeconds: 1, resultsSeconds: 600, tickMs: 250, maxPlayers: 3, maxRooms: 5, marketSeed: SEED, tickRetentionDays: 30 };
 
   const makeClient = async (nickname: string, room = HOUSE) => {
-    const [u] = await sql<{ id: string }[]>`INSERT INTO users (nickname, token_hash) VALUES (${nickname}, ${Buffer.from(randomUUID())}) RETURNING id`;
+    const { user, token } = (await createUser(sql, nickname))!;
     const inbox: ServerMsg[] = [];
-    const client: Client = { userId: u!.id, nickname, room, send: (d) => inbox.push(JSON.parse(d)) };
-    return { client, inbox };
+    const client: Client = { userId: user.id, nickname, room, send: (d) => inbox.push(JSON.parse(d)) };
+    return { client, inbox, token };
   };
   const fills = (inbox: ServerMsg[]) => inbox.filter((m) => m.t === 'fill');
   const rejects = (inbox: ServerMsg[]) => inbox.filter((m): m is Extract<ServerMsg, { t: 'reject' }> => m.t === 'reject');
@@ -360,6 +363,38 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
     const nosy = await makeClient('nosy', roomB.row.id);
     await engine.attach(nosy.client);
     expect(nosy.inbox[0]).toMatchObject({ t: 'hello', results: { restricted: true, top: [] } });
+
+    // The replay keeps the results' visibility: B's race is for B's traders only, A's is for anyone.
+    // app.ts reads the environment as it loads (through the logger), so it comes in only when this suite runs.
+    process.env.DATABASE_URL ??= ADMIN_URL;
+    const { createApp } = await import('../src/app.js');
+    const server = createApp(sql, engine, { TRUST_PROXY: false, ALLOWED_ORIGINS: [], JOIN_RATE_LIMIT: 1000, ADMIN_TOKEN: '', MAX_PLAYERS: 50 } as unknown as Env).listen(0);
+    const replayOf = (id: string, token?: string) =>
+      fetch(`http://127.0.0.1:${(server.address() as AddressInfo).port}/api/sessions/${id}/replay`, token ? { headers: { cookie: `${COOKIE}=${token}` } } : {});
+    try {
+      expect((await replayOf(roomB.row.id)).status).toBe(403);
+      expect((await replayOf(roomB.row.id, nosy.token)).status).toBe(403);
+      const later = await engine.createRoom({ id: hostA.client.userId, nickname: 'host a' }, room({ name: 'Later' }));
+      if ('error' in later) throw new Error('room refused');
+      expect((await replayOf(engine.liveByCode(later.code)!.row.id)).status).toBe(404); // no race before the bell
+      expect((await replayOf(roomA.row.id)).status).toBe(200);
+      const res = await replayOf(roomB.row.id, dana.token);
+      expect(res.headers.get('cache-control')).toMatch(/^private/);
+      const race = (await res.json()) as Replay;
+      // From the bell to the close in order, each line in final rank order and ending on the final value.
+      expect(race.ticks[0]).toBe(0);
+      expect(race.ticks).toEqual([...race.ticks].sort((x, y) => x - y));
+      expect(race.ticks.at(-1)).toBe(roomB.cfg.totalTicks);
+      expect(race.ticks.length).toBeGreaterThan(2);
+      const finals = await sql<{ participant_id: string; rank: number; final_value_cents: number }[]>`
+        SELECT participant_id, rank, final_value_cents FROM results WHERE session_id = ${roomB.row.id} ORDER BY rank`;
+      expect(race.players.map((p) => [p.participantId, p.rank, p.values.at(-1), p.ranks.at(-1)])).toEqual(finals.map((f) => [f.participant_id, f.rank, f.final_value_cents, f.rank]));
+      for (const p of race.players) expect(p.values[0]).toBe(500_000);
+      expect(race.players.every((p) => p.values.every((v) => v !== null))).toBe(true);
+      expect(race.news.every((n) => n.tick > 0 && n.tick <= roomB.cfg.totalTicks && (n.severity >= 2 || n.market))).toBe(true);
+    } finally {
+      server.close();
+    }
     await engine.stop();
   });
 

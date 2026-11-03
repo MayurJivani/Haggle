@@ -3,7 +3,8 @@ import { Check, ChevronRight, Copy, Share2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { changeBps, clock, money, moneyWhole, ordinal, pct, SECTOR_COLOR, signedMoney, tone, when } from '../lib/format';
 import { useGame, type PlayerResult, type Results as ResultsInfo, type SessionInfo, type TradeInfo } from '../lib/game';
-import { Pnl, SimulatedChip, useNow, Wordmark, leave } from './chrome';
+import { Lattice, Pnl, SimulatedChip, useNow, Wordmark, leave } from './chrome';
+import { RaceReplay } from './replay';
 import { StallList } from './floor';
 import { PURSE, STARTING_CASH, usePortfolio } from '../lib/portfolio';
 import { CopyInvite, HostControls, PortfolioTable } from './rooms';
@@ -483,8 +484,9 @@ function RosterRow({ r, you, start }: { r: PlayerResult; you: boolean; start: nu
       <details className="group">
         <summary className={`grid cursor-pointer list-none grid-cols-[2.25rem_minmax(0,1fr)_auto_4.5rem_1rem] items-baseline gap-2 rounded-md px-1 py-2 hover:bg-night-2 sm:grid-cols-[2.25rem_minmax(0,1fr)_6.5rem_6rem_6rem_6rem_4.5rem_3rem_1rem] [&::-webkit-details-marker]:hidden ${you ? 'bg-saffron-deep' : ''}`}>
           <span className={`font-display text-2xl font-extrabold ${r.rank === 1 ? 'text-saffron' : ''}`}>{cells[0]}</span>
-          <span className="truncate font-semibold">
-            {cells[1]}
+          <span className="flex min-w-0 items-center gap-2 self-center truncate font-semibold">
+            <Lattice nickname={r.nickname} size={22} you={you} />
+            <span className="truncate">{cells[1]}</span>
             {you && <span className="ml-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-saffron">you</span>}
           </span>
           <span className="text-right">{cells[3]}</span>
@@ -605,6 +607,7 @@ export function Results() {
                   transition={{ delay: 0.4 + order[col]! * 0.7, type: 'spring', stiffness: 180, damping: 18 }}
                   className="flex flex-col items-center gap-2 text-center"
                 >
+                  <Lattice nickname={r.nickname} size={col === 1 ? 64 : 48} you={r.participantId === results.me?.participantId} light={0.5 + order[col]! * 0.7} />
                   <p className="max-w-full truncate text-base font-bold sm:text-xl">{r.nickname}</p>
                   <p className="font-display text-xl font-extrabold sm:text-3xl"><CountUp cents={r.value} delay={0.6 + order[col]! * 0.7} /></p>
                   <p className={`text-sm font-semibold ${tone(r.bps)}`}>{pct(r.bps)}</p>
@@ -653,6 +656,7 @@ export function Results() {
             )}
           </section>
         </div>
+        {!results.restricted && results.top.length > 0 && <section aria-label="Replay"><RaceReplay results={results} /></section>}
         {!results.restricted && <section aria-label="Final standings"><FinalRoster results={results} start={start} /></section>}
       </div>
     </main>

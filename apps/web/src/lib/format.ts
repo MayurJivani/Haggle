@@ -58,3 +58,20 @@ const dayFmt = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'shor
 /** Wall-clock time of an event: seconds today, the date before that. */
 export const when = (ms: number, nowMs = Date.now()) => (nowMs - ms < 20 * 3_600_000 ? timeFmt.format(ms) : dayFmt.format(ms));
 
+
+/**
+ * A trader's lattice: which windows of a 5 by 5 carved screen are lit, mirrored left to right, from the
+ * nickname (unique per trader, so the same face follows them from game to game). Never fewer than six lit.
+ */
+export function lattice(nickname: string): boolean[] {
+  let h = 0x811c9dc5;
+  for (const ch of nickname.toLowerCase()) h = Math.imul(h ^ ch.codePointAt(0)!, 0x01000193) >>> 0;
+  const cells = Array.from({ length: 25 }, (_, i) => {
+    const col = i % 5;
+    const half = col < 3 ? col : 4 - col;
+    return ((h >>> (Math.floor(i / 5) * 3 + half)) & 1) === 1;
+  });
+  // A sparse hash still reads as a screen: light the centre column.
+  if (cells.filter(Boolean).length < 6) for (let r = 0; r < 5; r++) cells[r * 5 + 2] = true;
+  return cells;
+}
