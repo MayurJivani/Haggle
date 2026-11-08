@@ -1,28 +1,17 @@
 #!/bin/sh
-# Build here, ship the builds to Jinx, restart the unit. Re-runnable, no root beyond the
-# webdeploy sudo rules. Shape follows FRC/DEPLOY.md ("private or no-remote repo").
-#
-# The first run also installs the unit, the site block and /etc/apps/haggle.env
-# (DATABASE_URL from FRC/jinx/bootstrap.sh, ADMIN_TOKEN generated on the box).
-# The server migrates an empty database itself. Cloudflare tunnel, by hand:
-# haggle.futile.studio -> http://localhost:80
+# Box side of Haggle on Jinx: /etc/apps/haggle.env (DATABASE_URL
+# from jinx/bootstrap.sh, ADMIN_TOKEN generated on the box) and the site block.
+# The server migrates an empty database itself.
+# The app itself runs under Coolify (deploy/compose.yaml, image from GHCR), so
+# nothing is built or restarted here (FRC/DEPLOY.md). Re-runnable; on a rebuild
+# jinx/restore-all.sh runs it before the app is started in Coolify.
 set -eu
 cd "$(dirname "$0")/.."
 HOST=${HOST:-ssh.futile.studio}
 NAME=haggle
 
-# Ship committed code only, so uncommitted work never goes live by accident.
-if git rev-parse --verify -q HEAD >/dev/null; then
-  BUILD=$(mktemp -d)
-  trap 'rm -rf "$BUILD"' EXIT
-  git archive HEAD | tar x -C "$BUILD"
-  cd "$BUILD"
-fi
-npm ci
-npm run build
-
-scp -q deploy/haggle.caddy deploy/haggle.service "$HOST":/tmp/
-ssh "$HOST" "NAME=haggle sh -s" <<'BOX'
+scp -q deploy/$NAME.caddy "$HOST":/tmp/
+ssh "$HOST" "NAME=$NAME sh -s" <<'BOX'
 set -eu
 ENV=/etc/apps/$NAME.env
 sudo -n touch "$ENV" && sudo -n chmod 600 "$ENV"
@@ -32,15 +21,8 @@ add TRUST_PROXY true
 add ADMIN_TOKEN "$(openssl rand -hex 24)"
 sudo -n grep -q "^DATABASE_URL=" "$ENV" || { echo "$NAME: no DATABASE_URL in $ENV, run jinx/bootstrap.sh first" >&2; exit 1; }
 
-if ! cmp -s "/tmp/$NAME.service" "/etc/systemd/system/$NAME.service"; then
-  sudo -n install -m 644 "/tmp/$NAME.service" "/etc/systemd/system/$NAME.service"
-  sudo -n systemctl daemon-reload
-  sudo -n systemctl enable -q "$NAME"
-fi
-rm -f "/tmp/$NAME.service"
-
-LIVE=/etc/caddy/conf.d/haggle.caddy
-IN=/tmp/haggle.caddy
+LIVE=/etc/caddy/conf.d/$NAME.caddy
+IN=/tmp/$NAME.caddy
 if cmp -s "$IN" "$LIVE"; then
   rm -f "$IN"
 else
@@ -56,11 +38,4 @@ else
   sudo -n systemctl reload caddy
 fi
 BOX
-
-rsync -a --delete --relative package.json package-lock.json apps/server/package.json apps/server/dist apps/web/package.json apps/web/dist $HOST:/opt/apps/Haggle/
-ssh $HOST "cd /opt/apps/Haggle && npm ci --omit=dev -w apps/server --include-workspace-root && sudo -n systemctl restart $NAME"
-
-sleep 3
-code=$(ssh $HOST 'curl -s -o /dev/null -w "%{http_code}" -H "Host: haggle.futile.studio" http://127.0.0.1/healthz' || true)
-[ "$code" = "200" ] || { echo "$NAME: not healthy through Caddy (HTTP $code)"; exit 1; }
-echo "$NAME: deployed to https://haggle.futile.studio"
+echo "$NAME: box side in place; deploy it from Coolify"
