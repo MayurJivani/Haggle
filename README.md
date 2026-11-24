@@ -6,6 +6,12 @@ A live stock market for the whole room. Up to 1,000 players join with a nickname
 
 Virtual money only. Company names are real; every price, headline, financial report and euro is simulated.
 
+## Haggle RealTime (beta)
+
+A second mode at `/realtime`: paper-trade real stocks, ETFs and indices at real market prices, on each exchange's real clock. NYSE, Nasdaq, LSE, Xetra, Euronext, Tokyo, Hong Kong, Shanghai, Toronto and ASX each open, pause for lunch, close early and take holidays on their own calendars, in their own time zones. Players get €10,000 of virtual cash, place market and limit orders against live bid and ask, and compete in open, weekly and monthly seasons. Every price shows whether it is real time, delayed or stale; when there is no price, none is shown.
+
+RealTime is off until a market data provider is set (`REALTIME_PROVIDERS` in `.env`; Alpaca and Twelve Data are supported). [docs/realtime.md](docs/realtime.md) covers providers, licensing, fill rules and how to test it outside market hours.
+
 ## Run it
 
 **Docker Compose** (Postgres included):
