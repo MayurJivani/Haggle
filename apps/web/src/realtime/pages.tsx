@@ -274,7 +274,7 @@ export function ExecutionPolicy() {
 
 // ---------------------------------------------------------------- browse
 
-const EXCHANGE_OPTIONS = ['US', 'LSE', 'XETRA', 'EURONEXT', 'TSE', 'HKEX', 'SSE', 'TSX', 'ASX'];
+const EXCHANGE_OPTIONS = ['US', 'TG', 'LSE', 'XETRA', 'EURONEXT', 'TSE', 'HKEX', 'SSE', 'TSX', 'ASX'];
 const CAP_LABEL: Record<string, string> = { mega: 'Mega (>$200B)', large: 'Large ($10B-200B)', mid: 'Mid ($2B-10B)', small: 'Small ($300M-2B)', micro: 'Micro (<$300M)' };
 
 export function Stocks() {

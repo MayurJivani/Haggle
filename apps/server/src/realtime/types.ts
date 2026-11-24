@@ -20,6 +20,7 @@ export interface Instrument {
   industry: string | null;
   marketCapUsd: number | null;
   logoUrl: string | null;
+  isin: string | null;
   status: 'active' | 'halted' | 'delisted';
 }
 

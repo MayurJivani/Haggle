@@ -32,7 +32,9 @@ allows showing prices to the public. Check the licence before opening this to pl
 | Twelve Data Basic (free) | US | US | 8 credits/min, 800/day; no bid/ask |
 | Twelve Data Grow / Pro | + LSE, XETRA, Euronext, TSX / + HKEX, SSE, ASX | EU real time from Pro | Set `TWELVEDATA_EXCHANGES` and `TWELVEDATA_REALTIME` to match the plan |
 
-Recommended: `REALTIME_PROVIDERS=alpaca,twelvedata`. Alpaca prices US instruments; Twelve Data prices
+| Tradegate (free, no key) | About 190 European blue chips (DAX, MDAX, SDAX, TecDAX, Euro Stoxx 50) in euro | Yes, bid/ask from Tradegate Berlin | Unofficial public endpoint with no published terms; no candles. Exchange `TG`, 07:30 to 22:00 Berlin |
+
+Recommended: `REALTIME_PROVIDERS=alpaca,twelvedata,tradegate`. Alpaca prices US instruments; Twelve Data prices
 the other exchanges and indices, and takes over US if Alpaca fails. An instrument no provider covers
 shows "no price" and cannot be traded. The server never invents a price.
 

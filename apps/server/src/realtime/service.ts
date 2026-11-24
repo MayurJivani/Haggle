@@ -10,6 +10,7 @@ import { Alpaca } from './providers/alpaca.js';
 import { Dev } from './providers/dev.js';
 import { Feeds } from './providers/feeds.js';
 import type { Provider } from './providers/provider.js';
+import { Tradegate } from './providers/tradegate.js';
 import { TwelveData } from './providers/twelvedata.js';
 import { Trading, type Policy } from './trading.js';
 import type { Activity, BoardRow, Execution, FeedInfo, Instrument, LedgerEntry, Notification, Portfolio, PositionView, Season, ServerMsg } from './types.js';
@@ -39,6 +40,7 @@ export function providersFromEnv(env: {
         perMinute: env.TWELVEDATA_CREDITS_PER_MIN, ws: env.TWELVEDATA_WS, streamMax: env.TWELVEDATA_WS_MAX,
       });
     }
+    if (id === 'tradegate') return new Tradegate();
     return new Dev(now);
   });
 }
@@ -116,7 +118,8 @@ export class Realtime {
 
   private startJobs() {
     const catalogue = this.every(24 * 3600_000, async () => this.cfg.catalogueSync && (await this.catalogue.sync()), 'catalogue');
-    void this.catalogue.count().then((n) => n === 0 && catalogue());
+    // Empty, or from before Tradegate was added: sync now rather than in a day.
+    void this.sql<{ n: number }[]>`SELECT count(*)::int AS n FROM rt_instruments WHERE mic = 'XGAT'`.then(([r]) => r?.n === 0 && catalogue());
     void this.every(6 * 3600_000, () => this.market.syncFx(), 'fx')();
     void this.every(12 * 3600_000, () => this.syncCalendars(), 'calendar')();
     void this.every(6 * 3600_000, () => this.corporateActions(), 'corporate-actions')();

@@ -3,7 +3,7 @@
 // Holidays and early closes come from each exchange's published calendar (docs/realtime.md lists the
 // sources); provider calendars synced into rt_calendar override them day by day.
 
-export type ExchangeId = 'US' | 'LSE' | 'XETRA' | 'EURONEXT' | 'TSE' | 'HKEX' | 'SSE' | 'TSX' | 'ASX';
+export type ExchangeId = 'US' | 'LSE' | 'XETRA' | 'EURONEXT' | 'TG' | 'TSE' | 'HKEX' | 'SSE' | 'TSX' | 'ASX';
 export type MarketState = 'pre' | 'open' | 'break' | 'post' | 'closed' | 'holiday';
 
 export interface ExchangeDef {
@@ -94,6 +94,14 @@ export const EXCHANGES: Record<ExchangeId, ExchangeDef> = {
       2026-05-05 Labour Day, 2026-06-19 Dragon Boat Festival, 2026-09-25 Mid-Autumn Festival, 2026-10-01 National Day, 2026-10-02 National Day,
       2026-10-05 National Day, 2026-10-06 National Day, 2026-10-07 National Day`),
     early: {},
+  },
+  // Tradegate BSX, Berlin: European blue chips in euro on one long session. Dates from tradegatebsx.com/handelskalender.php.
+  TG: {
+    id: 'TG', name: 'Tradegate (Berlin)', tz: 'Europe/Berlin', mics: ['XGAT'], open: '07:30', close: '22:00', knownThrough: 2027, verified: true,
+    holidays: h(`2026-01-01 New Year's Day, 2026-04-03 Good Friday, 2026-04-06 Easter Monday, 2026-05-01 Labour Day, 2026-12-24 Christmas Eve,
+      2026-12-25 Christmas, 2026-12-31 New Year's Eve, 2027-01-01 New Year's Day, 2027-03-26 Good Friday, 2027-03-29 Easter Monday,
+      2027-12-24 Christmas Eve, 2027-12-31 New Year's Eve`),
+    early: e('2026-05-14 20:00, 2026-05-25 20:00, 2026-12-30 14:00, 2027-05-06 20:00, 2027-05-17 20:00, 2027-12-30 14:00'),
   },
   ASX: {
     id: 'ASX', name: 'Australian Securities Exchange', tz: 'Australia/Sydney', mics: ['XASX'], open: '10:00', close: '16:00', knownThrough: 2027, verified: true,

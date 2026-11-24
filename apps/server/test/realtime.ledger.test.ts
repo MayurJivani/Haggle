@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { EMPTY, fillBuy, fillSell, FX, markValue, MICRO, PRICE, split, splitPrice, toScaled } from '../src/realtime/ledger.js';
 import { fxScaled, priceStatus } from '../src/realtime/market.js';
 import { fillPrice } from '../src/realtime/trading.js';
+import { parseTradegateList } from '../src/realtime/catalogue.js';
+import { deNum, tradegateQuote } from '../src/realtime/providers/tradegate.js';
 import type { Quote } from '../src/realtime/types.js';
 
 const eur = FX; // 1 EUR per EUR
@@ -76,6 +78,23 @@ describe('realtime ledger', () => {
     // 100 shares at 250p = GBP 250 = EUR 312.50.
     expect(markValue(100n * MICRO, 250n * PRICE, pence)).toBe(31_250n);
     expect(fxScaled(rates, 'JPY')).toBeNull();
+  });
+});
+
+describe('tradegate parsing', () => {
+  it('reads German number strings and the index member list', () => {
+    expect(deNum('1 216,40')).toBe(1216.4);
+    expect(deNum('+1,10')).toBe(1.1);
+    expect(deNum(53.22)).toBe(53.22);
+    expect(deNum('53.22')).toBe(53.22);
+    expect(deNum('1.216,40')).toBe(1216.4);
+    expect(deNum('')).toBeNull();
+    const q = tradegateQuote(7, { bid: '189,06', ask: 189.1, bidsize: 350, asksize: 250, last: '189,10', high: '189,60', low: 183.74, close: 187.1, stueck: 43103 }, 1000)!;
+    expect([q.bid, q.ask, q.last, q.prevClose, q.volume]).toEqual([1_890_600, 1_891_000, 1_891_000, 1_871_000, 43103]);
+    expect(tradegateQuote(7, {}, 1000)).toBeNull();
+    expect(parseTradegateList('<a id="name_1" href="orderbuch.php?isin=DE000A1EWWW0">adidas AG&nbsp;</a><a href="orderbuch.php?isin=DE000A1EWWW0">x</a>'))
+      .toEqual([{ isin: 'DE000A1EWWW0', name: 'x' }]);
+    expect(parseTradegateList('<a href="orderbuch.php?isin=FR0000121014">LVMH Mo&euml;t &amp; M&uuml;nchener Gro&szlig;</a>')[0]!.name).toBe('LVMH Moët & Münchener Groß');
   });
 });
 

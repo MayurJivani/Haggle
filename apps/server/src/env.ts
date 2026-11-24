@@ -3,7 +3,7 @@ import { z } from 'zod';
 const seconds = (fallback: number) => z.coerce.number().int().min(5).max(24 * 3600).default(fallback);
 const list = z.string().default('').transform((v) => v.split(',').map((f) => f.trim()).filter(Boolean));
 const exchanges = z.string().transform((v) => v.split(',').map((f) => f.trim()).filter(Boolean))
-  .pipe(z.array(z.enum(['US', 'LSE', 'XETRA', 'EURONEXT', 'TSE', 'HKEX', 'SSE', 'TSX', 'ASX'])));
+  .pipe(z.array(z.enum(['US', 'LSE', 'XETRA', 'EURONEXT', 'TG', 'TSE', 'HKEX', 'SSE', 'TSX', 'ASX'])));
 // z.coerce.boolean would read the string "false" as true.
 const flag = (fallback: boolean) => z.enum(['true', 'false', '1', '0', '']).default(fallback ? 'true' : 'false').transform((v) => v === 'true' || v === '1');
 const tz = z.string().refine((t) => {
@@ -51,7 +51,7 @@ const envSchema = z
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
     // Haggle RealTime (docs/realtime.md). Providers in priority order; empty = RealTime is switched off.
-    REALTIME_PROVIDERS: list.pipe(z.array(z.enum(['alpaca', 'twelvedata', 'dev']))),
+    REALTIME_PROVIDERS: list.pipe(z.array(z.enum(['alpaca', 'twelvedata', 'tradegate', 'dev']))),
     ALPACA_KEY_ID: z.string().default(''),
     ALPACA_SECRET_KEY: z.string().default(''),
     ALPACA_FEED: z.enum(['iex', 'sip', 'delayed_sip']).default('iex'),
