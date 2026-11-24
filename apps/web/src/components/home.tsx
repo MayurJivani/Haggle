@@ -3,7 +3,7 @@ import { ArrowDownRight, ArrowUpRight, Pause, Play } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { clock, money, moneyWhole, pct, SECTOR_COLOR, tone, when } from '../lib/format';
 import type { EventInfo, FloorInfo, RoomListing, SessionInfo } from '../lib/game';
-import { AwningRow } from './ceremony';
+import { AwningRow, ClaimName } from './ceremony';
 import { leave, SimulatedChip, useNow, Wordmark } from './chrome';
 import { JoinByCode } from './rooms';
 import { SourceTag } from './side';
@@ -257,7 +257,7 @@ function Custom({ rooms, t }: { rooms: RoomListing[]; t: number }) {
 }
 
 /** The front door: nothing here joins a competition until the visitor picks one. */
-export function Home({ nickname, session: first, offset }: { nickname: string | null; session: SessionInfo | null; offset: number }) {
+export function Home({ nickname, registered, onAuth, session: first, offset }: { nickname: string | null; registered: boolean; onAuth: () => void; session: SessionInfo | null; offset: number }) {
   const me = usePolled<{ session: SessionInfo | null }>('/api/me', 10_000);
   const floor = usePolled<FloorInfo>('/api/floor', 5000);
   const rooms = usePolled<{ rooms: RoomListing[] }>('/api/rooms', 15_000);
@@ -284,8 +284,17 @@ export function Home({ nickname, session: first, offset }: { nickname: string | 
             {nickname && (
               <p className="text-sm text-ink-3">
                 Trading as <strong className="text-ink">{nickname}</strong>.{' '}
-                <button type="button" onClick={() => void leave()} className="underline decoration-ink-3 underline-offset-4 hover:text-ink">Change name</button>
+                <button type="button" onClick={() => void leave()} className="underline decoration-ink-3 underline-offset-4 hover:text-ink">{registered ? 'Log out' : 'Change name'}</button>
               </p>
+            )}
+            {nickname && !registered && (
+              <details className="max-w-md text-sm text-ink-3">
+                <summary className="cursor-pointer font-semibold text-ink-2 hover:text-ink">Keep this name: set a password</summary>
+                <div className="mt-3"><ClaimName registered={false} onDone={onAuth} /></div>
+              </details>
+            )}
+            {!nickname && (
+              <a href="/play" className="text-sm font-semibold text-ink-2 underline decoration-ink-3 underline-offset-4 hover:text-ink">Have a password? Log in</a>
             )}
           </div>
           <Movers quotes={quotes} />

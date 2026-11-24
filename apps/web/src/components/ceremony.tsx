@@ -42,26 +42,34 @@ export function Splash({ text = 'Opening the market' }: { text?: string }) {
   );
 }
 
-/** Picks a trader name and signs in: the one way in, from the market and from the custom games page. */
+const post = async (path: string, body: unknown) => {
+  try {
+    const r = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const b = (await r.json().catch(() => ({}))) as { error?: string };
+    return r.ok ? null : (b.error ?? 'Something went wrong. Try again.');
+  } catch {
+    return 'Haggle is not reachable right now. Check your connection.';
+  }
+};
+const field = 'h-14 min-w-0 rounded-md border border-rule bg-night-2 px-4 text-xl font-semibold placeholder:font-normal placeholder:text-ink-3 focus:border-saffron/70 focus:outline-none';
+
+/** Picks a trader name and signs in, or logs in to a name claimed with a password. */
 export function TraderName({ onJoined, action = 'Enter the market' }: { onJoined: () => void; action?: string }) {
   const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [withPassword, setWithPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    setError(null);
-    try {
-      const r = await fetch('/api/join', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ nickname: name }) });
-      const body = (await r.json().catch(() => ({}))) as { error?: string };
-      if (!r.ok) throw new Error(body.error ?? 'Could not join. Try again.');
-      onJoined();
-    } catch (err) {
-      setError(err instanceof Error && err.message !== 'Failed to fetch' ? err.message : 'Haggle is not reachable right now. Check your connection.');
-    } finally {
-      setBusy(false);
-    }
+    const err = withPassword ? await post('/api/login', { nickname: name, password }) : await post('/api/join', { nickname: name });
+    setBusy(false);
+    setError(err);
+    if (!err) onJoined();
+    // A registered name: offer the password field straight away.
+    else if (/registered/.test(err)) setWithPassword(true);
   };
 
   return (
@@ -70,26 +78,63 @@ export function TraderName({ onJoined, action = 'Enter the market' }: { onJoined
         Your trader name
       </label>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <input
-          id="nick"
-          autoFocus
-          required
-          minLength={2}
-          maxLength={20}
-          autoComplete="nickname"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          aria-invalid={!!error}
-          aria-describedby="nick-help"
-          placeholder="e.g. Saffron Sam"
-          className="h-14 min-w-0 flex-1 rounded-md border border-rule bg-night-2 px-4 text-xl font-semibold placeholder:font-normal placeholder:text-ink-3 focus:border-saffron/70 focus:outline-none"
-        />
-        <button type="submit" disabled={busy || name.trim().length < 2} className="h-14 rounded-md bg-saffron px-6 text-lg font-bold text-night hover:brightness-110 disabled:opacity-40">
-          {busy ? 'Joining' : action}
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <input
+            id="nick" autoFocus required minLength={2} maxLength={20} autoComplete="username" value={name}
+            onChange={(e) => setName(e.target.value)} aria-invalid={!!error} aria-describedby="nick-help" placeholder="e.g. Saffron Sam" className={field}
+          />
+          {withPassword && (
+            <input
+              type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)}
+              aria-label="Password" placeholder="Password" className={field}
+            />
+          )}
+        </div>
+        <button type="submit" disabled={busy || name.trim().length < 2 || (withPassword && !password)} className="h-14 rounded-md bg-saffron px-6 text-lg font-bold text-night hover:brightness-110 disabled:opacity-40 sm:self-end">
+          {busy ? 'Joining' : withPassword ? 'Log in' : action}
         </button>
       </div>
       <p id="nick-help" className={`text-sm ${error ? 'text-down' : 'text-ink-3'}`} role={error ? 'alert' : undefined}>
-        {error ?? 'This device remembers you, so you can reconnect any time during the session.'}
+        {error ?? (withPassword ? 'Log in with the password you set for this name.' : 'This device remembers you. Set a password later to keep your name and play on other devices.')}
+      </p>
+      <button type="button" onClick={() => (setWithPassword(!withPassword), setError(null))} className="self-start text-sm font-semibold text-ink-2 underline decoration-ink-3 underline-offset-4 hover:text-ink">
+        {withPassword ? 'New here? Just pick a name' : 'Have a password? Log in'}
+      </button>
+    </form>
+  );
+}
+
+/** Sets a password on the signed-in name (or changes it), so it can log in on any device. */
+export function ClaimName({ registered, onDone }: { registered: boolean; onDone: () => void }) {
+  const [password, setPassword] = useState('');
+  const [current, setCurrent] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    const err = await post('/api/account/password', { password, current: registered ? current : undefined });
+    setBusy(false);
+    setError(err);
+    if (!err) (setDone(true), setPassword(''), setCurrent(''), onDone());
+  };
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-2">
+      {registered && (
+        <input type="password" required autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} aria-label="Current password" placeholder="Current password" className={`${field} h-11 text-base`} />
+      )}
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <input
+          type="password" required minLength={8} maxLength={128} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)}
+          aria-label={registered ? 'New password' : 'Password'} placeholder={registered ? 'New password (8+ characters)' : 'Password (8+ characters)'} className={`${field} h-11 flex-1 text-base`}
+        />
+        <button type="submit" disabled={busy || password.length < 8} className="h-11 rounded-md bg-saffron px-5 font-bold text-night disabled:opacity-40">
+          {registered ? 'Change password' : 'Set password'}
+        </button>
+      </div>
+      <p className={`text-sm ${error ? 'text-down' : 'text-ink-3'}`} role={error ? 'alert' : 'status'}>
+        {error ?? (done ? 'Saved. Log in with this name and password on any device.' : '')}
       </p>
     </form>
   );

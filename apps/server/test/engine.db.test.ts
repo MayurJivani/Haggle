@@ -392,6 +392,28 @@ describe.skipIf(!ADMIN_URL)('engine against postgres', () => {
       for (const p of race.players) expect(p.values[0]).toBe(500_000);
       expect(race.players.every((p) => p.values.every((v) => v !== null))).toBe(true);
       expect(race.news.every((n) => n.tick > 0 && n.tick <= roomB.cfg.totalTicks && (n.severity >= 2 || n.market))).toBe(true);
+
+      // Passwords: claim the name, log in from a second device, refuse a wrong password and a takeover by join.
+      const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      const post = (path: string, body: unknown, token?: string) => fetch(base + path, {
+        method: 'POST', body: JSON.stringify(body), headers: { 'content-type': 'application/json', origin: base, ...(token ? { cookie: `${COOKIE}=${token}` } : {}) },
+      });
+      const cookieOf = (r: Response) => /hg_token=([^;]+)/.exec(r.headers.get('set-cookie') ?? '')?.[1];
+      expect((await post('/api/login', { nickname: 'dana', password: 'whatever1' })).status).toBe(401); // no password yet
+      expect((await post('/api/account/password', { password: 'short' }, dana.token)).status).toBe(400);
+      expect((await post('/api/account/password', { password: 'correct horse' }, dana.token)).status).toBe(200);
+      expect((await post('/api/account/password', { password: 'another one', current: 'nope' }, dana.token)).status).toBe(403);
+      expect((await post('/api/join', { nickname: 'DANA' })).status).toBe(409);
+      expect((await post('/api/login', { nickname: 'Dana', password: 'wrong pass' })).status).toBe(401);
+      const second = await post('/api/login', { nickname: 'Dana', password: 'correct horse' });
+      expect(second.status).toBe(200);
+      const token2 = cookieOf(second)!;
+      const me = await (await fetch(`${base}/api/me`, { headers: { cookie: `${COOKIE}=${token2}` } })).json() as { user: { nickname: string; registered: boolean } };
+      expect(me.user).toMatchObject({ nickname: 'dana', registered: true });
+      // Logging out the second device leaves the first signed in.
+      await post('/api/leave', {}, token2);
+      expect(((await (await fetch(`${base}/api/me`, { headers: { cookie: `${COOKIE}=${token2}` } })).json()) as { user: unknown }).user).toBeNull();
+      expect(((await (await fetch(`${base}/api/me`, { headers: { cookie: `${COOKIE}=${dana.token}` } })).json()) as { user: unknown }).user).not.toBeNull();
     } finally {
       server.close();
     }

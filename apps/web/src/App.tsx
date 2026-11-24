@@ -267,11 +267,11 @@ export function App() {
   const isPlay = location.pathname.replace(/\/$/, '') === '/play' || !!ROOM;
   const badRoom = location.pathname.startsWith('/room/') && !ROOM;
   const isRealtime = /^\/realtime(\/|$)/.test(location.pathname);
-  const [me, setMe] = useState<{ user: { nickname: string } | null; session: SessionInfo | null; offset: number } | 'loading' | 'error' | 'noroom'>('loading');
+  const [me, setMe] = useState<{ user: { nickname: string; registered: boolean } | null; session: SessionInfo | null; offset: number } | 'loading' | 'error' | 'noroom'>('loading');
 
   const load = useCallback(() => {
     Promise.all([
-      fetch(`/api/me${roomQuery}`).then((r) => r.json() as Promise<{ user: { nickname: string } | null; session: SessionInfo | null; serverNow: number }>),
+      fetch(`/api/me${roomQuery}`).then((r) => r.json() as Promise<{ user: { nickname: string; registered: boolean } | null; session: SessionInfo | null; serverNow: number }>),
       ROOM ? fetch(`/api/rooms/${ROOM}`).then((r) => r.ok) : true,
     ])
       .then(([m, found]) => setMe(found ? { user: m.user, session: m.session, offset: m.serverNow - Date.now() } : 'noroom'))
@@ -294,7 +294,7 @@ export function App() {
       </div>
     );
   else if (me === 'loading') body = <Splash />;
-  else if (isRealtime && me !== 'error') body = <Suspense fallback={<Splash />}><RealtimeApp nickname={me.user?.nickname ?? null} /></Suspense>;
+  else if (isRealtime && me !== 'error') body = <Suspense fallback={<Splash />}><RealtimeApp user={me.user} onAuth={load} /></Suspense>;
   else if (isRooms && me !== 'error') body = <RoomsPage signedIn={!!me.user} onJoined={load} />;
   else if (me === 'error')
     body = (
@@ -307,7 +307,7 @@ export function App() {
         </div>
       </div>
     );
-  else if (!isPlay) body = <Home nickname={me.user?.nickname ?? null} session={me.session} offset={me.offset} />;
+  else if (!isPlay) body = <Home nickname={me.user?.nickname ?? null} registered={!!me.user?.registered} onAuth={load} session={me.session} offset={me.offset} />;
   else if (!me.user) body = <Join session={me.session} offset={me.offset} onJoined={load} />;
   else body = <Game />;
 

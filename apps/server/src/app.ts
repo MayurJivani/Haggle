@@ -5,7 +5,9 @@ import express, { type Request, type Response, type NextFunction } from 'express
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { z } from 'zod';
-import { COOKIE, COOKIE_MAX_AGE_MS, clientKey, cookieFrom, createUser, nicknameSchema, originAllowed, userForToken } from './auth.js';
+import {
+  COOKIE, COOKIE_MAX_AGE_MS, clientKey, cookieFrom, createUser, login, logout, nicknameSchema, originAllowed, passwordSchema, setPassword, userForToken,
+} from './auth.js';
 import type { Sql } from './db/db.js';
 import type { Env } from './env.js';
 import { logger } from './logger.js';
@@ -84,7 +86,15 @@ export function createApp(sql: Sql, engine: Engine, env: Env, rt: Realtime | nul
     },
   });
 
+  // Password guesses: a few per minute per network is plenty for a person and useless for a guesser.
+  const passwordLimiter = rateLimit({
+    windowMs: 15 * 60_000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false, keyGenerator: ipKey,
+    handler: (_req, res) => void res.status(429).json({ error: 'Too many password attempts. Wait 15 minutes and try again.' }),
+  });
+
   const secure = (req: Request) => req.secure;
+  const setCookie = (req: Request, res: Response, token: string) =>
+    res.cookie(COOKIE, token, { httpOnly: true, sameSite: 'lax', secure: secure(req), maxAge: COOKIE_MAX_AGE_MS, path: '/' });
 
   const userOf = (req: Request) => userForToken(sql, cookieFrom(req.headers.cookie, COOKIE));
   const codeSchema = z.string().regex(ROOM_CODE);
@@ -102,19 +112,37 @@ export function createApp(sql: Sql, engine: Engine, env: Env, rt: Realtime | nul
     const parsed = z.object({ nickname: nicknameSchema }).safeParse(req.body);
     if (!parsed.success) return void res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Invalid nickname' });
     const created = await createUser(sql, parsed.data.nickname);
-    if (!created) return void res.status(409).json({ error: 'That name is taken. Try another.' });
-    res.cookie(COOKIE, created.token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: secure(req),
-      maxAge: COOKIE_MAX_AGE_MS,
-      path: '/',
-    });
+    if (!created) {
+      const [owner] = await sql<{ registered: boolean }[]>`SELECT password_hash IS NOT NULL AS registered FROM users WHERE lower(nickname) = lower(${parsed.data.nickname})`;
+      return void res.status(409).json({ error: owner?.registered ? 'That name is registered. Log in with its password.' : 'That name is taken. Try another.' });
+    }
+    setCookie(req, res, created.token);
     logger.info({ user: created.user.id }, 'user joined');
     res.status(201).json({ user: created.user });
   });
 
-  app.post('/api/leave', (req, res) => {
+  app.post('/api/login', passwordLimiter, async (req, res) => {
+    const parsed = z.object({ nickname: z.string().trim().min(1).max(20), password: z.string().min(1).max(128) }).safeParse(req.body);
+    if (!parsed.success) return void res.status(400).json({ error: 'Enter your trader name and password' });
+    const done = await login(sql, parsed.data.nickname, parsed.data.password);
+    if (!done) return void res.status(401).json({ error: 'Wrong name or password' });
+    setCookie(req, res, done.token);
+    logger.info({ user: done.user.id }, 'user logged in');
+    res.json({ user: done.user });
+  });
+
+  app.post('/api/account/password', passwordLimiter, async (req, res) => {
+    const user = await userOf(req);
+    if (!user) return void res.status(401).json({ error: 'Pick a trader name first' });
+    const parsed = z.object({ password: passwordSchema, current: z.string().max(128).optional() }).safeParse(req.body);
+    if (!parsed.success) return void res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Invalid password' });
+    const r = await setPassword(sql, user.id, parsed.data.password, parsed.data.current);
+    if (r === 'wrong_current') return void res.status(403).json({ error: 'Your current password is wrong' });
+    res.json({ user: { ...user, registered: true } });
+  });
+
+  app.post('/api/leave', async (req, res) => {
+    await logout(sql, cookieFrom(req.headers.cookie, COOKIE));
     res.clearCookie(COOKIE, { path: '/', httpOnly: true, sameSite: 'lax', secure: secure(req) });
     res.status(204).end();
   });

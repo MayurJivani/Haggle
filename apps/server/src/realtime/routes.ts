@@ -55,6 +55,8 @@ export function realtimeRouter(rt: Realtime, userOf: (req: Request) => Promise<U
   const signedIn = async (req: Request, res: Response) => {
     const u = await userOf(req);
     if (!u) res.status(401).json({ error: 'Pick a nickname first' });
+    // RealTime standings last for weeks, so the name behind them must be claimed with a password.
+    else if (!u.registered) return void res.status(403).json({ error: 'Set a password for your trader name to play RealTime', code: 'needs_password' });
     return u;
   };
   const seasonOf = async (req: Request, res: Response) => {

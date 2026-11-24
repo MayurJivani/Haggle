@@ -1,5 +1,6 @@
 import { Search, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ClaimName } from '../components/ceremony';
 import { Change, Lattice, Pnl } from '../components/chrome';
 import { money, pct, signedMoney, tone } from '../lib/format';
 import { uuid } from '../lib/uuid';
@@ -414,7 +415,7 @@ export function Stock({ id, signedIn }: { id: number; signedIn: boolean }) {
       <div className="grid content-start gap-4">
         {i.kind === 'index'
           ? <Panel title="Trade"><Empty>Indices cannot be bought. Search for an ETF that tracks the {i.name}.</Empty></Panel>
-          : signedIn ? <TradePanel i={i} q={q} ex={ex} /> : <Panel title="Trade"><Empty><a href="/play" className="text-saffron">Pick a nickname</a> to trade with virtual cash.</Empty></Panel>}
+          : signedIn ? <TradePanel i={i} q={q} ex={ex} /> : <Panel title="Trade"><Empty><a href="/realtime" className="text-saffron">Sign in</a> to trade with virtual cash.</Empty></Panel>}
       </div>
     </div>
   );
@@ -828,6 +829,7 @@ export function Settings() {
   const save = (pub: boolean, muted: string[]) => void api('/profile', { method: 'PUT', json: { public: pub, muted } }).then(reload);
   return (
     <div className="grid max-w-xl gap-4">
+      <Panel title="Password"><div className="p-4"><ClaimName registered onDone={() => {}} /></div></Panel>
       <Panel title="Privacy">
         <label className="flex items-start gap-3 p-4 text-sm">
           <input type="checkbox" checked={data.public} onChange={(e) => save(e.target.checked, data.muted)} className="mt-1" />
