@@ -1,6 +1,6 @@
 import { MotionConfig } from 'motion/react';
 import { ArrowLeft, BarChart3, LineChart, Newspaper, Store, Wallet } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Bell, Join, Lobby, Results, ShareCard, Splash } from './components/ceremony';
 import { Overview, Screener } from './components/dashboard';
 import { Host } from './components/host';
@@ -11,6 +11,9 @@ import { clock } from './lib/format';
 import { game, ROOM, roomQuery, useGame, type SessionInfo } from './lib/game';
 import { RoomBar, RoomsPage } from './components/rooms';
 import { Home } from './components/home';
+
+// RealTime is a separate chunk: the classic game never downloads it.
+const RealtimeApp = lazy(() => import('./realtime/App').then((m) => ({ default: m.RealtimeApp })));
 
 type Tab = 'market' | 'stock' | 'portfolio' | 'news' | 'board';
 const TABS: { id: Tab; label: string; Icon: typeof Store }[] = [
@@ -263,6 +266,7 @@ export function App() {
   const isRooms = location.pathname.replace(/\/$/, '') === '/rooms';
   const isPlay = location.pathname.replace(/\/$/, '') === '/play' || !!ROOM;
   const badRoom = location.pathname.startsWith('/room/') && !ROOM;
+  const isRealtime = /^\/realtime(\/|$)/.test(location.pathname);
   const [me, setMe] = useState<{ user: { nickname: string } | null; session: SessionInfo | null; offset: number } | 'loading' | 'error' | 'noroom'>('loading');
 
   const load = useCallback(() => {
@@ -290,6 +294,7 @@ export function App() {
       </div>
     );
   else if (me === 'loading') body = <Splash />;
+  else if (isRealtime && me !== 'error') body = <Suspense fallback={<Splash />}><RealtimeApp nickname={me.user?.nickname ?? null} /></Suspense>;
   else if (isRooms && me !== 'error') body = <RoomsPage signedIn={!!me.user} onJoined={load} />;
   else if (me === 'error')
     body = (

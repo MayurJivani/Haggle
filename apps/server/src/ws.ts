@@ -8,6 +8,7 @@ import { logger } from './logger.js';
 import type { ClientMsg } from './protocol.js';
 import type { Client, Engine } from './session/engine.js';
 import { MAX_ORDER_QTY } from './trading/portfolio.js';
+import type { Client as RtClient, Realtime } from './realtime/service.js';
 
 export const ROOM_CODE = /^[A-Z2-9]{8}$/;
 
@@ -27,8 +28,9 @@ const STRIKES_BEFORE_CLOSE = 50;
 /** Skip price ticks for a client this far behind; the next tick carries absolute prices anyway. */
 const SLOW_CLIENT_BYTES = 512 * 1024;
 
-export function attachSockets(server: Server, sql: Sql, engine: Engine, allowedOrigins: string[]) {
+export function attachSockets(server: Server, sql: Sql, engine: Engine, allowedOrigins: string[], rt: Realtime | null = null) {
   const wss = new WebSocketServer({ noServer: true, maxPayload: 1024, perMessageDeflate: false });
+  const rtWss = new WebSocketServer({ noServer: true, maxPayload: 8192, perMessageDeflate: false });
 
   server.on('upgrade', (req: IncomingMessage, socket: Duplex, head: Buffer) => {
     const refuse = (status: string) => {
@@ -36,6 +38,14 @@ export function attachSockets(server: Server, sql: Sql, engine: Engine, allowedO
       socket.destroy();
     };
     const url = new URL(req.url ?? '/', 'http://x');
+    if (url.pathname === '/rt/ws' && rt) {
+      if (!originAllowed(req.headers.origin, req.headers.host, allowedOrigins)) return refuse('403 Forbidden');
+      // Prices are for everyone; the cookie only decides whose fills and notifications arrive here.
+      void userForToken(sql, cookieFrom(req.headers.cookie, COOKIE))
+        .then((user) => rtWss.handleUpgrade(req, socket, head, (ws) => onRealtime(ws, rt, user?.id ?? '')))
+        .catch(() => refuse('503 Service Unavailable'));
+      return;
+    }
     if (url.pathname !== '/ws') return refuse('404 Not Found');
     if (!originAllowed(req.headers.origin, req.headers.host, allowedOrigins)) return refuse('403 Forbidden');
     // A room code is the key to a room: private rooms are reached by nothing else.
@@ -113,5 +123,53 @@ export function attachSockets(server: Server, sql: Sql, engine: Engine, allowedO
     });
   }
 
-  return wss;
+  return [wss, rtWss];
+}
+
+const rtMsg = z.object({ t: z.enum(['sub', 'unsub']), ids: z.array(z.number().int().positive()).max(300) });
+
+/** One RealTime socket: the instruments on its screen, and the player's own order and fill events. */
+function onRealtime(ws: WebSocket, rt: Realtime, userId: string) {
+  let alive = true;
+  let tokens = BURST;
+  let last = Date.now();
+  const client: RtClient = {
+    userId,
+    ids: new Set(),
+    send(m) {
+      if (ws.readyState !== ws.OPEN) return;
+      // A slow phone skips price batches; the next one carries absolute prices anyway.
+      if (m.t === 'q' && ws.bufferedAmount > SLOW_CLIENT_BYTES) return;
+      ws.send(JSON.stringify(m));
+    },
+  };
+  ws.on('pong', () => (alive = true));
+  const heartbeat = setInterval(() => {
+    if (!alive) return ws.terminate();
+    alive = false;
+    ws.ping();
+  }, 20_000);
+  ws.on('message', (raw, isBinary) => {
+    const now = Date.now();
+    tokens = Math.min(BURST, tokens + ((now - last) / 1000) * REFILL_PER_SEC);
+    last = now;
+    if (tokens < 1) return;
+    tokens -= 1;
+    let msg: unknown = null;
+    try {
+      msg = isBinary ? null : JSON.parse(raw.toString());
+    } catch {
+      return;
+    }
+    const m = rtMsg.safeParse(msg);
+    if (!m.success) return;
+    if (m.data.t === 'sub') rt.subscribe(client, m.data.ids);
+    else rt.unsubscribe(client, m.data.ids);
+  });
+  ws.on('close', () => {
+    clearInterval(heartbeat);
+    rt.detach(client);
+  });
+  ws.on('error', (err) => logger.warn({ err }, 'realtime socket error'));
+  rt.attach(client);
 }

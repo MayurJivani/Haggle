@@ -12,6 +12,7 @@ export default defineConfig({
       '/api': api,
       '/healthz': api,
       '/ws': { target: api, ws: true },
+      '/rt/ws': { target: api, ws: true },
     },
   },
 });

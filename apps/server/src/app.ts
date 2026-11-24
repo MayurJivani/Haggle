@@ -13,6 +13,8 @@ import { metrics, renderMetrics } from './metrics.js';
 import { HOUSE, type Engine } from './session/engine.js';
 import { ASSETS, CORE_TICKERS, SECTORS } from './market/assets.js';
 import type { IndexHistory, PlayerResult, PriceHistory, Range } from './protocol.js';
+import { realtimeRouter } from './realtime/routes.js';
+import type { Realtime } from './realtime/service.js';
 import {
   firstPrices, indexBars, participantId, priceBars, priceSpan, replayOf, resultFor, sessionById, sessionByCode, sessionResults, sessionsBetween, tradesFor,
   type PricePoint,
@@ -38,7 +40,7 @@ function bearerMatches(req: Request, token: string): boolean {
   return given.length === want.length && timingSafeEqual(given, want);
 }
 
-export function createApp(sql: Sql, engine: Engine, env: Env) {
+export function createApp(sql: Sql, engine: Engine, env: Env, rt: Realtime | null = null) {
   const app = express();
   app.disable('x-powered-by');
   if (env.TRUST_PROXY) app.set('trust proxy', 1);
@@ -420,6 +422,9 @@ export function createApp(sql: Sql, engine: Engine, env: Env) {
     const next = engine.nextNow();
     res.status(next ? 200 : 409).json({ next });
   });
+
+  if (rt) app.use('/api/rt', realtimeRouter(rt, userOf, ipKey));
+  else app.use('/api/rt', (_req, res) => void res.status(503).json({ error: 'Haggle RealTime is not configured on this server' }));
 
   app.get('/healthz', async (_req, res) => {
     try {
