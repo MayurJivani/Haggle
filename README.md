@@ -10,7 +10,7 @@ Play it at **[haggle.futile.studio](https://haggle.futile.studio)**.
 
 ## How a round goes
 
-Everyone joins with a nickname and gets €10,000 of virtual money. When the bell rings, the whole room trades the same 75 real companies (five in each of 15 sectors) at the same simulated prices. News lands on every screen at the same moment, quarterly reports move the stocks, and the clock turns red for last calls. When the market closes, cash plus shares decides the ranking. A round takes about 15 minutes, and then the next one begins on the same market, which carries on from round to round.
+Everyone joins with a nickname and gets €10,000 of virtual money. When the bell rings, the whole room trades the same 75 real companies (five in each of 15 sectors) at the same simulated prices. News lands on every screen at the same moment, quarterly reports move the stocks, and the clock turns red for last calls. When the market closes, cash plus shares decides the ranking. A round takes about 15 minutes, and then the next one begins on the same market, which never resets between rounds.
 
 | Phase | Length | What happens |
 | --- | --- | --- |
