@@ -1,12 +1,22 @@
+<div align="center">
+
+<img src="docs/screenshots/home.png" alt="Haggle home page with the live tape of company prices, today's movers and the round timetable" width="100%">
+
 # Haggle
 
-**A live stock market for the whole room.** Same prices, same news, one clock. The fattest purse at the closing bell wins.
+**A live stock market for the whole room. Same prices, same news, one clock. The fattest purse at the closing bell wins.**
 
-Play it at **[haggle.futile.studio](https://haggle.futile.studio)**.
+[Play it](https://haggle.futile.studio) · [How it works](HOW-IT-WORKS.md) · [Futile Studio](https://futile.studio)
 
-![Stack](https://img.shields.io/badge/stack-React%20%C2%B7%20Node%20%C2%B7%20Postgres-ffb020) ![Realtime](https://img.shields.io/badge/live-WebSockets-7c83ff) ![Players](https://img.shields.io/badge/load%20tested-1%2C000%20players-3ddc84)
+[![live](https://img.shields.io/badge/live-haggle.futile.studio-0d0b19?style=flat-square&labelColor=0b0b0b)](https://haggle.futile.studio)
+![React](https://img.shields.io/badge/React-19-0b0b0b?style=flat-square&logo=react)
+![Node](https://img.shields.io/badge/Node-22-0b0b0b?style=flat-square&logo=nodedotjs)
+![Postgres](https://img.shields.io/badge/Postgres-16-0b0b0b?style=flat-square&logo=postgresql)
+![last commit](https://img.shields.io/github/last-commit/MayurJivani/Haggle?style=flat-square&labelColor=0b0b0b&color=0d0b19)
 
-![Haggle home page](docs/screenshots/home.png)
+</div>
+
+> **Futile Studio · FS-003** · Games, market game · Live since Oct 2026
 
 ## How a round goes
 
@@ -40,7 +50,11 @@ The second mode swaps the simulation for the real market. You paper-trade real s
 
 RealTime stays off until a market data provider is configured. [docs/realtime.md](docs/realtime.md) covers the providers, their licences, the fill rules and how to test it outside market hours.
 
-## Run it yourself
+## Stack
+
+React, Vite and Tailwind on the front, with Lightweight Charts and Motion. Node and TypeScript on the back, with Express, one WebSocket server and Postgres. One process owns the market, so the clock, the prices and every order have a single authority. Money is kept in whole cents, so no rounding error can create or lose a cent.
+
+## Running it locally
 
 **Docker Compose** (Postgres included):
 
@@ -59,13 +73,25 @@ cp .env.example .env    # point DATABASE_URL at your database, add ALLOWED_ORIGI
 npm run dev             # API on :4371, web on :5273
 ```
 
-Migrations run at startup. Every setting, with what it does, is in [.env.example](.env.example).
+Migrations run at startup.
 
 To try RealTime without an API key, use the development feed. Its prices are generated and every screen says so, and it refuses to start in production:
 
 ```bash
 REALTIME_PROVIDERS=dev REALTIME_CLOCK=2026-11-24T15:10:00Z npm run dev
 ```
+
+## Configuration
+
+Every setting, with what it does and its default, is in [.env.example](.env.example). The ones you will touch first:
+
+- `DATABASE_URL`: the Postgres the server connects to (local dev).
+- `POSTGRES_PASSWORD`: password for the bundled Postgres (Docker Compose only).
+- `ADMIN_TOKEN`: the host code for `/host` and `GET /metrics`. Unset, both answer 404.
+- `LOBBY_SECONDS`, `TRADING_SECONDS`, `CLOSING_SECONDS`, `RESULTS_SECONDS`, `TICK_MS`: round timing.
+- `MAX_PLAYERS`, `MAX_ROOMS`, `MARKET_SEED`: session size, custom room cap, a fixed seed for demos.
+- `ALLOWED_ORIGINS`, `TRUST_PROXY`, `JOIN_RATE_LIMIT`: network and rate limits.
+- `REALTIME_PROVIDERS` plus `ALPACA_*` and `TWELVEDATA_*`: market data for RealTime.
 
 ## Running an event
 
@@ -85,12 +111,16 @@ npm run loadtest                                                         # 1,000
 
 On one laptop, 1,000 simulated players traded for two minutes with a p95 order round trip of 5 ms. No order ran twice and no reconnect lost a position. The full numbers are in [HOW-IT-WORKS.md](HOW-IT-WORKS.md#load-testing).
 
-## How it's built
-
-React, Vite and Tailwind on the front, with Lightweight Charts and Motion. Node and TypeScript on the back, with Express, one WebSocket server and Postgres. One process owns the market, so the clock, the prices and every order have a single authority. Money is kept in whole cents, so no rounding error can create or lose a cent.
+## More reading
 
 - [HOW-IT-WORKS.md](HOW-IT-WORKS.md): architecture, the price model, exact accounting, restart recovery, security, deployment.
 - [docs/realtime.md](docs/realtime.md): Haggle RealTime.
 - [docs/](docs/): market research, model calibration and the scenario library.
 
-Made by [Futile Studio](https://futile.studio).
+## Licence
+
+No licence file yet, all rights reserved.
+
+---
+
+<p align="center"><sub>Built by <a href="https://github.com/MayurJivani">Mayur Jivani</a> at <a href="https://futile.studio">Futile Studio</a>. Everything is futile. Do it anyway.</sub></p>
