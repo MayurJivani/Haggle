@@ -277,7 +277,6 @@ export function Home({ nickname, session: first, offset }: { nickname: string | 
               <motion.a href="/play" whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} transition={{ type: 'spring', stiffness: 400, damping: 28 }} className="grid h-14 place-items-center rounded-md bg-saffron px-8 text-lg font-bold text-night">Enter the market</motion.a>
               <motion.a href="/rooms" whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} transition={{ type: 'spring', stiffness: 400, damping: 28 }} className="grid h-14 place-items-center rounded-md border border-saffron/70 px-8 text-lg font-bold text-saffron hover:bg-saffron-deep">Play with friends</motion.a>
             </div>
-            <a href="/realtime" className="text-sm font-semibold text-ink-2 hover:text-saffron">Haggle RealTime: paper-trade the real stock market on its real clock →</a>
             <p className="flex items-center gap-2 text-sm text-ink-2" role="status">
               <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-up motion-reduce:animate-none" aria-hidden />
               {marketStatus(session, t)}
@@ -295,6 +294,14 @@ export function Home({ nickname, session: first, offset }: { nickname: string | 
         <Crier news={floor?.news ?? []} />
         <Stalls quotes={quotes} />
         <Custom rooms={rooms?.rooms ?? []} t={t} />
+        <section aria-labelledby="home-realtime" className="flex flex-col items-start gap-3 border-t border-rule pt-8">
+          <h2 id="home-realtime" className="flex items-center gap-2 font-display text-2xl font-black uppercase">
+            Haggle RealTime
+            <span className="rounded-sm bg-saffron-deep px-1.5 py-0.5 font-sans text-[11px] font-bold tracking-[0.08em] text-saffron">BETA</span>
+          </h2>
+          <p className="max-w-xl text-sm text-ink-2">Paper-trade real stocks at real prices, on the real exchange clock. Virtual cash, real market.</p>
+          <a href="/realtime" className="rounded-md border border-saffron/70 px-5 py-2.5 text-sm font-bold text-saffron hover:bg-saffron-deep">Try RealTime</a>
+        </section>
         <footer className="flex flex-col gap-3 border-t border-rule pt-6 text-[13px] text-ink-3">
           <SimulatedChip />
           <p className="max-w-3xl">Virtual money only. Company names are real; every price, report and headline is simulated, and none of it is advice. Market orders and whole shares, with no shorting or leverage. Trades never move prices, so nobody can push the market around: you only have the news and your nerve.</p>
