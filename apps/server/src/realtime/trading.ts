@@ -111,7 +111,8 @@ export class Trading {
 
   // ---------------------------------------------------------------- seasons
 
-  async join(userId: string, seasonId: string): Promise<{ ok: true; accountId: string } | { ok: false; reason: 'season_closed' }> {
+  /** `startingCents` is the player's own pick; without one the season's default applies. */
+  async join(userId: string, seasonId: string, startingCents?: number): Promise<{ ok: true; accountId: string } | { ok: false; reason: 'season_closed' }> {
     return this.sql.begin(async (tx) => {
       const [s] = await tx<{ starting_cash_cents: number; status: string; join_until: Date | null; ends_at: Date | null }[]>`
         SELECT starting_cash_cents, status, join_until, ends_at FROM rt_seasons WHERE id = ${seasonId} FOR SHARE`;
@@ -119,10 +120,11 @@ export class Trading {
       if (had) return { ok: true as const, accountId: had.id };
       const t = this.now();
       if (!s || s.status === 'finished' || (s.join_until && t >= s.join_until.getTime()) || (s.ends_at && t >= s.ends_at.getTime())) return { ok: false as const, reason: 'season_closed' as const };
+      const cash = startingCents ?? s.starting_cash_cents;
       const [a] = await tx<{ id: string }[]>`
-        INSERT INTO rt_accounts (season_id, user_id, cash_cents, starting_cash_cents) VALUES (${seasonId}, ${userId}, ${s.starting_cash_cents}, ${s.starting_cash_cents})
+        INSERT INTO rt_accounts (season_id, user_id, cash_cents, starting_cash_cents) VALUES (${seasonId}, ${userId}, ${cash}, ${cash})
         RETURNING id`;
-      await tx`INSERT INTO rt_ledger (account_id, kind, amount_cents, balance_after_cents, note) VALUES (${a!.id}, 'grant', ${s.starting_cash_cents}, ${s.starting_cash_cents}, 'Starting cash')`;
+      await tx`INSERT INTO rt_ledger (account_id, kind, amount_cents, balance_after_cents, note) VALUES (${a!.id}, 'grant', ${cash}, ${cash}, 'Starting cash')`;
       return { ok: true as const, accountId: a!.id };
     });
   }

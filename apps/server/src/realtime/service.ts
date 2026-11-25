@@ -51,7 +51,7 @@ interface SeasonRow {
 }
 interface AccountMark { id: string; user_id: string; nickname: string; cash_cents: number; starting_cash_cents: number; public: boolean }
 
-const OPEN_RULES = 'Always on. Join any time with the starting cash; your return is measured against it. No end date and no prize, just the standing.';
+const OPEN_RULES = 'Always on. Join any time with a starting amount you pick; your return is measured against it. No end date and no prize, just the standing.';
 const SNAPSHOT_MS = 15 * 60_000;
 
 export interface Client {
@@ -210,7 +210,7 @@ export class Realtime {
       const ends = wallToUtc(p.end, '00:00', this.cfg.tz);
       if (ends <= t) continue;
       const join = Math.min(ends, wallToUtc(addDays(p.start, p.joinDays), '00:00', this.cfg.tz));
-      const rules = `Everyone starts with the same cash at ${p.start} 00:00 (${this.cfg.tz}) and the standing is frozen at ${p.end} 00:00. ` +
+      const rules = `Starts ${p.start} 00:00 (${this.cfg.tz}), ranked by return (you pick your starting cash), frozen at ${p.end} 00:00. ` +
         `Join until ${new Date(join).toISOString().slice(0, 16).replace('T', ' ')} UTC; later sign-ups wait for the next one, so nobody starts with a head start on the field.`;
       await this.sql`
         INSERT INTO rt_seasons (slug, name, kind, starting_cash_cents, starts_at, ends_at, join_until, rules, status)
@@ -242,7 +242,8 @@ export class Realtime {
     for (const s of due) {
       await this.sql`UPDATE rt_seasons SET status = 'finished' WHERE id = ${s.id}`;
       await this.trading.cancelSeason(s.id, 'The competition ended');
-      const rows = await this.board(s.id, 'value', 100_000);
+      // Players pick their own starting cash, so the final standing is by return.
+      const rows = await this.board(s.id, 'return', 100_000);
       if (rows.length) {
         await this.sql`
           INSERT INTO rt_season_results ${this.sql(rows.map((r) => ({
@@ -300,7 +301,7 @@ export class Realtime {
     positions.sort((x, y) => (y.value ?? y.cost) - (x.value ?? x.cost));
     const value = a.cash_cents + invested;
     return {
-      accountId, season: seasonView({ ...season, players: players[0]!.n, joined: true }), cash: a.cash_cents, reserved: a.reserved_cents, invested, value, realized, unrealized,
+      accountId, season: seasonView({ ...season, starting_cash_cents: a.starting_cash_cents, players: players[0]!.n, joined: true }), cash: a.cash_cents, reserved: a.reserved_cents, invested, value, realized, unrealized,
       dayPnl: dayKnown ? dayPnl : null, returnBps: returnBps(BigInt(value), BigInt(a.starting_cash_cents)), positions, unpriced,
     };
   }

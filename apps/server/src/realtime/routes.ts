@@ -190,7 +190,9 @@ export function realtimeRouter(rt: Realtime, userOf: (req: Request) => Promise<U
     if (!u) return;
     const s = await rt.season(req.params.id!);
     if (!s) return void res.status(404).json({ error: 'No such competition' });
-    const out = await rt.trading.join(u.id, s.id);
+    const body = z.object({ startingCash: z.number().int().min(100).max(20_000).optional() }).safeParse(req.body ?? {});
+    if (!body.success) return void res.status(400).json({ error: 'Starting cash must be a whole number from €100 to €20,000' });
+    const out = await rt.trading.join(u.id, s.id, body.data.startingCash === undefined ? undefined : body.data.startingCash * 100);
     if (!out.ok) return void res.status(409).json({ reason: out.reason, error: 'Registration for this competition has closed' });
     res.json(out);
   });
@@ -199,12 +201,8 @@ export function realtimeRouter(rt: Realtime, userOf: (req: Request) => Promise<U
     const u = await signedIn(req, res);
     const s = u && (await seasonOf(req, res));
     if (!u || !s) return;
-    let account = await rt.accountFor(u.id, s.id);
-    // The open season is joined the first time a player looks at it.
-    if (!account && s.kind === 'open') {
-      const j = await rt.trading.join(u.id, s.id);
-      account = j.ok ? j.accountId : null;
-    }
+    // No auto-join: the player picks a starting amount first.
+    const account = await rt.accountFor(u.id, s.id);
     if (!account) return void res.json({ portfolio: null });
     res.json({ portfolio: await rt.portfolio(account) });
   });
@@ -272,7 +270,7 @@ export function realtimeRouter(rt: Realtime, userOf: (req: Request) => Promise<U
   r.get('/leaderboard', async (req, res) => {
     const s = await seasonOf(req, res);
     if (!s) return;
-    const sort = z.enum(['value', 'return', 'day', 'pick']).catch('value').parse(req.query.sort);
+    const sort = z.enum(['value', 'return', 'day', 'pick']).catch('return').parse(req.query.sort);
     const u = await userOf(req);
     const following = u ? new Set(await rt.following(u.id)) : new Set<string>();
     const rows = s.status === 'finished' ? await rt.results(s.id) : await rt.board(s.id, sort, 100);

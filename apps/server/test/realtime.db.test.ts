@@ -357,6 +357,11 @@ describe.skipIf(!ADMIN_URL)('realtime trading against postgres', () => {
     expect(await rt.trading.join(user.id, s!.id)).toEqual({ ok: false, reason: 'season_closed' });
     await sql`UPDATE rt_seasons SET join_until = ${new Date(OPEN + 60_000)} WHERE id = ${s!.id}`;
     expect((await rt.trading.join(user.id, s!.id)).ok).toBe(true);
+    // A player's own pick replaces the season default.
+    const { user: picker } = (await createUser(sql, 'rt_picker'))!;
+    const j = await rt.trading.join(picker.id, s!.id, 123_400);
+    expect((await rt.portfolio(j.ok ? j.accountId : ''))!.season.startingCash).toBe(123_400);
+    await sql`DELETE FROM rt_accounts WHERE user_id = ${picker.id}`;
     price(aapl, 100);
     const r = await rt.trading.place(user.id, s!.id, { clientOrderId: randomUUID(), instrumentId: aapl, side: 'buy', type: 'market', qty: Number(MICRO) });
     expect(r.ok).toBe(true);

@@ -549,14 +549,47 @@ function useFx(currency: string) {
   return rate;
 }
 
+const START_PRESETS = [1_000, 5_000, 10_000];
+
+/** Starting cash for a new account: a preset or a custom whole-euro amount from €100 to €20,000. */
+function JoinPicker({ season, onJoined }: { season: Season; onJoined: () => void }) {
+  const [pick, setPick] = useState<number | 'custom'>(10_000);
+  const [custom, setCustom] = useState('2500');
+  const amount = pick === 'custom' ? Number(custom) : pick;
+  const valid = Number.isInteger(amount) && amount >= 100 && amount <= 20_000;
+  const join = async () => {
+    try {
+      await api(`/seasons/${season.id}/join`, { method: 'POST', json: { startingCash: amount } });
+      onJoined();
+    } catch (e) {
+      toast((e as Error).message, 'down');
+    }
+  };
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+      <select aria-label="Starting cash" value={String(pick)} onChange={(e) => setPick(e.target.value === 'custom' ? 'custom' : Number(e.target.value))} className="rounded-md border border-rule bg-night-2 px-2 py-1.5">
+        {START_PRESETS.map((v) => <option key={v} value={v}>{money(v * 100)}</option>)}
+        <option value="custom">Custom</option>
+      </select>
+      {pick === 'custom' && (
+        <input aria-label="Custom starting cash in euros" type="number" min={100} max={20_000} step={1} value={custom} onChange={(e) => setCustom(e.target.value)} className="w-24 rounded-md border border-rule bg-night-2 px-2 py-1.5 tabular-nums" />
+      )}
+      <button type="button" disabled={!valid} onClick={() => void join()} className="rounded-md bg-saffron px-3 py-1.5 font-bold text-night disabled:opacity-40">Join</button>
+      {!valid && <span className="text-down">€100 to €20,000</span>}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------- portfolio
 
 export function PortfolioPage() {
   const [season, setSeason] = useSeason();
   const version = useLive((s) => s.version);
-  const { data } = useLoad<{ portfolio: Portfolio | null }>(`/portfolio?season=${season}`, [version]);
+  const { data, reload } = useLoad<{ portfolio: Portfolio | null }>(`/portfolio?season=${season}`, [version]);
   const hist = useLoad<{ points: [number, number][] }>(`/history?season=${season}`, [version]).data;
-  const seasons = useLoad<{ seasons: Season[] }>('/seasons').data?.seasons.filter((s) => s.joined) ?? [];
+  const all = useLoad<{ seasons: Season[] }>('/seasons', [data]).data?.seasons;
+  const seasons = all?.filter((s) => s.joined) ?? [];
+  const here = all?.find((s) => s.slug === season);
   usePositionQuotes(data?.portfolio ?? null);
   const quotes = useLive((s) => s.quotes);
   const p = data?.portfolio;
@@ -569,7 +602,12 @@ export function PortfolioPage() {
           {!seasons.some((s) => s.slug === season) && <option value={season}>{season}</option>}
         </select>
       </div>
-      {!p ? <Panel><Empty>You have not joined this competition.</Empty></Panel> : (
+      {!p ? (
+        <Panel>
+          <Empty>You have not joined this competition.{here?.kind === 'open' && ' Pick your starting cash to begin.'}</Empty>
+          {here?.kind === 'open' && <div className="flex justify-center pb-4"><JoinPicker season={here} onJoined={reload} /></div>}
+        </Panel>
+      ) : (
         <>
           <Panel><Summary p={p} /></Panel>
           {hist && hist.points.length > 1 && <Panel title="Value over time"><Spark points={hist.points} start={p.season.startingCash} /></Panel>}
@@ -701,20 +739,15 @@ const SORTS: [string, string][] = [['value', 'Portfolio value'], ['return', 'Ret
 
 export function Leaderboard({ signedIn }: { signedIn: boolean }) {
   const [season, setSeason] = useSeason();
-  const [sort, setSort] = useState('value');
+  const [sort, setSort] = useState('return');
   const { data: seasons, reload: reloadSeasons } = useLoad<{ seasons: Season[] }>('/seasons');
   const { data, reload } = useLoad<{ rows: (BoardRow & { following: boolean })[]; you: string | null }>(`/leaderboard?season=${season}&sort=${sort}`);
   const now = useClock(30_000);
   const current = seasons?.seasons.find((s) => s.slug === season);
-  const join = async (s: Season) => {
-    try {
-      await api(`/seasons/${s.id}/join`, { method: 'POST', json: {} });
-      setSeason(s.slug);
-      reloadSeasons();
-      reload();
-    } catch (e) {
-      toast((e as Error).message, 'down');
-    }
+  const joined = (s: Season) => {
+    setSeason(s.slug);
+    reloadSeasons();
+    reload();
   };
   const follow = async (id: string, on: boolean) => {
     await api(`/follow/${id}`, { method: on ? 'PUT' : 'DELETE' }).catch(() => {});
@@ -758,11 +791,11 @@ export function Leaderboard({ signedIn }: { signedIn: boolean }) {
                     <span className="text-xs uppercase text-ink-3">{s.status}</span>
                   </div>
                   <p className="text-xs text-ink-3">
-                    {money(s.startingCash)} start · {s.players} player{s.players === 1 ? '' : 's'}
+                    {s.players} player{s.players === 1 ? '' : 's'}
                     {s.endsAt && ` · ${s.status === 'finished' ? 'ended' : 'ends'} ${new Date(s.endsAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`}
                   </p>
                   <p className="mt-1 text-xs text-ink-2">{s.rules}</p>
-                  {signedIn && canJoin && <button type="button" onClick={() => void join(s)} className="mt-2 rounded-md bg-saffron px-3 py-1.5 text-xs font-bold text-night">Join</button>}
+                  {signedIn && canJoin && <JoinPicker season={s} onJoined={() => joined(s)} />}
                   {s.joined && <span className="mt-1 block text-xs text-up">Joined</span>}
                   {!s.joined && !canJoin && s.status !== 'finished' && <span className="mt-1 block text-xs text-ink-3">Registration closed</span>}
                 </li>
