@@ -1,4 +1,5 @@
-import { Bell, Star } from 'lucide-react';
+import { Bell, Briefcase, LayoutGrid, Search, Star, Trophy } from 'lucide-react';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { Change, Wordmark } from '../components/chrome';
 import {
@@ -91,9 +92,9 @@ export function WatchStar({ id }: { id: number }) {
   );
 }
 
-export function Link({ to, children, className = '' }: { to: string; children: React.ReactNode; className?: string }) {
+export function Link({ to, children, className = '', current }: { to: string; children: React.ReactNode; className?: string; current?: boolean }) {
   return (
-    <a href={`/realtime${to}`} onClick={(e) => { if (!e.metaKey && !e.ctrlKey) { e.preventDefault(); go(to); } }} className={className}>
+    <a href={`/realtime${to}`} aria-current={current ? 'page' : undefined} onClick={(e) => { if (!e.metaKey && !e.ctrlKey) { e.preventDefault(); go(to); } }} className={className}>
       {children}
     </a>
   );
@@ -111,6 +112,12 @@ export const Panel = ({ title, right, children, className = '' }: { title?: stri
   </section>
 );
 
+/** The terminal's ease and the one spring every RealTime control shares. */
+export const EXPO = [0.16, 1, 0.3, 1] as const;
+export const SNAP = { type: 'spring', stiffness: 500, damping: 38 } as const;
+
+const TABS: [string, string, typeof Star][] = [['', 'Home', LayoutGrid], ['stocks', 'Stocks', Search], ['watchlist', 'Watch', Star], ['portfolio', 'Portfolio', Briefcase], ['leaderboard', 'Ranks', Trophy]];
+
 const NAV: [string, string][] = [
   ['', 'Overview'], ['markets', 'Markets'], ['stocks', 'Stocks'], ['watchlist', 'Watchlist'], ['portfolio', 'Portfolio'],
   ['orders', 'Orders'], ['leaderboard', 'Leaderboard'], ['history', 'History'],
@@ -119,25 +126,44 @@ const NAV: [string, string][] = [
 function Notes() {
   const notes = useLive((s) => s.notes);
   const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
   const unread = notes.filter((n) => !n.read).length;
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: PointerEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('pointerdown', away);
+    document.addEventListener('keydown', esc);
+    return () => (document.removeEventListener('pointerdown', away), document.removeEventListener('keydown', esc));
+  }, [open]);
   return (
-    <div className="relative">
-      <button type="button" aria-label={`Notifications, ${unread} unread`} onClick={() => (setOpen(!open), unread && void readNotes())} className="relative grid size-9 place-items-center rounded-md hover:bg-night-3">
+    <div ref={box} className="relative">
+      <button type="button" aria-expanded={open} aria-label={`Notifications, ${unread} unread`} onClick={() => (setOpen(!open), unread && void readNotes())} className="relative grid size-9 place-items-center rounded-md hover:bg-night-3">
         <Bell size={18} />
-        {unread > 0 && <span className="absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-saffron px-1 text-[10px] font-bold text-night">{unread}</span>}
+        <AnimatePresence>
+          {unread > 0 && (
+            <motion.span key="n" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={SNAP} className="absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-saffron px-1 text-[10px] font-bold text-night">{unread}</motion.span>
+          )}
+        </AnimatePresence>
       </button>
-      {open && (
-        <div className="absolute right-0 top-11 z-40 max-h-96 w-80 overflow-auto rounded-lg border border-rule bg-night-2 shadow-2xl">
-          {notes.length === 0 && <p className="p-4 text-sm text-ink-3">Fills, big moves on your watchlist and market opens show up here.</p>}
-          {notes.map((n) => (
-            <div key={n.id} className="border-b border-rule px-4 py-2.5 text-sm last:border-0">
-              <p>{n.text}</p>
-              <p className="text-xs text-ink-3">{new Date(n.at).toLocaleString()}</p>
-            </div>
-          ))}
-          <div className="border-t border-rule px-4 py-2 text-right"><Link to="/settings" className="text-xs text-saffron">Notification settings</Link></div>
-        </div>
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.18, ease: EXPO }} style={{ transformOrigin: 'top right' }}
+            className="absolute right-0 top-11 z-40 max-h-96 w-80 overflow-auto rounded-lg border border-rule bg-night-2 shadow-[0_18px_40px_rgba(0,0,0,0.55)]"
+          >
+            {notes.length === 0 && <p className="p-4 text-sm text-ink-3">Fills, big moves on your watchlist and market opens show up here.</p>}
+            {notes.map((n) => (
+              <div key={n.id} className="border-b border-rule px-4 py-2.5 text-sm last:border-0">
+                <p>{n.text}</p>
+                <p className="text-xs text-ink-3">{new Date(n.at).toLocaleString()}</p>
+              </div>
+            ))}
+            <div className="border-t border-rule px-4 py-2 text-right"><Link to="/settings" className="text-xs text-saffron">Notification settings</Link></div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -172,7 +198,8 @@ export function Shell({ nickname, children }: { nickname: string | null; childre
   const conn = useLive((s) => s.conn);
   const toasts = useLive((s) => s.toasts);
   return (
-    <div className="min-h-dvh pb-16 lg:pb-0">
+    <MotionConfig reducedMotion="user">
+    <div className="min-h-dvh pb-20 lg:pb-0">
       <header className="sticky top-0 z-30 border-b border-rule bg-night/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1500px] items-center gap-3 px-4 py-2.5">
           <a href="/" aria-label="Haggle home"><Wordmark className="text-2xl" /></a>
@@ -189,7 +216,10 @@ export function Shell({ nickname, children }: { nickname: string | null; childre
         </div>
         <nav aria-label="RealTime" className="mx-auto hidden max-w-[1500px] gap-1 px-4 lg:flex">
           {NAV.map(([to, label]) => (
-            <Link key={to} to={`/${to}`} className={`border-b-2 px-3 py-2 text-sm font-semibold ${page === to ? 'border-saffron text-ink' : 'border-transparent text-ink-2 hover:text-ink'}`}>{label}</Link>
+            <Link key={to} to={`/${to}`} current={page === to} className={`relative px-3 py-2.5 text-sm font-semibold transition-colors ${page === to ? 'text-ink' : 'text-ink-2 hover:text-ink'}`}>
+              {label}
+              {page === to && <motion.span layoutId="rt-nav" transition={SNAP} className="absolute inset-x-2 bottom-0 h-[2px] bg-saffron" />}
+            </Link>
           ))}
         </nav>
         <MarketStrip />
@@ -200,17 +230,27 @@ export function Shell({ nickname, children }: { nickname: string | null; childre
         )}
       </header>
       <main className="mx-auto max-w-[1500px] px-3 py-4 sm:px-4">{children}</main>
-      <nav aria-label="RealTime" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-rule bg-night/95 backdrop-blur lg:hidden">
-        {NAV.filter(([to]) => ['', 'stocks', 'watchlist', 'portfolio', 'leaderboard'].includes(to)).map(([to, label]) => (
-          <Link key={to} to={`/${to}`} className={`truncate py-3 text-center text-[11px] font-semibold ${page === to ? 'text-saffron' : 'text-ink-2'}`}>{label}</Link>
+      <nav aria-label="RealTime" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-rule bg-night-2 pb-[env(safe-area-inset-bottom)] lg:hidden">
+        {TABS.map(([to, label, Icon]) => (
+          <Link key={to} to={`/${to}`} current={page === to} className={`relative flex h-14 flex-col items-center justify-center gap-1 text-[11px] font-semibold uppercase tracking-[0.06em] ${page === to ? 'text-saffron' : 'text-ink-3'}`}>
+            {page === to && <motion.span layoutId="rt-tab" transition={SNAP} className="absolute inset-x-4 top-0 h-[2px] bg-saffron" />}
+            <Icon size={19} aria-hidden />
+            {label}
+          </Link>
         ))}
       </nav>
-      <div aria-live="polite" className="fixed bottom-20 right-4 z-50 flex flex-col gap-2 lg:bottom-4">
-        {toasts.map((t) => (
-          <div key={t.id} className={`rounded-md border px-4 py-2.5 text-sm shadow-xl ${t.tone === 'up' ? 'border-up/40 bg-up-deep' : t.tone === 'down' ? 'border-down/40 bg-down-deep' : 'border-rule bg-night-3'}`}>{t.text}</div>
-        ))}
+      <div aria-live="polite" className="pointer-events-none fixed bottom-20 right-4 z-50 flex flex-col items-end gap-2 lg:bottom-4">
+        <AnimatePresence initial={false}>
+          {toasts.map((t) => (
+            <motion.div
+              key={t.id} layout initial={{ opacity: 0, y: 16, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, x: 24, transition: { duration: 0.18 } }} transition={SNAP}
+              className={`rounded-md border px-4 py-2.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.5)] ${t.tone === 'up' ? 'border-up/40 bg-up-deep' : t.tone === 'down' ? 'border-down/40 bg-down-deep' : 'border-rule bg-night-3'}`}
+            >{t.text}</motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
+    </MotionConfig>
   );
 }
 

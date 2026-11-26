@@ -1,5 +1,6 @@
 import { Search, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion, useInView } from 'motion/react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ClaimName } from '../components/ceremony';
 import { Change, Lattice, Pnl } from '../components/chrome';
 import { money, pct, signedMoney, tone } from '../lib/format';
@@ -9,7 +10,7 @@ import {
   api, compact, countdown, HttpError, loadQuotes, price, pushRecent, recent, REJECT_COPY, remember, shares, STATE_LABEL, toast, useLive, useQuotes,
   type Activity, type BoardRow, type Details, type Execution, type ExchangeStatus, type Instrument, type LedgerEntry, type NewsItem, type Order, type Portfolio, type Quote, type Season,
 } from './store';
-import { DayChange, Link, Panel, Px, Quality, StateBadge, useClock, Virtual, WatchStar } from './ui';
+import { DayChange, EXPO, Link, Panel, Px, Quality, SNAP, StateBadge, useClock, Virtual, WatchStar } from './ui';
 
 // ---------------------------------------------------------------- shared
 
@@ -74,6 +75,7 @@ export function Overview({ signedIn }: { signedIn: boolean }) {
   }, [movers, data?.trending]);
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
+      {signedIn && <PortfolioSummary />}
       <section aria-label="Major indices" className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-rule bg-rule sm:grid-cols-3 lg:grid-cols-6">
         {idx.map(({ i, q }) => {
           const d = q?.last && q.prevClose ? q.last - q.prevClose : null;
@@ -91,10 +93,9 @@ export function Overview({ signedIn }: { signedIn: boolean }) {
         })}
         {data && !idx.length && <p className="col-span-full bg-night-2 p-4 text-sm text-ink-3">Index data appears once the instrument catalogue has synced.</p>}
       </section>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div className="grid gap-4">
-          {signedIn && <PortfolioSummary />}
-          <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-3">
             <Panel title="Top gainers"><Movers ids={movers?.gainers ?? []} /></Panel>
             <Panel title="Top losers"><Movers ids={movers?.losers ?? []} /></Panel>
             <Panel title="Most active"><Movers ids={movers?.actives ?? []} volume /></Panel>
@@ -104,7 +105,7 @@ export function Overview({ signedIn }: { signedIn: boolean }) {
             <QuoteTable ids={watch.slice(0, 8)} empty="Star a stock to watch it here." />
           </Panel>
         </div>
-        <div className="grid content-start gap-4">
+        <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-4">
           <Panel title="Trending on Haggle"><QuoteTable ids={data?.trending.slice(0, 8) ?? []} empty="Nothing is being watched right now." /></Panel>
           <Panel title="Recently viewed"><QuoteTable ids={recentIds.slice(0, 6)} empty="Stocks you open show up here." /></Panel>
           <ActivityFeed />
@@ -138,10 +139,11 @@ function Movers({ ids, volume = false }: { ids: number[]; volume?: boolean }) {
 function PortfolioSummary() {
   const [season] = useSeason();
   const version = useLive((s) => s.version);
-  const { data } = useLoad<{ portfolio: Portfolio | null }>(`/portfolio?season=${season}`, [version]);
+  const { data, reload } = useLoad<{ portfolio: Portfolio | null }>(`/portfolio?season=${season}`, [version]);
+  const here = useLoad<{ seasons: Season[] }>('/seasons', [data]).data?.seasons.find((s) => s.slug === season);
   usePositionQuotes(data?.portfolio ?? null);
   const p = data?.portfolio;
-  if (!p) return null;
+  if (!p) return data && here?.kind === 'open' ? <Panel><StartCard season={here} onJoined={reload} /></Panel> : null;
   return (
     <Panel title={`Portfolio · ${p.season.name}`} right={<Link to="/portfolio" className="text-xs text-saffron">Open</Link>}>
       <Summary p={p} />
@@ -360,6 +362,7 @@ export function Stock({ id, signedIn }: { id: number; signedIn: boolean }) {
     }
   }, [data, id]);
   useQuotes([id]);
+  const ticket = useRef<HTMLDivElement>(null);
   const q = useLive((s) => s.quotes.get(id)) ?? data?.quote ?? undefined;
   const ex = useLive((s) => s.exchanges.find((e) => e.exchange === data?.instrument.exchange));
   if (error) return <Empty>{error}</Empty>;
@@ -379,9 +382,8 @@ export function Stock({ id, signedIn }: { id: number; signedIn: boolean }) {
     ['52-week low', price(data.fiftyTwoWeek?.low, i.currency)],
   ];
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="grid content-start gap-4">
-        <Panel>
+    <div className="grid gap-4 pb-16 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:pb-0">
+        <Panel className="lg:col-start-1">
           <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start">
             {i.logoUrl && <img src={i.logoUrl} alt="" className="size-12 rounded-md bg-ink object-contain p-1" />}
             <div className="min-w-0 sm:flex-1">
@@ -410,14 +412,33 @@ export function Stock({ id, signedIn }: { id: number; signedIn: boolean }) {
           </dl>
           <Candles i={i} q={q} />
         </Panel>
-        <News ids={[i.id]} />
-      </div>
-      <div className="grid content-start gap-4">
+      <div ref={ticket} id="ticket" className="scroll-mt-44 lg:sticky lg:top-32 lg:col-start-2 lg:row-span-2 lg:row-start-1">
         {i.kind === 'index'
           ? <Panel title="Trade"><Empty>Indices cannot be bought. Search for an ETF that tracks the {i.name}.</Empty></Panel>
           : signedIn ? <TradePanel i={i} q={q} ex={ex} /> : <Panel title="Trade"><Empty><a href="/realtime" className="text-saffron">Sign in</a> to trade with virtual cash.</Empty></Panel>}
       </div>
+      <div className="lg:col-start-1"><News ids={[i.id]} /></div>
+      {signedIn && i.kind !== 'index' && <TradeBar i={i} q={q} ticket={ticket} />}
     </div>
+  );
+}
+
+/** Phones: the ticket sits under the chart, so a docked bar brings it up until it is on screen. */
+function TradeBar({ i, q, ticket }: { i: Instrument; q: Quote | undefined; ticket: React.RefObject<HTMLDivElement | null> }) {
+  const seen = useInView(ticket, { amount: 0.2 });
+  return (
+    <AnimatePresence>
+      {!seen && (
+        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={SNAP}
+          className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-20 flex items-center gap-3 border-t border-rule bg-night-2 px-4 py-2 lg:hidden">
+          <span className="min-w-0 flex-1 text-[12px] leading-tight text-ink-3">
+            <span className="block font-semibold text-ink">{i.symbol} <Px v={q?.last} currency={i.currency} /></span>
+            <DayChange q={q} />
+          </span>
+          <button type="button" onClick={() => ticket.current?.scrollIntoView({ behavior: 'smooth' })} className="h-11 rounded-md bg-saffron px-6 text-[15px] font-bold text-night">Trade</button>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -425,12 +446,13 @@ function TradePanel({ i, q, ex }: { i: Instrument; q: Quote | undefined; ex: Exc
   const [season] = useSeason();
   const version = useLive((s) => s.version);
   const feed = useLive((s) => s.feed);
-  const { data } = useLoad<{ portfolio: Portfolio | null }>(`/portfolio?season=${season}`, [version]);
+  const { data, reload } = useLoad<{ portfolio: Portfolio | null }>(`/portfolio?season=${season}`, [version]);
+  const here = useLoad<{ seasons: Season[] }>('/seasons', [data]).data?.seasons.find((s) => s.slug === season);
   const p = data?.portfolio;
   const pos = p?.positions.find((x) => x.instrument.id === i.id);
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [type, setType] = useState<'market' | 'limit'>('market');
-  const [by, setBy] = useState<'shares' | 'amount'>('shares');
+  const [byPick, setBy] = useState<'shares' | 'amount'>('shares');
   const [qtyText, setQty] = useState('1');
   const [limitText, setLimit] = useState('');
   const [queue, setQueue] = useState(false);
@@ -439,6 +461,8 @@ function TradePanel({ i, q, ex }: { i: Instrument; q: Quote | undefined; ex: Exc
   const [err, setErr] = useState<string | null>(null);
   const minor = i.currency === 'GBp' || i.currency === 'GBX';
 
+  // Buying by euro amount is a market buy only; everything else is sized in shares.
+  const byAmount = byPick === 'amount' && type === 'market' && side === 'buy';
   const open = ex?.state === 'open';
   const extended = (ex?.state === 'pre' || ex?.state === 'post') && feed?.policy.extendedHours;
   const qtyMicro = Math.round(Number(qtyText) * 1_000_000);
@@ -446,8 +470,14 @@ function TradePanel({ i, q, ex }: { i: Instrument; q: Quote | undefined; ex: Exc
   const limitUnits = Math.round(Number(limitText) * 10_000);
   const ref = type === 'limit' ? limitUnits : side === 'buy' ? (q?.ask ?? q?.last) : (q?.bid ?? q?.last);
   const fx = useFx(i.currency);
-  const estimate = ref && fx ? (by === 'amount' && type === 'market' ? amountCents : Math.round(((qtyMicro / 1_000_000) * (ref / 10_000) * 100) / fx)) : null;
+  const estimate = ref && fx ? (byAmount ? amountCents : Math.round(((qtyMicro / 1_000_000) * (ref / 10_000) * 100) / fx)) : null;
   const tradableNow = type === 'market' ? open : open || extended || queue;
+  const avail = p ? p.cash - p.reserved : 0;
+  const free = pos ? pos.qty - pos.reservedQty : 0;
+  // Whole shares the available cash covers at the reference price, in euro.
+  const maxBuy = ref && fx ? Math.floor((avail * fx * 100) / ref) : 0;
+  const edit = (f: () => void) => (f(), setReview(null), setErr(null));
+  const setShares = (n: number) => edit(() => (setBy('shares'), setQty(String(Math.max(0, n)))));
 
   const submit = async () => {
     if (!review) return;
@@ -456,10 +486,11 @@ function TradePanel({ i, q, ex }: { i: Instrument; q: Quote | undefined; ex: Exc
     try {
       const body = {
         clientOrderId: review, instrumentId: i.id, side, type,
-        ...(by === 'amount' && type === 'market' && side === 'buy' ? { amount: amountCents } : { qty: qtyMicro }),
+        ...(byAmount ? { amount: amountCents } : { qty: qtyMicro }),
         ...(type === 'limit' ? { limitPrice: limitUnits, queue } : {}),
       };
       const r = await api<{ order: Order; execution?: Execution }>(`/orders?season=${season}`, { method: 'POST', json: body });
+      // Fills toast from the live socket; only a resting order needs saying here.
       if (!r.execution) toast(`${type === 'limit' ? 'Limit order' : 'Order'} placed: ${side} ${shares(r.order.qty)} ${i.symbol}`, 'info');
       setReview(null);
     } catch (e) {
@@ -472,68 +503,125 @@ function TradePanel({ i, q, ex }: { i: Instrument; q: Quote | undefined; ex: Exc
     }
   };
 
-  if (!p) return <Panel title="Trade"><Empty>Join a competition on the Leaderboard page to trade here.</Empty></Panel>;
-  const valid = (by === 'amount' && type === 'market' ? amountCents > 0 : qtyMicro > 0) && (type === 'market' || limitUnits > 0);
+  if (!data) return <Panel title="Trade"><Empty>Loading</Empty></Panel>;
+  if (!p) {
+    return (
+      <Panel title={`Trade ${i.symbol}`}>
+        {here?.kind === 'open' ? <StartCard season={here} onJoined={reload} /> : <Empty>You have not joined {here?.name ?? 'this competition'}. Pick one on the <Link to="/leaderboard" className="text-saffron underline underline-offset-2">Leaderboard</Link>.</Empty>}
+      </Panel>
+    );
+  }
+  const valid = (byAmount ? amountCents > 0 : qtyMicro > 0) && (type === 'market' || limitUnits > 0);
+  const short = side === 'buy' ? estimate !== null && estimate > avail : qtyMicro > free;
+  const problem = !valid ? (byAmount ? 'Enter an amount.' : 'Enter a number of shares.')
+    : short ? (side === 'buy' ? `Not enough cash: ${money(avail)} available.` : free ? `You can sell up to ${shares(free)}.` : `You do not hold ${i.symbol}.`)
+    : !tradableNow ? (type === 'market' ? `${ex?.name ?? 'This exchange'} is ${(ex && STATE_LABEL[ex.state]?.toLowerCase()) ?? 'closed'}. Market orders fill only in the regular session; use a limit order to queue one.` : 'The market is closed: tick the box to queue the order for the next session.')
+    : null;
+  const what = `${side === 'buy' ? 'Buy' : 'Sell'} ${byAmount ? `${money(amountCents)} of` : shares(qtyMicro)} ${i.symbol}`;
+  const chip = 'h-7 rounded-sm px-2 text-[12px] font-semibold text-ink-2 hover:bg-night-3 hover:text-ink';
   return (
     <Panel title={`Trade ${i.symbol}`} right={<span className="text-xs text-ink-3">{p.season.name}</span>}>
       <div className="grid gap-3 p-4">
-        <div className="grid grid-cols-2 gap-1 rounded-md bg-night p-1">
-          {(['buy', 'sell'] as const).map((s) => (
-            <button key={s} type="button" aria-pressed={side === s} onClick={() => (setSide(s), setReview(null))}
-              className={`rounded py-2 text-sm font-bold uppercase ${side === s ? (s === 'buy' ? 'bg-up text-night' : 'bg-down text-night') : 'text-ink-2'}`}>{s}</button>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <label className="flex flex-col gap-1 text-xs text-ink-3">Order type
-            <select value={type} onChange={(e) => (setType(e.target.value as 'market' | 'limit'), setReview(null))} className="rounded-md border border-rule bg-night px-2 py-2 text-sm text-ink">
-              <option value="market">Market</option><option value="limit">Limit</option>
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-ink-3">{type === 'market' && side === 'buy' ? 'Buy by' : 'Quantity in'}
-            <select value={type === 'market' && side === 'buy' ? by : 'shares'} disabled={!(type === 'market' && side === 'buy')} onChange={(e) => (setBy(e.target.value as 'shares' | 'amount'), setReview(null))} className="rounded-md border border-rule bg-night px-2 py-2 text-sm text-ink">
-              <option value="shares">Shares</option><option value="amount">Euro amount</option>
-            </select>
-          </label>
-        </div>
-        <label className="flex flex-col gap-1 text-xs text-ink-3">{by === 'amount' && type === 'market' && side === 'buy' ? 'Amount (EUR)' : 'Shares (fractions allowed)'}
-          <input inputMode="decimal" value={qtyText} onChange={(e) => (setQty(e.target.value), setReview(null))} className="rounded-md border border-rule bg-night px-3 py-2 text-base tabular-nums text-ink" />
-        </label>
-        {side === 'sell' && pos && <button type="button" className="-mt-2 self-start text-xs text-saffron" onClick={() => (setQty(String((pos.qty - pos.reservedQty) / 1_000_000)), setBy('shares'))}>Sell all ({shares(pos.qty - pos.reservedQty)})</button>}
-        {type === 'limit' && (
-          <label className="flex flex-col gap-1 text-xs text-ink-3">Limit price ({minor ? 'pence' : i.currency})
-            <input inputMode="decimal" value={limitText} placeholder={q?.last ? String(q.last / 10_000) : ''} onChange={(e) => (setLimit(e.target.value), setReview(null))} className="rounded-md border border-rule bg-night px-3 py-2 text-base tabular-nums text-ink" />
-          </label>
-        )}
-        {type === 'limit' && !open && !extended && (
-          <label className="flex items-start gap-2 text-xs text-ink-2">
-            <input type="checkbox" checked={queue} onChange={(e) => setQueue(e.target.checked)} className="mt-0.5" />
-            The market is closed. Queue this order for the next session ({ex ? new Date(ex.nextOpen).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : ''}). It may fill at a very different price after an overnight gap.
-          </label>
-        )}
-        <dl className="grid gap-1 rounded-md bg-night px-3 py-2 text-sm">
-          <div className="flex justify-between"><dt className="text-ink-3">{side === 'buy' ? 'Ask' : 'Bid'}</dt><dd className="tabular-nums">{price(side === 'buy' ? q?.ask : q?.bid, i.currency)}</dd></div>
-          <div className="flex justify-between"><dt className="text-ink-3">Estimated {side === 'buy' ? 'cost' : 'proceeds'}</dt><dd className="tabular-nums font-bold">{estimate === null ? '—' : money(estimate)}</dd></div>
-          <div className="flex justify-between"><dt className="text-ink-3">Available cash</dt><dd className="tabular-nums">{money(p.cash - p.reserved)}</dd></div>
-          {pos && <div className="flex justify-between"><dt className="text-ink-3">You hold</dt><dd className="tabular-nums">{shares(pos.qty)}{pos.reservedQty ? ` (${shares(pos.reservedQty)} in orders)` : ''}</dd></div>}
-          {i.currency !== 'EUR' && fx && <div className="flex justify-between text-xs"><dt className="text-ink-3">Rate</dt><dd className="tabular-nums text-ink-3">{fx} {minor ? 'GBP' : i.currency} per EUR</dd></div>}
+        <Segmented label="Side" value={side} onChange={(v) => edit(() => setSide(v))} options={[['buy', 'BUY'], ['sell', 'SELL']]} tone={(v) => (v === 'buy' ? 'bg-saffron' : 'bg-down')} />
+
+        <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[13px]">
+          <dt className="text-ink-3">{side === 'buy' ? 'Ask' : 'Bid'}</dt>
+          <dd className="text-right font-semibold tabular-nums">{price(side === 'buy' ? q?.ask ?? q?.last : q?.bid ?? q?.last, i.currency)}</dd>
+          <dt className="text-ink-3">Available cash</dt>
+          <dd className="text-right tabular-nums">{money(avail)}</dd>
+          <dt className="text-ink-3">{side === 'buy' ? 'You can afford' : 'You can sell'}</dt>
+          <dd className="text-right tabular-nums">{side === 'buy' ? `${maxBuy.toLocaleString()} shares` : shares(free)}</dd>
+          {i.currency !== 'EUR' && fx && <><dt className="text-xs text-ink-3">Rate</dt><dd className="text-right text-xs tabular-nums text-ink-3">{fx} {minor ? 'GBP' : i.currency} per EUR</dd></>}
         </dl>
-        {!tradableNow && <p className="text-sm text-saffron">{type === 'market' ? `${ex?.name ?? 'This exchange'} is ${(ex && STATE_LABEL[ex.state]?.toLowerCase()) ?? 'closed'}. Market orders fill only in the regular session.` : 'Tick the box above to queue the order, or wait for the session.'}</p>}
-        {err && <p role="alert" className="text-sm text-down">{err}</p>}
-        {!review ? (
-          <button type="button" disabled={!valid || !tradableNow} onClick={() => (setErr(null), setReview(uuid()))}
-            className={`rounded-md py-3 font-bold text-night disabled:opacity-40 ${side === 'buy' ? 'bg-up' : 'bg-down'}`}>Review order</button>
-        ) : (
-          <div className="grid gap-2 rounded-md border border-saffron/60 p-3">
-            <p className="text-sm">
-              {side === 'buy' ? 'Buy' : 'Sell'} {by === 'amount' && type === 'market' && side === 'buy' ? `${money(amountCents)} of` : shares(qtyMicro)} {i.symbol} {type === 'market' ? 'at market' : `with a limit of ${price(limitUnits, i.currency)}`}
-              {estimate !== null && <>, about {money(estimate)}</>}. The fill price comes from the live quote at execution.
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => setReview(null)} className="rounded-md border border-rule py-2 text-sm">Back</button>
-              <button type="button" disabled={busy} onClick={() => void submit()} className="rounded-md bg-saffron py-2 text-sm font-bold text-night disabled:opacity-50">{busy ? 'Sending' : 'Confirm'}</button>
-            </div>
+
+        <Segmented label="Order type" value={type} onChange={(v) => edit(() => setType(v))} options={[['market', 'Market'], ['limit', 'Limit']]} quiet />
+
+        <div>
+          <div className="mb-1 flex items-center justify-between gap-2">
+            {type === 'market' && side === 'buy' ? (
+              <span role="radiogroup" aria-label="Size by" className="flex gap-1 text-[12px] font-medium uppercase tracking-[0.08em]">
+                {(['shares', 'amount'] as const).map((b) => (
+                  <button key={b} type="button" role="radio" aria-checked={byPick === b} onClick={() => edit(() => (setBy(b), setQty(b === 'amount' ? '100' : '1')))}
+                    className={`rounded-sm px-1.5 py-0.5 ${byPick === b ? 'bg-night-4 text-ink' : 'text-ink-3 hover:text-ink'}`}>{b === 'shares' ? 'Shares' : 'Euros'}</button>
+                ))}
+              </span>
+            ) : <span className="text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">Shares</span>}
+            <span className="flex gap-0.5">
+              {byAmount
+                ? <>{[100, 500].map((n) => <button key={n} type="button" className={chip} onClick={() => edit(() => setQty(String(n)))}>€{n}</button>)}
+                    <button type="button" className={`${chip} text-saffron`} disabled={avail <= 0} onClick={() => edit(() => setQty(String(Math.floor(avail) / 100)))}>Max</button></>
+                : <>{[1, 10].map((n) => <button key={n} type="button" className={chip} onClick={() => setShares((Number(qtyText) || 0) + n)}>+{n}</button>)}
+                    {side === 'buy'
+                      ? <button type="button" className={`${chip} text-saffron disabled:text-ink-3`} disabled={maxBuy < 1} onClick={() => setShares(maxBuy)}>Max {maxBuy > 0 ? maxBuy.toLocaleString() : ''}</button>
+                      : <button type="button" className={`${chip} text-saffron disabled:text-ink-3`} disabled={free <= 0} onClick={() => setShares(free / 1_000_000)}>All</button>}</>}
+            </span>
           </div>
-        )}
+          <span className="relative block">
+            {byAmount && <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" aria-hidden>€</span>}
+            <input aria-label={byAmount ? 'Amount in euros' : 'Shares, fractions allowed'} inputMode="decimal" autoComplete="off" value={qtyText}
+              onChange={(e) => edit(() => setQty(e.target.value.replace(',', '.').replace(/[^\d.]/g, '')))}
+              className={`h-11 w-full rounded-md border border-rule bg-night ${byAmount ? 'pl-7' : 'pl-3'} pr-3 text-center text-lg font-semibold tabular-nums focus:border-saffron/60 focus:outline-none`} />
+          </span>
+          {!byAmount && <span className="mt-1 block text-[11px] text-ink-3">Fractions allowed, to six decimals.</span>}
+        </div>
+
+        <AnimatePresence initial={false}>
+          {type === 'limit' && (
+            <motion.div key="limit" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22, ease: EXPO }} className="grid gap-2 overflow-hidden">
+              <label className="flex flex-col gap-1 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-3">Limit price ({minor ? 'pence' : i.currency})
+                <input inputMode="decimal" value={limitText} placeholder={q?.last ? String(q.last / 10_000) : ''} onChange={(e) => edit(() => setLimit(e.target.value.replace(',', '.')))}
+                  className="h-11 rounded-md border border-rule bg-night px-3 text-base normal-case tracking-normal tabular-nums text-ink focus:border-saffron/60 focus:outline-none" />
+              </label>
+              <p className="text-[12px] text-ink-3">{side === 'buy' ? 'Buys only at this price or lower.' : 'Sells only at this price or higher.'} It waits on the server until a quote crosses it.</p>
+              {!open && !extended && (
+                <label className="flex items-start gap-2 text-xs text-ink-2">
+                  <input type="checkbox" checked={queue} onChange={(e) => edit(() => setQueue(e.target.checked))} className="mt-0.5 accent-saffron" />
+                  Queue for the next session ({ex ? new Date(ex.nextOpen).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : ''}). It may fill at a very different price after an overnight gap.
+                </label>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <p className="flex justify-between gap-3 text-[13px] text-ink-3">
+          <span>Estimated {side === 'buy' ? 'cost' : 'proceeds'} <span className="font-semibold text-ink tabular-nums">{estimate === null ? '—' : money(estimate)}</span></span>
+          <span>Cash after <span className={`font-semibold tabular-nums ${short && side === 'buy' ? 'text-down' : 'text-ink'}`}>{estimate === null ? '—' : money(Math.max(0, side === 'buy' ? avail - estimate : avail + estimate))}</span></span>
+        </p>
+
+        <AnimatePresence mode="wait" initial={false}>
+          {!review ? (
+            <motion.button key="go" type="button" disabled={!!problem} onClick={() => (setErr(null), setReview(uuid()))}
+              initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.15, ease: EXPO }} whileTap={{ scale: 0.98 }}
+              className={`h-12 rounded-md text-[15px] font-bold text-night transition-[filter,opacity] hover:brightness-110 disabled:opacity-35 ${side === 'buy' ? 'bg-saffron' : 'bg-down'}`}>
+              Review: {what}
+            </motion.button>
+          ) : (
+            <motion.div key="confirm" role="group" aria-label="Confirm order" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }} transition={{ duration: 0.18, ease: EXPO }}
+              className="grid gap-2 rounded-md border border-saffron/60 bg-night p-3">
+              <p className="text-sm">
+                <strong>{what}</strong> {type === 'market' ? 'at market' : `with a limit of ${price(limitUnits, i.currency)}`}
+                {estimate !== null && <>, about <strong className="tabular-nums">{money(estimate)}</strong></>}.
+                <span className="block text-xs text-ink-3">The fill price comes from the live quote at execution.</span>
+              </p>
+              <div className="grid grid-cols-[auto_1fr] gap-2">
+                <button type="button" onClick={() => setReview(null)} className="h-11 rounded-md px-4 text-sm font-semibold text-ink-2 hover:text-ink">Back</button>
+                <button type="button" disabled={busy} onClick={() => void submit()} autoFocus
+                  className={`h-11 rounded-md text-sm font-bold text-night hover:brightness-110 disabled:opacity-50 ${side === 'buy' ? 'bg-saffron' : 'bg-down'}`}>{busy ? 'Sending order' : `Confirm ${side}`}</button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <p className="min-h-[1.25rem] text-[13px] text-ink-2" aria-live="polite">
+          {err ? <span role="alert" className="text-down">{err}</span>
+            : problem && valid ? <span className="text-saffron">{problem}</span>
+            : pos ? (
+              <span className="flex flex-wrap justify-between gap-x-3">
+                <span>You hold <strong className="text-ink">{shares(pos.qty)}</strong> at {money(Math.round((pos.cost * 1_000_000) / pos.qty))}{pos.reservedQty ? `, ${shares(pos.reservedQty)} in orders` : ''}</span>
+                {pos.unrealized !== null && <Pnl cents={pos.unrealized} className="font-semibold" />}
+              </span>
+            ) : <span className="text-ink-3">Paper trading: real prices, virtual euros. Orders never reach an exchange.</span>}
+        </p>
       </div>
     </Panel>
   );
@@ -551,31 +639,67 @@ function useFx(currency: string) {
 
 const START_PRESETS = [1_000, 5_000, 10_000];
 
+/** Two to four options sliding one saffron pill between them. */
+function Segmented<T extends string>({ label, value, options, onChange, tone, quiet = false }: { label: string; value: T; options: [T, string][]; onChange: (v: T) => void; tone?: (v: T) => string; quiet?: boolean }) {
+  const id = useId();
+  return (
+    <div role="radiogroup" aria-label={label} className="grid auto-cols-fr grid-flow-col rounded-md bg-night p-1">
+      {options.map(([v, l]) => (
+        <button key={v} type="button" role="radio" aria-checked={value === v} onClick={() => onChange(v)}
+          className={`relative h-9 rounded-[5px] text-sm font-bold transition-colors ${value === v ? (quiet ? 'text-ink' : 'text-night') : 'text-ink-3 hover:text-ink'}`}>
+          {value === v && <motion.span layoutId={`${id}-pill`} transition={SNAP} className={`absolute inset-0 rounded-[5px] ${quiet ? 'bg-night-4' : tone?.(v) ?? 'bg-saffron'}`} />}
+          <span className="relative">{l}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** Starting cash for a new account: a preset or a custom whole-euro amount from €100 to €20,000. */
-function JoinPicker({ season, onJoined }: { season: Season; onJoined: () => void }) {
-  const [pick, setPick] = useState<number | 'custom'>(10_000);
+function StartCard({ season, onJoined, compact = false }: { season: Season; onJoined: () => void; compact?: boolean }) {
+  const [pick, setPick] = useState<string>('10000');
   const [custom, setCustom] = useState('2500');
-  const amount = pick === 'custom' ? Number(custom) : pick;
+  const [busy, setBusy] = useState(false);
+  const amount = pick === 'custom' ? Number(custom) : Number(pick);
   const valid = Number.isInteger(amount) && amount >= 100 && amount <= 20_000;
   const join = async () => {
+    setBusy(true);
     try {
       await api(`/seasons/${season.id}/join`, { method: 'POST', json: { startingCash: amount } });
+      toast(`You are in ${season.name} with ${money(amount * 100)}`, 'up');
       onJoined();
     } catch (e) {
       toast((e as Error).message, 'down');
+    } finally {
+      setBusy(false);
     }
   };
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-      <select aria-label="Starting cash" value={String(pick)} onChange={(e) => setPick(e.target.value === 'custom' ? 'custom' : Number(e.target.value))} className="rounded-md border border-rule bg-night-2 px-2 py-1.5">
-        {START_PRESETS.map((v) => <option key={v} value={v}>{money(v * 100)}</option>)}
-        <option value="custom">Custom</option>
-      </select>
-      {pick === 'custom' && (
-        <input aria-label="Custom starting cash in euros" type="number" min={100} max={20_000} step={1} value={custom} onChange={(e) => setCustom(e.target.value)} className="w-24 rounded-md border border-rule bg-night-2 px-2 py-1.5 tabular-nums" />
+    <div className={`grid gap-3 ${compact ? 'mt-3' : 'p-5'}`}>
+      {!compact && (
+        <div>
+          <h2 className="font-display text-2xl font-black uppercase">Pick your starting cash</h2>
+          <p className="mt-1 max-w-[60ch] text-sm text-ink-2">Virtual euros to trade real prices with in {season.name}. You are ranked by return, so a small pot can beat a big one. You cannot top it up later.</p>
+        </div>
       )}
-      <button type="button" disabled={!valid} onClick={() => void join()} className="rounded-md bg-saffron px-3 py-1.5 font-bold text-night disabled:opacity-40">Join</button>
-      {!valid && <span className="text-down">€100 to €20,000</span>}
+      <Segmented label="Starting cash" value={pick} onChange={setPick} options={[...START_PRESETS.map((v) => [String(v), money(v * 100).replace(/\.00$/, '')] as [string, string]), ['custom', 'Custom']]} />
+      <AnimatePresence initial={false}>
+        {pick === 'custom' && (
+          <motion.label initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22, ease: EXPO }} className="block overflow-hidden">
+            <span className="mb-1 block text-xs font-medium uppercase tracking-[0.08em] text-ink-3">Amount in euros, 100 to 20,000</span>
+            <span className="relative block">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" aria-hidden>€</span>
+              <input inputMode="numeric" value={custom} onChange={(e) => setCustom(e.target.value.replace(/[^\d]/g, '').slice(0, 5))} aria-invalid={!valid}
+                className="h-11 w-full rounded-md border border-rule bg-night pl-7 pr-3 text-base font-semibold tabular-nums focus:border-saffron/60 focus:outline-none" />
+            </span>
+            {!valid && <span role="alert" className="mt-1 block text-xs text-down">Pick a whole amount from €100 to €20,000.</span>}
+          </motion.label>
+        )}
+      </AnimatePresence>
+      <motion.button type="button" disabled={!valid || busy} onClick={() => void join()} whileTap={{ scale: 0.98 }}
+        className={`${compact ? 'h-10' : 'h-12'} rounded-md bg-saffron font-bold text-night transition-[filter,opacity] hover:brightness-110 disabled:opacity-40`}>
+        {busy ? 'Joining' : valid ? `Start with ${money(amount * 100)}` : 'Start trading'}
+      </motion.button>
     </div>
   );
 }
@@ -604,8 +728,7 @@ export function PortfolioPage() {
       </div>
       {!p ? (
         <Panel>
-          <Empty>You have not joined this competition.{here?.kind === 'open' && ' Pick your starting cash to begin.'}</Empty>
-          {here?.kind === 'open' && <div className="flex justify-center pb-4"><JoinPicker season={here} onJoined={reload} /></div>}
+          {here?.kind === 'open' ? <StartCard season={here} onJoined={reload} /> : <Empty>You have not joined {here?.name ?? 'this competition'}. Competitions are listed on the <Link to="/leaderboard" className="text-saffron underline underline-offset-2">Leaderboard</Link>.</Empty>}
         </Panel>
       ) : (
         <>
@@ -635,7 +758,7 @@ export function PortfolioPage() {
                   })}
                 </tbody>
               </table>
-              {!p.positions.length && <Empty>No positions yet. Find a stock and buy it.</Empty>}
+              {!p.positions.length && <Empty>No positions yet. <Link to="/stocks" className="text-saffron underline underline-offset-2">Find a stock</Link> and buy it.</Empty>}
             </div>
             <p className="border-t border-rule px-4 py-2 text-xs text-ink-3">Values refresh on every fill; prices on this page move live. Realised P&L {signedMoney(p.realized)}.</p>
           </Panel>
@@ -740,6 +863,7 @@ const SORTS: [string, string][] = [['value', 'Portfolio value'], ['return', 'Ret
 export function Leaderboard({ signedIn }: { signedIn: boolean }) {
   const [season, setSeason] = useSeason();
   const [sort, setSort] = useState('return');
+  const [joining, setJoining] = useState<string | null>(null);
   const { data: seasons, reload: reloadSeasons } = useLoad<{ seasons: Season[] }>('/seasons');
   const { data, reload } = useLoad<{ rows: (BoardRow & { following: boolean })[]; you: string | null }>(`/leaderboard?season=${season}&sort=${sort}`);
   const now = useClock(30_000);
@@ -760,8 +884,8 @@ export function Leaderboard({ signedIn }: { signedIn: boolean }) {
       }>
         <ol>
           {data?.rows.map((r) => (
-            <li key={r.userId} className={`grid grid-cols-[2.5rem_minmax(0,1fr)_auto_auto] items-center gap-3 border-b border-rule/60 px-4 py-2 text-sm ${r.userId === data.you ? 'bg-saffron-deep/40' : ''}`}>
-              <span className="font-display text-lg font-black text-ink-3">{r.rank}</span>
+            <motion.li layout="position" transition={SNAP} key={r.userId} className={`grid grid-cols-[2.5rem_minmax(0,1fr)_auto_auto] items-center gap-3 border-b border-rule/60 px-4 py-2 text-sm ${r.userId === data.you ? 'bg-saffron-deep/40' : ''}`}>
+              <span className={`font-display text-xl font-black ${r.rank === 1 ? 'text-saffron' : r.rank <= 3 ? 'text-ink' : 'text-ink-3'}`}>{r.rank}</span>
               <Link to={`/player/${r.userId}`} className="flex min-w-0 items-center gap-2">
                 <Lattice nickname={r.nickname} size={22} you={r.userId === data.you} />
                 <span className="truncate font-semibold">{r.nickname}</span>
@@ -774,7 +898,7 @@ export function Leaderboard({ signedIn }: { signedIn: boolean }) {
               {signedIn && r.userId !== data.you ? (
                 <button type="button" onClick={() => void follow(r.userId, !r.following)} className={`rounded border px-2 py-1 text-xs ${r.following ? 'border-saffron text-saffron' : 'border-rule text-ink-2'}`}>{r.following ? 'Following' : 'Follow'}</button>
               ) : <span />}
-            </li>
+            </motion.li>
           ))}
         </ol>
         {data && !data.rows.length && <Empty>No players yet.</Empty>}
@@ -795,7 +919,9 @@ export function Leaderboard({ signedIn }: { signedIn: boolean }) {
                     {s.endsAt && ` · ${s.status === 'finished' ? 'ended' : 'ends'} ${new Date(s.endsAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`}
                   </p>
                   <p className="mt-1 text-xs text-ink-2">{s.rules}</p>
-                  {signedIn && canJoin && <JoinPicker season={s} onJoined={() => joined(s)} />}
+                  {signedIn && canJoin && (joining === s.id
+                    ? <StartCard compact season={s} onJoined={() => (setJoining(null), joined(s))} />
+                    : <button type="button" onClick={() => setJoining(s.id)} className="mt-2 h-9 rounded-md border border-saffron/70 px-4 text-xs font-bold text-saffron hover:bg-saffron-deep">Join</button>)}
                   {s.joined && <span className="mt-1 block text-xs text-up">Joined</span>}
                   {!s.joined && !canJoin && s.status !== 'finished' && <span className="mt-1 block text-xs text-ink-3">Registration closed</span>}
                 </li>
