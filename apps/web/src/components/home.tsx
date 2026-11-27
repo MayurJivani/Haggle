@@ -277,6 +277,7 @@ export function Home({ nickname, registered, onAuth, session: first, offset }: {
               <motion.a href="/play" whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} transition={{ type: 'spring', stiffness: 400, damping: 28 }} className="grid h-14 place-items-center rounded-md bg-saffron px-8 text-lg font-bold text-night">Enter the market</motion.a>
               <motion.a href="/rooms" whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} transition={{ type: 'spring', stiffness: 400, damping: 28 }} className="grid h-14 place-items-center rounded-md border border-saffron/70 px-8 text-lg font-bold text-saffron hover:bg-saffron-deep">Play with friends</motion.a>
             </div>
+            <a href="/event" className="self-start text-[15px] font-semibold text-ink-2 underline decoration-ink-3 underline-offset-4 hover:text-ink">Host an event on a big screen, for a hundred players or more</a>
             <p className="flex items-center gap-2 text-sm text-ink-2" role="status">
               <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-up motion-reduce:animate-none" aria-hidden />
               {marketStatus(session, t)}

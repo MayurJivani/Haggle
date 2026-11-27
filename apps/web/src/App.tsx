@@ -11,6 +11,7 @@ import { clock } from './lib/format';
 import { game, ROOM, roomQuery, useGame, type SessionInfo } from './lib/game';
 import { RoomBar, RoomsPage } from './components/rooms';
 import { Home } from './components/home';
+import { EventSetup, EventTV } from './components/event';
 
 // RealTime is a separate chunk: the classic game never downloads it.
 const RealtimeApp = lazy(() => import('./realtime/App').then((m) => ({ default: m.RealtimeApp })));
@@ -266,6 +267,7 @@ export function App() {
   const isRooms = location.pathname.replace(/\/$/, '') === '/rooms';
   const isPlay = location.pathname.replace(/\/$/, '') === '/play' || !!ROOM;
   const badRoom = location.pathname.startsWith('/room/') && !ROOM;
+  const event = location.pathname.match(/^\/event(?:\/([A-Z2-9]{8}))?\/?$/);
   const isRealtime = /^\/realtime(\/|$)/.test(location.pathname);
   const [me, setMe] = useState<{ user: { nickname: string; registered: boolean } | null; session: SessionInfo | null; offset: number } | 'loading' | 'error' | 'noroom'>('loading');
 
@@ -295,6 +297,7 @@ export function App() {
     );
   else if (me === 'loading') body = <Splash />;
   else if (isRealtime && me !== 'error') body = <Suspense fallback={<Splash />}><RealtimeApp user={me.user} onAuth={load} /></Suspense>;
+  else if (event && me !== 'error') body = event[1] ? <EventTV code={event[1]} offset={me.offset} /> : <EventSetup signedIn={!!me.user} onJoined={load} />;
   else if (isRooms && me !== 'error') body = <RoomsPage signedIn={!!me.user} onJoined={load} />;
   else if (me === 'error')
     body = (

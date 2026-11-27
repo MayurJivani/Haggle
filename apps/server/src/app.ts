@@ -345,6 +345,15 @@ export function createApp(sql: Sql, engine: Engine, env: Env, rt: Realtime | nul
     const done = act === 'start' ? await engine.openNow(live) : await engine.closeNow(live);
     res.status(done ? 200 : 409).json({ ok: done, session: engine.sessionInfo(live) });
   };
+  /** The event TV for a live room: same visibility as its board. */
+  app.get('/api/rooms/:code/screen', researchLimiter, async (req, res) => {
+    const code = codeSchema.safeParse(req.params.code);
+    const live = code.success ? engine.liveByCode(code.data) : undefined;
+    if (!live) return void res.status(404).json({ error: 'There is no live room with that code' });
+    const user = await userOf(req);
+    if (!engine.canView(live, user?.id ?? null)) return void res.status(403).json({ error: 'This room is private' });
+    res.setHeader('Cache-Control', 'no-store').json(engine.screen(live, user?.id ?? null));
+  });
   app.post('/api/rooms/:code/start', hostAction('start'));
   app.post('/api/rooms/:code/close', hostAction('close'));
 

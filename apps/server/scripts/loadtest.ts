@@ -5,9 +5,10 @@
 //
 //   TARGET=http://localhost:4371 CLIENTS=500 DURATION=120 ADMIN_TOKEN=... npm run loadtest
 //   ROOMS=10 splits the clients across that many custom rooms; RECOVER=1 reconnects through a server restart.
+//   ROOM=CODE puts every client in a room someone already opened (an /event), for its host to start.
 import WebSocket from 'ws';
 import { randomUUID } from 'node:crypto';
-import type { BookInfo, ServerMsg } from '../src/protocol.js';
+import type { BookInfo, EventScreen, ServerMsg } from '../src/protocol.js';
 
 const TARGET = process.env.TARGET ?? 'http://localhost:4371';
 const CLIENTS = Number(process.env.CLIENTS ?? 500);
@@ -19,6 +20,7 @@ const RESEARCH_EVERY_MS = Number(process.env.RESEARCH_EVERY_MS ?? 15000);
 const RANGES = ['1m', '5m', '15m', '1h', 'all'];
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const ROOMS = Number(process.env.ROOMS ?? 0);
+const ROOM = process.env.ROOM ?? null;
 const RECOVER = process.env.RECOVER === '1';
 const run = Date.now().toString(36).slice(-5);
 const origin = new URL(TARGET).origin;
@@ -50,6 +52,9 @@ const stats = {
   /** A fill in a ticker the bot's room does not list, or for an order it never sent. */
   crossRoom: 0,
   outages: 0,
+  /** The event TV polled by each room's host: latency, and screens whose head count or order was wrong. */
+  screenMs: [] as number[],
+  screenErrors: 0,
 };
 
 interface Bot {
@@ -205,6 +210,7 @@ async function main() {
     hosts.push({ code: ((await r.json()) as { code: string }).code, cookie: host.cookie });
   }
   if (ROOMS) bots.forEach((b, i) => (b.room = hosts[i % ROOMS]!.code));
+  if (ROOM) bots.forEach((b) => (b.room = ROOM));
   for (let i = 0; i < bots.length; i += 50) await Promise.all(bots.slice(i, i + 50).map(connect));
   console.log(`connected ${stats.connected}, hello p95 ${pct(stats.helloMs, 95)}ms`);
 
@@ -213,12 +219,26 @@ async function main() {
     if (!r.ok) throw new Error(`start ${h.code}: ${r.status}`);
   }
   if (hosts.length) console.log(`${hosts.length} rooms opened`);
-  if (ADMIN_TOKEN && !ROOMS) {
+  if (ADMIN_TOKEN && !ROOMS && !ROOM) {
     const r = await fetch(`${TARGET}/api/admin/start`, { method: 'POST', headers: { authorization: `Bearer ${ADMIN_TOKEN}` } });
     console.log(`admin start: ${r.status}`);
   }
 
+  // Each room's host keeps its event screen open, as a TV would.
+  const watchScreen = async (h: { code: string; cookie: string }) => {
+    const t0 = Date.now();
+    try {
+      const r = await fetch(`${TARGET}/api/rooms/${h.code}/screen`, { headers: { cookie: h.cookie } });
+      const v = (await r.json()) as EventScreen;
+      stats.screenMs.push(Date.now() - t0);
+      const sorted = v.top.every((row, i) => i === 0 || v.top[i - 1]!.value >= row.value);
+      if (!r.ok || v.count !== bots.filter((b) => b.room === h.code).length || !sorted || v.lines.length !== Math.min(8, v.count)) stats.screenErrors++;
+    } catch {
+      if (!RECOVER) stats.screenErrors++;
+    }
+  };
   const timers = [
+    ...hosts.map((h) => setInterval(() => void watchScreen(h), 2000)),
     ...bots.map((b) => setInterval(() => trade(b), ORDER_EVERY_MS * (0.5 + Math.random()))),
     ...bots.map((b) => setInterval(() => void research(b), RESEARCH_EVERY_MS * (0.5 + Math.random()))),
   ];
@@ -262,10 +282,11 @@ async function main() {
     research: { requests: stats.researchMs.length, errors: stats.researchErrors, p50: pct(stats.researchMs, 50), p95: pct(stats.researchMs, 95), p99: pct(stats.researchMs, 99) },
     socketErrors: stats.errors,
     rooms: ROOMS, inconsistentTicks: stats.inconsistentTicks, crossRoomFills: stats.crossRoom, outages: stats.outages, ticksCompared: stats.tickPrices.size,
+    screen: { polls: stats.screenMs.length, errors: stats.screenErrors, p50: pct(stats.screenMs, 50), p95: pct(stats.screenMs, 95) },
   };
   console.log(JSON.stringify(report, null, 2));
   const ok = stats.dupesExecutedTwice === 0 && stats.reconnectMismatch === 0 && stats.joined === CLIENTS && (!RECOVER || stats.connected === CLIENTS || stats.errors === 0) && (RECOVER || !stats.rejects.server_error)
-    && stats.inconsistentTicks === 0 && stats.crossRoom === 0 && (RECOVER || missed === 0) && stats.researchErrors === 0;
+    && stats.inconsistentTicks === 0 && stats.crossRoom === 0 && (RECOVER || missed === 0) && stats.researchErrors === 0 && stats.screenErrors === 0;
   console.log(ok ? 'PASS' : 'FAIL');
   process.exit(ok ? 0 : 1);
 }

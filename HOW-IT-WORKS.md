@@ -27,7 +27,7 @@ The design and its trade-offs are in [docs/engine-2-design.md](docs/engine-2-des
 
 ## Pages
 
-`/` is the home page and joins nothing; it reads the public `GET /api/floor` (prices, moves over the last 600 ticks, latest news, round timings), built at most every three seconds. `/play` is the main market, `/rooms` lists and creates custom games, `/room/CODE` is one game, `/host` is the organiser's console and `/r/ID` a shared result. A socket opens only on `/play` and `/room/CODE`, so looking at the home page never deals anyone in. The host console's QR code points at `/play`.
+`/` is the home page and joins nothing; it reads the public `GET /api/floor` (prices, moves over the last 600 ticks, latest news, round timings), built at most every three seconds. `/play` is the main market, `/rooms` lists and creates custom games, `/room/CODE` is one game, `/host` is the organiser's console, `/event` sets up an event and `/event/CODE` is its big screen, and `/r/ID` a shared result. A socket opens only on `/play` and `/room/CODE`, so looking at the home page never deals anyone in. The host console's QR code points at `/play`.
 
 ## Session loop
 
@@ -180,6 +180,7 @@ A custom room is a competition like the house one, with a host and its own rules
 - **Sockets.** A socket joins one competition (`/ws?room=CODE`, none = the house). Ticks, news, reports and the regime go to every socket; phase, board, results and fills go only to that competition's sockets, so a second tab in another room never sees them.
 - **Joining.** The unique `(session, user)` participant row means a reconnect, a second tab or a repeated request never deals a second purse, and a book from one room never enters another. Nickname accounts cannot stop one person opening several accounts; the per-IP join limit only slows it.
 - **The host.** Only the host may ring a manual bell or close the market early. If the host disconnects the room carries on by its clock; a manual room nobody starts is closed with no results after 24 hours.
+- **Events.** `/event` is a room preset for a crowd in one place: invite code only (so it is not listed), standings open to anyone with the link (so a TV with no trader name can show them), up to `MAX_PLAYERS` traders (1,000 by default), a starting purse and trading time the host picks, a bell the host rings. `/event/CODE` is the screen for the TV or projector: in the lobby a QR code to `/room/CODE` and the names coming in; while trading a leaderboard of profit and a race of the top eight's profit since the bell, with the host's bell and close buttons when the host's own browser shows it. It polls `GET /api/rooms/:code/screen` every two seconds; the lines come from the value samples the engine already keeps every 10 ticks for the awards (`session/screen.ts`, matched from the right, so a late joiner or a restart only shortens a line), so the screen costs no query. Players trade on their phones in the room as usual.
 - **Leaderboard.** `GET /api/sessions/:id/board` returns every trader at one valuation time (cached a second); `GET /api/sessions/:id/portfolio/:participant` returns a rival's book only where the room allows peeking, and only to its own traders.
 
 ## Monitoring
@@ -199,7 +200,7 @@ NODE_ENV=production JOIN_RATE_LIMIT=100000 LOBBY_SECONDS=600 TRADING_SECONDS=300
 TARGET=http://localhost:4391 CLIENTS=1000 DURATION=120 ADMIN_TOKEN=<token> npm run loadtest
 ```
 
-It exits non-zero on any double execution, book mismatch, missed story, failed research request or server error.
+`ROOMS=1` puts every bot in one room, as at an event, with its host polling the event screen every 2 s (`ROOM=CODE` joins a room a host already opened instead). It exits non-zero on any double execution, book mismatch, missed story, failed research request or server error.
 
 Result on a laptop (one Node process, built, `NODE_ENV=production`, Postgres 17 in Docker, pool of 10), 1,000 clients for 120 s, 75 companies, 26 October 2026:
 

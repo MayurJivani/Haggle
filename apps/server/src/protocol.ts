@@ -221,6 +221,24 @@ export interface FullBoard {
   at: number;
 }
 
+/** GET /api/rooms/:code/screen: what the event TV shows, polled every couple of seconds. */
+export interface EventScreen {
+  session: SessionInfo;
+  /** The viewer runs this room (shows the bell and close buttons). */
+  host: boolean;
+  top: BoardRow[];
+  count: number;
+  /** Traders above and below the starting purse. */
+  up: number;
+  down: number;
+  avgBps: number;
+  /** The leaders' values from the bell to now, as [local tick, value in cents]. */
+  lines: { participantId: string; nickname: string; points: [number, number][] }[];
+  /** The latest traders to join, newest first, for the lobby. */
+  newest: string[];
+  at: number;
+}
+
 /** One trader's book, valued at the given prices (the results page and the in-game peek). */
 export interface PortfolioView {
   participantId: string;

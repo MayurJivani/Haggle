@@ -10,13 +10,14 @@ import { ENGINE_VERSION, EPOCH_TICKS, Tape } from '../market/tape.js';
 import { metrics } from '../metrics.js';
 import { reactionBps, reactionMembers } from '../market/dashboard.js';
 import type {
-  Activity, FloorInfo, Reaction, AssetInfo, BoardRow, BookInfo, ClientMsg, EventInfo, FullBoard, HoldingResult, PlayerResult, PortfolioView, Regime, Results, RoomInfo,
+  Activity, FloorInfo, Reaction, AssetInfo, BoardRow, BookInfo, ClientMsg, EventInfo, EventScreen, FullBoard, HoldingResult, PlayerResult, PortfolioView, Regime, Results, RoomInfo,
   RoomListing, ServerMsg, SessionInfo,
 } from '../protocol.js';
 import { apply, pnlByTicker, quote, returnBps, STARTING_CASH, valueOf, type Book } from '../trading/portfolio.js';
 import { pickAwards } from './awards.js';
 import { compareRank, phaseAt, type Phase } from './ranking.js';
 import * as store from './store.js';
+import { screenOf } from './screen.js';
 
 export interface EngineConfig {
   lobbySeconds: number;
@@ -728,6 +729,8 @@ export class Engine {
     live.cfg.totalTicks = tick;
     live.closesAt = live.opensAt + tick * this.cfg.tickMs;
     live.frozen = Array.from(this.market.prices);
+    // The closing sample a natural close takes on its last tick (unless that tick was sampled already).
+    if (tick % SAMPLE_EVERY !== 0) for (const p of live.players.values()) p.samples.push(this.valueOf(live, p));
     await store.setCloseTime(this.sql, live.row.id, new Date(live.closesAt));
     this.log.info({ session: live.row.id, room: live.row.code, tick }, 'market closed early');
     return true;
@@ -935,6 +938,20 @@ export class Engine {
     if (live.boardCache && now - live.boardCache.at < 1000 && !live.frozen) return live.boardCache;
     live.boardCache = { rows: this.ranking(live).map((r) => this.row(live, r)), at: live.frozen ? live.closesAt : this.lastAt };
     return live.boardCache;
+  }
+
+  /** The event TV: the top of the board, the room's spread, the leaders' lines (from the in-memory samples). */
+  screen(live: Live, userId: string | null): EventScreen {
+    const board = this.fullBoard(live);
+    const players = [...live.players.values()];
+    const samples = new Map(players.map((p) => [p.id, p.samples]));
+    return {
+      session: this.sessionInfo(live)!,
+      host: !!userId && this.isHost(live, userId),
+      ...screenOf(board.rows, samples, { start: live.cfg.startingCash, tick: this.localTick(live), every: SAMPLE_EVERY, ended: !!live.frozen, top: 12, lines: 8 }),
+      newest: players.sort((a, b) => b.joinedAt - a.joinedAt).slice(0, 24).map((p) => p.nickname),
+      at: board.at,
+    };
   }
 
   /** One trader's book at the competition's current (or closing) prices. */
