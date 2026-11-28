@@ -28,4 +28,14 @@ describe('event screen', () => {
     expect(early.lines[0]!.points).toEqual([[0, 1000], [10, 1100], [20, 1200], [25, 1300]]);
     expect(screenOf([], new Map(), { start: 1000, tick: 0, every: 10, ended: false, top: 10, lines: 8 }).avgBps).toBe(0);
   });
+
+  it('filters out host when screen is built from engine', () => {
+    const rows = [row(1, 'host-id', 2000), row(2, 'player-1', 1500), row(3, 'player-2', 1200)];
+    const samples = new Map([['player-1', [1000, 1500]], ['player-2', [1000, 1200]]]);
+    const filteredRows = rows.filter((r) => r.participantId !== 'host-id');
+    const s = screenOf(filteredRows, samples, { start: 1000, tick: 10, every: 5, ended: false, top: 10, lines: 8 });
+    expect(s.top.map((r) => r.participantId)).toEqual(['player-1', 'player-2']);
+    expect(s.lines.map((l) => l.participantId)).toEqual(['player-1', 'player-2']);
+    expect(s.count).toBe(2);
+  });
 });

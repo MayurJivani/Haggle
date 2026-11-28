@@ -131,7 +131,7 @@ export function EventTV({ code, offset }: { code: string; offset: number }) {
       } catch {
         /* a blip: the next poll catches up */
       }
-      if (!stop) timer = setTimeout(poll, 2000);
+      if (!stop) timer = setTimeout(poll, 1000);
     };
     void poll();
     return () => { stop = true; clearTimeout(timer); };

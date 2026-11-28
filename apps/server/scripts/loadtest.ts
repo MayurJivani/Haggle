@@ -199,7 +199,7 @@ async function main() {
     bots.push(...(await Promise.all(Array.from({ length: Math.min(25, CLIENTS - i) }, (_, k) => join(i + k)))));
   }
   console.log(`joined ${stats.joined}`);
-  const hosts: { code: string; cookie: string }[] = [];
+  const hosts: { code: string; cookie: string; userId: string }[] = [];
   for (let k = 0; k < ROOMS; k++) {
     const host = bots[Math.floor((k * bots.length) / ROOMS)]!;
     const r = await fetch(`${TARGET}/api/rooms`, {
@@ -207,7 +207,7 @@ async function main() {
       body: JSON.stringify({ name: `Load ${k}`, maxPlayers: Math.ceil(CLIENTS / ROOMS) + 1, durationMinutes: Math.ceil(DURATION / 60000) + 2 }),
     });
     if (!r.ok) throw new Error(`room ${k}: ${r.status} ${await r.text()}`);
-    hosts.push({ code: ((await r.json()) as { code: string }).code, cookie: host.cookie });
+    hosts.push({ code: ((await r.json()) as { code: string }).code, cookie: host.cookie, userId: host.userId });
   }
   if (ROOMS) bots.forEach((b, i) => (b.room = hosts[i % ROOMS]!.code));
   if (ROOM) bots.forEach((b) => (b.room = ROOM));
@@ -225,14 +225,15 @@ async function main() {
   }
 
   // Each room's host keeps its event screen open, as a TV would.
-  const watchScreen = async (h: { code: string; cookie: string }) => {
+  const watchScreen = async (h: { code: string; cookie: string; userId: string }) => {
     const t0 = Date.now();
     try {
       const r = await fetch(`${TARGET}/api/rooms/${h.code}/screen`, { headers: { cookie: h.cookie } });
       const v = (await r.json()) as EventScreen;
       stats.screenMs.push(Date.now() - t0);
       const sorted = v.top.every((row, i) => i === 0 || v.top[i - 1]!.value >= row.value);
-      if (!r.ok || v.count !== bots.filter((b) => b.room === h.code).length || !sorted || v.lines.length !== Math.min(8, v.count)) stats.screenErrors++;
+      const expectedCount = bots.filter((b) => b.room === h.code && b.userId !== h.userId).length;
+      if (!r.ok || v.count !== expectedCount || !sorted || v.lines.length !== Math.min(8, v.count)) stats.screenErrors++;
     } catch {
       if (!RECOVER) stats.screenErrors++;
     }

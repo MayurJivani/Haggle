@@ -104,7 +104,7 @@ export interface Live {
   boardCache: FullBoard | null;
 }
 
-const SAMPLE_EVERY = 10;
+const SAMPLE_EVERY = 5;
 /** Market ticks between checkpoints. A crash loses nothing: the ticks since are replayed identically. */
 const CHECKPOINT_EVERY = 10;
 /** Ticks between standings snapshots, the points of the results page replay. */
@@ -206,7 +206,7 @@ export class Engine {
     private readonly sql: Sql,
     private readonly cfg: EngineConfig,
     private readonly log: Logger,
-  ) {}
+  ) { }
 
   async start() {
     // One writer per market. A second process on the same database refuses to start rather than
@@ -268,7 +268,7 @@ export class Engine {
     this.timer = null;
     await this.saving;
     if (this.lock) {
-      await this.lock`SELECT pg_advisory_unlock(${LOCK_KEY})`.catch(() => {});
+      await this.lock`SELECT pg_advisory_unlock(${LOCK_KEY})`.catch(() => { });
       this.lock.release();
       this.lock = null;
     }
@@ -943,12 +943,19 @@ export class Engine {
   /** The event TV: the top of the board, the room's spread, the leaders' lines (from the in-memory samples). */
   screen(live: Live, userId: string | null): EventScreen {
     const board = this.fullBoard(live);
-    const players = [...live.players.values()];
+    const hostId = live.row.host_user_id;
+    const hostParticipantId = hostId ? live.players.get(hostId)?.id : null;
+    const rows = hostParticipantId ? board.rows.filter((r) => r.participantId !== hostParticipantId) : board.rows;
+    const players = [...live.players.values()].filter((p) => !hostId || p.userId !== hostId);
     const samples = new Map(players.map((p) => [p.id, p.samples]));
+    const session = this.sessionInfo(live)!;
+    if (hostId && live.players.has(hostId)) {
+      session.players = Math.max(0, session.players - 1);
+    }
     return {
-      session: this.sessionInfo(live)!,
+      session,
       host: !!userId && this.isHost(live, userId),
-      ...screenOf(board.rows, samples, { start: live.cfg.startingCash, tick: this.localTick(live), every: SAMPLE_EVERY, ended: !!live.frozen, top: 12, lines: 8 }),
+      ...screenOf(rows, samples, { start: live.cfg.startingCash, tick: this.localTick(live), every: SAMPLE_EVERY, ended: !!live.frozen, top: 12, lines: 8 }),
       newest: players.sort((a, b) => b.joinedAt - a.joinedAt).slice(0, 24).map((p) => p.nickname),
       at: board.at,
     };
